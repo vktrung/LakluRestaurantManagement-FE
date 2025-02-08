@@ -1,0 +1,168 @@
+/* Bw Modelica Fonts */
+@font-face {
+  font-family: 'Bw Modelica';
+  src: url('/fonts/modellica/BwModelicaCyrillicDEMO-Black.woff2')
+      format('woff2'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-Black.woff') format('woff'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-Black.ttf') format('truetype'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-Black.eot'); /* IE9+ */
+  font-weight: 900; /* Black weight */
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Bw Modelica';
+  src: url('/fonts/modellica/BwModelicaCyrillicDEMO-BlackItalic.woff2')
+      format('woff2'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-BlackItalic.woff')
+      format('woff'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-BlackItalic.ttf')
+      format('truetype'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-BlackItalic.eot'); /* IE9+ */
+  font-weight: 900; /* Black weight */
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Bw Modelica';
+  src: url('/fonts/modellica/BwModelicaCyrillicDEMO-Bold.woff2') format('woff2'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-Bold.woff') format('woff'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-Bold.ttf') format('truetype'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-Bold.eot'); /* IE9+ */
+  font-weight: 700; /* Bold weight */
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Bw Modelica';
+  src: url('/fonts/modellica/BwModelicaCyrillicDEMO-BoldItalic.woff2')
+      format('woff2'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-BoldItalic.woff')
+      format('woff'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-BoldItalic.ttf')
+      format('truetype'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-BoldItalic.eot'); /* IE9+ */
+  font-weight: 700; /* Bold weight */
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Bw Modelica';
+  src: url('/fonts/modellica/BwModelicaCyrillicDEMO-ExtraBold.woff2')
+      format('woff2'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-ExtraBold.woff') format('woff'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-ExtraBold.ttf')
+      format('truetype'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-ExtraBold.eot'); /* IE9+ */
+  font-weight: 800; /* ExtraBold weight */
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Bw Modelica';
+  src: url('/fonts/modellica/BwModelicaCyrillicDEMO-ExtraBoldItalic.woff2')
+      format('woff2'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-ExtraBoldItalic.woff')
+      format('woff'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-ExtraBoldItalic.ttf')
+      format('truetype'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-ExtraBoldItalic.eot'); /* IE9+ */
+  font-weight: 800; /* ExtraBold weight */
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Bw Modelica';
+  src: url('/fonts/modellica/BwModelicaCyrillicDEMO-Light.woff2')
+      format('woff2'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-Light.woff') format('woff'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-Light.ttf') format('truetype'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-Light.eot'); /* IE9+ */
+  font-weight: 300; /* Light weight */
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Bw Modelica';
+  src: url('/fonts/modellica/BwModelicaCyrillicDEMO-LightItalic.woff2')
+      format('woff2'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-LightItalic.woff')
+      format('woff'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-LightItalic.ttf')
+      format('truetype'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-LightItalic.eot'); /* IE9+ */
+  font-weight: 300; /* Light weight */
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Bw Modelica';
+  src: url('/fonts/modellica/BwModelicaCyrillicDEMO-Medium.woff2')
+      format('woff2'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-Medium.woff') format('woff'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-Medium.ttf') format('truetype'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-Medium.eot'); /* IE9+ */
+  font-weight: 500; /* Medium weight */
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Bw Modelica';
+  src: url('/fonts/modellica/BwModelicaCyrillicDEMO-MediumItalic.woff2')
+      format('woff2'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-MediumItalic.woff')
+      format('woff'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-MediumItalic.ttf')
+      format('truetype'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-MediumItalic.eot'); /* IE9+ */
+  font-weight: 500; /* Medium weight */
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Bw Modelica';
+  src: url('/fonts/modellica/BwModelicaCyrillicDEMO-Regular.woff2')
+      format('woff2'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-Regular.woff') format('woff'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-Regular.ttf')
+      format('truetype'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-Regular.eot'); /* IE9+ */
+  font-weight: 400; /* Regular weight */
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Bw Modelica';
+  src: url('/fonts/modellica/BwModelicaCyrillicDEMO-RegularItalic.woff2')
+      format('woff2'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-RegularItalic.woff')
+      format('woff'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-RegularItalic.ttf')
+      format('truetype'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-RegularItalic.eot'); /* IE9+ */
+  font-weight: 400; /* Regular weight */
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Bw Modelica';
+  src: url('/fonts/modellica/BwModelicaCyrillicDEMO-Thin.woff2') format('woff2'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-Thin.woff') format('woff'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-Thin.ttf') format('truetype'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-Thin.eot'); /* IE9+ */
+  font-weight: 100; /* Thin weight */
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Bw Modelica';
+  src: url('/fonts/modellica/BwModelicaCyrillicDEMO-ThinItalic.woff2')
+      format('woff2'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-ThinItalic.woff')
+      format('woff'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-ThinItalic.ttf')
+      format('truetype'),
+    url('/fonts/modellica/BwModelicaCyrillicDEMO-ThinItalic.eot'); /* IE9+ */
+  font-weight: 100; /* Thin weight */
+  font-style: italic;
+}

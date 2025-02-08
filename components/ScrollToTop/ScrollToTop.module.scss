@@ -1,0 +1,37 @@
+.scrollToTop {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%; // Makes the button circular
+  background-color: #282929; // Neutral dark background
+  color: #e7e7e7; // Neutral white for text/icon
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  z-index: 10;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.4);
+  &:hover {
+    background-color: #092522; // Neutral black on hover
+  }
+
+  // Add the dynamic circular border
+  &::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+    border-radius: 50%;
+    background: conic-gradient(
+      #43b1a4 calc(var(--scroll-rate, 0)),
+      transparent calc(var(--scroll-rate, 0))
+    );
+    z-index: -1; // Place it behind the button
+    mask: radial-gradient(circle, transparent 60%, black 100%);
+    -webkit-mask: radial-gradient(circle, transparent 60%, black 100%);
+  }
+}

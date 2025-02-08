@@ -1,0 +1,93 @@
+.flex-center {
+  @apply flex items-center justify-center;
+}
+
+.flex-center-horizontal {
+  @apply flex justify-center;
+}
+
+.flex-center-vertical {
+  @apply flex items-center;
+}
+
+/* Grid centering */
+.grid-center {
+  @apply grid place-items-center;
+}
+
+/* Absolute centering using `transform` */
+.absolute-center {
+  @apply absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2;
+}
+
+/* Absolute horizontal centering */
+.absolute-center-horizontal {
+  @apply absolute left-1/2 transform -translate-x-1/2;
+}
+
+/* Absolute vertical centering */
+.absolute-center-vertical {
+  @apply absolute top-1/2 transform -translate-y-1/2;
+}
+
+/* Fixed position centering */
+.fixed-center {
+  @apply fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2;
+}
+
+/* Full-screen centering */
+.fullscreen-center {
+  @apply fixed inset-0 flex items-center justify-center;
+}
+
+/* Inline-block centering (vertical using line-height) */
+.inline-block-center {
+  @apply inline-block align-middle;
+}
+
+.inline-block-container {
+  @apply relative;
+  line-height: 1;
+}
+
+/* Position-based centering */
+.top-center {
+  @apply absolute top-0 left-1/2 transform -translate-x-1/2;
+}
+
+.bottom-center {
+  @apply absolute bottom-0 left-1/2 transform -translate-x-1/2;
+}
+
+.left-center {
+  @apply absolute top-1/2 left-0 transform -translate-y-1/2;
+}
+
+.right-center {
+  @apply absolute top-1/2 right-0 transform -translate-y-1/2;
+}
+
+/* Custom centering with padding */
+.center-with-padding {
+  @apply flex items-center justify-center p-4;
+}
+
+/* Center with space between */
+.flex-space-between {
+  @apply flex justify-between items-center;
+}
+
+/* Center with space around */
+.flex-space-around {
+  @apply flex justify-around items-center;
+}
+
+/* Center with space evenly */
+.flex-space-evenly {
+  @apply flex justify-evenly items-center;
+}
+
+/* Center inline elements */
+.inline-center {
+  @apply flex justify-center items-center;
+}

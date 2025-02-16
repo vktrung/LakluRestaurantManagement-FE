@@ -13,8 +13,8 @@ export const routes = {
       name: 'Staff',
     },
     {
-      path: '/reports',
-      name: 'Reports',
+      path: '/reservation',
+      name: 'Reservation',
     },
     {
       path: '/order',

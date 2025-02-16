@@ -25,6 +25,7 @@
 
   // Mobile
   @apply flex gap-1 flex-col font-semibold  pt-32 fixed inset-0 pl-5 bg-slate-300 z-20;
+
   // Tablet -->
   @apply sm:gap-8 sm:flex-row sm:static sm:pt-0 sm:bg-transparent;
 

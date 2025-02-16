@@ -1,0 +1,50 @@
+.sideNav {
+  @apply flex gap-3 items-center sm:relative;
+}
+
+.navIconMobile {
+  @apply w-7 h-7 block sm:hidden cursor-pointer;
+}
+
+.closeNavBtn {
+  // Mobile
+  @apply h-7 w-7 fixed z-30 top-5 right-5 cursor-pointer;
+  // Tablet -->
+  @apply sm:hidden;
+}
+
+.nav {
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+
+  &.navOpen {
+    @apply opacity-100 translate-x-0;
+  }
+  &.navClosed {
+    @apply opacity-0 -translate-x-full sm:opacity-100 sm:translate-x-0;
+  }
+
+  // Mobile
+  @apply flex gap-1 flex-col font-semibold  pt-32 fixed inset-0 pl-5 bg-slate-300 z-20;
+  // Tablet -->
+  @apply sm:gap-8 sm:flex-row sm:static sm:pt-0 sm:bg-transparent;
+
+  .navItem {
+    @apply hover:text-primary;
+  }
+
+  .navItemActive {
+    @apply text-primary;
+  }
+
+  .navItemInactive {
+    @apply text-inherit;
+  }
+
+  .navLink {
+    @apply py-1 sm:py-4 w-full sm:w-fit inline-block;
+  }
+}
+
+:global(.dark) .nav {
+  @apply bg-neutral-dark-md;
+}

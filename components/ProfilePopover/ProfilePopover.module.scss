@@ -1,0 +1,23 @@
+.popover {
+  @apply rounded-lg p-2 w-72;
+
+  .menu-item {
+    @apply flex items-center gap-3 py-2 px-4 cursor-pointer rounded-md hover:bg-gray-100;
+  }
+
+  .menu-header {
+    @apply mb-4;
+  }
+
+  .email {
+    @apply text-gray-500 text-sm;
+  }
+
+  .username {
+    @apply text-gray-400 text-xs;
+  }
+
+  .logout {
+    @apply text-red-500 mt-2 hover:text-red-700 flex items-center cursor-pointer gap-2;
+  }
+}

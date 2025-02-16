@@ -2,15 +2,23 @@ export const routes = {
   navbar: [
     {
       path: '/',
-      name: 'Home',
+      name: 'Dashboard',
     },
     {
-      path: '/explore',
-      name: 'Explore',
+      path: '/menu',
+      name: 'Menu',
     },
     {
-      path: '/exams',
-      name: 'Exams',
+      path: '/staff',
+      name: 'Staff',
+    },
+    {
+      path: '/reports',
+      name: 'Reports',
+    },
+    {
+      path: '/order',
+      name: 'Order/Table',
     },
   ],
 };

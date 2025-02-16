@@ -18,7 +18,7 @@ const config: Config = {
         sm: '0',
         lg: '0',
         xl: '1rem',
-        '2xl': '3rem',
+        '2xl': '1rem',
       },
     },
     extend: {
@@ -28,7 +28,7 @@ const config: Config = {
           'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
       colors: {
-        primary: '#43b1a4',
+        primary: '#FAC1D9',
         'neutral-black': '#092522',
         'neutral-white': '#e7e7e7',
       },

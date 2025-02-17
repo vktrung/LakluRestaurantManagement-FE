@@ -1,4 +1,3 @@
-// tailwind.config.js
 const { nextui } = require('@nextui-org/react');
 import type { Config } from 'tailwindcss';
 
@@ -28,14 +27,14 @@ const config: Config = {
           'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
       colors: {
-        primary: '#c1d4fa',
-        'neutral-black': '#092522',
-        'neutral-white': '#e7e7e7',
+        primary: '#000000', 
+        'neutral-black': '#333333', 
+        'neutral-white': '#f4f4f4', 
       },
       backgroundColor: {
-        'neutral-dark-md': '#282929',
-        'main-dark': '#1d1e1e',
-        'main-light': '#f4f4f4',
+        'bg-neutral-dark-md': '#f0f0f0', 
+        'main-dark': '#dcdcdc', 
+        'main-light': '#ffffff', 
       },
     },
     screens: {
@@ -54,4 +53,5 @@ const config: Config = {
     }),
   ],
 };
+
 export default config;

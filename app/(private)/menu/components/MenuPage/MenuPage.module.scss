@@ -1,31 +1,28 @@
 .categoryCard {
     @apply relative flex flex-col items-center justify-center p-4 transition-all duration-200 rounded-lg cursor-pointer;
-    
+  
     &:hover {
-      @apply bg-blue-500/10;
+      @apply bg-neutral-black/10; 
     }
-    
+  
     &.active {
-      @apply bg-blue-100 dark:bg-blue-500/20;
+      @apply bg-neutral-white/20 dark:bg-neutral-black/20;
     }
   }
   
   .menuTable {
-    :global {
-      .nextui-table-container {
-        @apply bg-transparent;
-      }
-      
-      .nextui-table-header-cell {
-        @apply bg-background/60 backdrop-blur-md;
-      }
-      
-      .nextui-table-row {
-        &:hover {
-          @apply bg-foreground/5;
-        }
+    .nextui-table-container {
+      @apply bg-transparent;
+    }
+  
+    .nextui-table-header-cell {
+      @apply bg-neutral-white/60 backdrop-blur-md; 
+    }
+  
+    .nextui-table-row {
+      &:hover {
+        @apply bg-neutral-black/5;  
       }
     }
   }
-  
   

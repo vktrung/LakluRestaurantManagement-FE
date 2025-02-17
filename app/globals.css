@@ -15,6 +15,9 @@
     --background-end-rgb: 0, 0, 0;
   }
 }
+.bg-content1 {
+  background-color: white !important;
+}
 
 body {
   font-family: 'Bw Modelica', sans-serif;

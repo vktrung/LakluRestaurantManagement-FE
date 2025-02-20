@@ -1,3 +1,5 @@
+import { MobileSidebar } from '@/components/Sidebar/MobileSidebar';
+import { Sidebar } from '@/components/Sidebar/Sidebar';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -7,12 +9,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <main className="pt-14 lg:pt-16 main-container min-h-screen bg-main-light dark:bg-main-dark">
-      <div className="container">{children}</div>
-    </main>
+    <html lang="en">
+      <body>
+        <div className="flex">
+          <Sidebar />
+
+          <main className=" p-4">{children}</main>
+        </div>
+      </body>
+    </html>
   );
 }

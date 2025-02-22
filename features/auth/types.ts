@@ -1,19 +1,50 @@
 import { UserRole } from '@/enums/roles.enums';
 
+interface LoginRequest {
+  username: string
+  password: string
+}
+
+interface LoginResponse {
+  token: string
+  message?: string
+}
+
+export interface CheckUsernameRequest {
+  username: string
+}
+
+export interface CheckUsernameResponse {
+  exists: boolean
+  message?: string
+}
+
+/**
+ * Kiểu dữ liệu request và response của checkPassword
+ */
+export interface CheckPasswordRequest {
+  username: string
+  password: string
+}
+
+export interface CheckPasswordResponse {
+  token: string
+  message?: string
+}
+
 export interface LoginCredentials {
-  email: string;
-  password: string;
+   username: string
+   password: string
 }
 
 export interface LoginApiResponse {
-  accessToken: {
-    value: string;
-    expiresIn: string;
+  data: {
+    token: string;
   };
-  refreshToken: {
-    value: string;
-    expiresIn: string;
-  };
+  message: string;
+  httpStatus: number;
+  timestamp: string;
+  error: string | null;
 }
 
 export interface RegisterCredentials {

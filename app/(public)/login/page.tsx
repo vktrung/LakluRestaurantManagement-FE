@@ -1,3 +1,27 @@
+
+import { GalleryVerticalEnd } from 'lucide-react';
+import LoginForm from './components/LoginForm';
+
+
+
+export const metadata = {
+  title: '#1 Free Quizlet Alternative | BrainFlip',
+  description: 'Login to your account',
+};
+
+export default function LoginPage() {
+  return (
+            <LoginForm />
+       
+  );
+}
+
+
+
+
+
+
+
 "use client";
 import { Input, Button } from "@nextui-org/react";
 import { useState } from "react";
@@ -68,3 +92,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

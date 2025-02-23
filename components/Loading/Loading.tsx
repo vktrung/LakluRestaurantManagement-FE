@@ -1,5 +1,4 @@
 import { useLoading } from '@/components/Providers/LoadingProvider';
-import { Spinner } from '@nextui-org/react';
 import React from 'react';
 
 const Loading = () => {
@@ -13,9 +12,7 @@ const Loading = () => {
       style={{
         zIndex: 1000000,
       }}
-    >
-      <Spinner size="md" />
-    </div>
+    ></div>
   );
 };
 

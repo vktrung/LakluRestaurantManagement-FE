@@ -10,6 +10,8 @@ import {
   RegisterCredentials,
   RequestResetPasswordApiResponse,
   RequestResetPasswordCredentials,
+  CheckUsernameRequest,
+  CheckUsernameResponse,CheckPasswordRequest,CheckPasswordResponse
 } from '@/features/auth/types';
 import baseQuery from '@/features/baseQuery';
 import { createApi } from '@reduxjs/toolkit/query/react';
@@ -18,6 +20,21 @@ export const authApiSlice = createApi({
   reducerPath: 'authApi',
   baseQuery,
   endpoints: builder => ({
+
+    checkUsername: builder.mutation<CheckUsernameResponse, CheckUsernameRequest>({
+      query: (credentials) => ({
+        url: endpoints.login,
+        method: 'POST',
+        body: credentials,
+     }),
+    }),
+    checkPassword: builder.mutation<CheckPasswordResponse, CheckPasswordRequest>({
+      query: (credentials) => ({
+        url: endpoints.login,
+        method: 'POST',
+        body: credentials,
+      }),
+    }),
     login: builder.mutation<LoginApiResponse, LoginCredentials>({
       query: credentials => ({
         url: endpoints.login,
@@ -78,4 +95,6 @@ export const {
   useRequestResetPasswordMutation,
   useConfirmResetPasswordMutation,
   useLogoutMutation,
+  useCheckUsernameMutation,
+  useCheckPasswordMutation,
 } = authApiSlice;

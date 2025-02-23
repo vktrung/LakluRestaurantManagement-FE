@@ -1,6 +1,10 @@
+import Staff from "./components/StaffPage";
+
 const StaffPage = () => {
+    
+   
     return (<div>
-        Staff Page
+        <Staff/>
     </div> );
 }
  

@@ -5,4 +5,5 @@ export const endpoints = {
   requestResetPassword: '/auth/forgot-password',
   confirmResetPassword: '/auth/forgot-password/reset',
   me: '/users/me',
+  getListStaff: '/api/v1/users/'
 };

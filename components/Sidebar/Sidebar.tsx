@@ -77,12 +77,12 @@ const mainAccordionItems = [
   },
   {
     label: 'Nhân viên',
-    value: 'nhan-vien',
+    value: 'staff',
     icon: <Users className="h-4 w-4" />,
     children: [
       {
         label: 'Danh sách',
-        href: '/nhan-vien',
+        href: '/staff',
         icon: <Users className="h-4 w-4" />,
       },
       // ...

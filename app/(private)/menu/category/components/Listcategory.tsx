@@ -5,118 +5,128 @@ import { useRouter } from 'next/navigation';
 import { useGetCategoriesQuery } from '@/features/category/categoryApiSlice';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Category } from '@/features/category/types';
 
-export default function CategoryListPage() {
-  console.log('Listcategory is rendering...');
+export default function DanhSachDanhMuc() {
+  console.log('Danh sách danh mục đang được render...');
 
-  const [categories, setCategories] = useState<Category[]>([]);
-  const {
-    data: categoriesResponse,
-    isLoading,
-    isError,
-  } = useGetCategoriesQuery();
+  const [danhMuc, setDanhMuc] = useState<Category[]>([]);
+  const { data: danhMucResponse, isLoading, isError } = useGetCategoriesQuery();
   const router = useRouter();
 
   useEffect(() => {
-    if (categoriesResponse?.data) {
-      const filteredCategories = categoriesResponse.data.filter(
-        category => category.isDeleted === false,
-      ); 
-      setCategories(filteredCategories);
-      console.log('✅ Fetched and filtered categories:', filteredCategories);
+    if (danhMucResponse?.data) {
+      const danhMucLoc = danhMucResponse.data.filter(
+        danhMuc => danhMuc.isDeleted === false,
+      );
+      setDanhMuc(danhMucLoc);
+      console.log('✅ Đã lấy và lọc danh mục:', danhMucLoc);
     }
-  }, [categoriesResponse]);
+  }, [danhMucResponse]);
 
-  if (isLoading) return <div className="container mx-auto p-6">Loading...</div>;
+  if (isLoading)
+    return <div className="container mx-auto p-6">Đang tải...</div>;
   if (isError)
-    return (
-      <div className="container mx-auto p-6">Error loading categories</div>
-    );
+    return <div className="container mx-auto p-6">Lỗi khi tải danh mục</div>;
 
-  // ✅ Navigate to edit page with category data
-  const handleEdit = (category: Category) => {
+  // Chuyển hướng đến trang sửa danh mục
+  const handleEdit = (danhMuc: Category) => {
     router.push(
-      `/menu/category/edit/${category.id}?name=${category.name}&description=${
-        category.description || ''
+      `/menu/category/edit/${danhMuc.id}?name=${danhMuc.name}&description=${
+        danhMuc.description || ''
       }`,
     );
   };
 
-  // ✅ Navigate to delete page with category data
-  const handleDelete = (category: Category) => {
-    router.push(`/menu/category/delete/${category.id}?name=${category.name}`);
+  // Chuyển hướng đến trang xóa danh mục
+  const handleDelete = (danhMuc: Category) => {
+    router.push(`/menu/category/delete/${danhMuc.id}?name=${danhMuc.name}`);
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <Card className="shadow-lg">
-        <CardHeader className="flex justify-between items-center bg-gradient-to-r from-indigo-100 to-purple-100">
-          <CardTitle className="text-2xl font-bold text-gray-800">
-            Category Management
-          </CardTitle>
+    <div className="container w-full p-6 bg-white">
+      <div className="shadow-lg rounded-lg overflow-hidden bg-white">
+        <div className="flex justify-between items-center p-6 bg-gray-100">
+          <h2 className="text-2xl font-bold text-black">Quản Lý Danh Mục</h2>
           <Link href="./category/add">
             <Button variant="default" className="flex items-center gap-2">
               <Plus className="h-5 w-5" />
-              Add New Category
+              Thêm Danh Mục
             </Button>
           </Link>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {categories.length > 0 ? (
-              categories.map(category => (
-                <Card
-                  key={category.id}
-                  className="p-4 hover:shadow-md transition-shadow duration-300"
-                >
-                  <div className="flex flex-col gap-4">
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-800">
-                        {category.name}
-                      </h2>
-                      <p className="text-gray-600 line-clamp-2">
-                        {category.description || 'No description'}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Tạo vào ngày:{' '}
-                        {category.createdAt
-                          ? new Date(category.createdAt).toLocaleDateString()
-                          : 'Not available'}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center gap-1"
-                        onClick={() => handleEdit(category)}
-                      >
-                        <Edit className="h-4 w-4" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="flex items-center gap-1"
-                        onClick={() => handleDelete(category)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Delete
-                      </Button>
-                    
-                    </div>
-                  </div>
-                </Card>
-              ))
-            ) : (
-              <p className="text-gray-500 text-center">No categories found.</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="overflow-x-auto p-6">
+          <table className="min-w-full table-auto text-left">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="px-4 py-2 text-sm font-medium text-gray-700">
+                  Tên
+                </th>
+                <th className="px-4 py-2 text-sm font-medium text-gray-700">
+                  Mô Tả
+                </th>
+                <th className="px-4 py-2 text-sm font-medium text-gray-700">
+                  Ngày Tạo
+                </th>
+                <th className="px-4 py-2 text-sm font-medium text-gray-700">
+                  Hành Động
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {danhMuc.length > 0 ? (
+                danhMuc.map(danhMuc => (
+                  <tr key={danhMuc.id} className="border-t hover:bg-gray-100">
+                    <td className="px-4 py-2 text-sm text-gray-800">
+                      {danhMuc.name}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-600">
+                      {danhMuc.description || 'Không có mô tả'}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-500">
+                      {danhMuc.createdAt
+                        ? new Date(danhMuc.createdAt).toLocaleDateString()
+                        : 'Không có thông tin'}
+                    </td>
+                    <td className="px-4 py-2 text-sm">
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-1"
+                          onClick={() => handleEdit(danhMuc)}
+                        >
+                          <Edit className="h-4 w-4" />
+                          Sửa
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="flex items-center gap-1"
+                          onClick={() => handleDelete(danhMuc)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Xóa
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={4}
+                    className="px-4 py-2 text-sm text-gray-500 text-center"
+                  >
+                    Không có danh mục nào.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

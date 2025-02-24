@@ -1,7 +1,6 @@
-// category/categoryApiSlice.ts
 import { endpoints } from '@/configs/endpoints';
 import baseQuery from '@/features/baseQuery';
-import { createApi } from '@reduxjs/toolkit/query/react'; // Remove FetchBaseQueryError import unless you need it here
+import { createApi } from '@reduxjs/toolkit/query/react'; 
 import { Category, CategoryResponse, CategoryRequest } from './types';
 
 export const categoryApiSlice = createApi({
@@ -9,7 +8,6 @@ export const categoryApiSlice = createApi({
   baseQuery,
   tagTypes: ['category-list', 'category'],
   endpoints: builder => ({
-    // Read: Get all categories (list)
     getCategories: builder.query<CategoryResponse, void>({
       query: () => ({
         url: endpoints.CategoryApi,
@@ -18,7 +16,6 @@ export const categoryApiSlice = createApi({
       providesTags: ['category-list'],
     }),
 
-    // Read: Get category by ID
     getCategoryById: builder.query<Category, number>({
       query: id => ({
         url: `${endpoints.CategoryApi}${id.toString()}`, 
@@ -27,7 +24,6 @@ export const categoryApiSlice = createApi({
       providesTags: ['category'],
     }),
 
-    // Create: Add a new category
     createCategory: builder.mutation<CategoryResponse, CategoryRequest>({
       query: body => ({
         url: endpoints.CategoryApi,
@@ -37,7 +33,6 @@ export const categoryApiSlice = createApi({
       invalidatesTags: ['category-list'],
     }),
 
-    // Update: Update an existing category
     updateCategory: builder.mutation<CategoryResponse, { id: number; body: CategoryRequest }>({
       query: ({ id, body }) => ({
         url: `${endpoints.CategoryApi}${id.toString()}`, // Ensure id is a string in the URL
@@ -47,7 +42,6 @@ export const categoryApiSlice = createApi({
       invalidatesTags: ['category-list', 'category'],
     }),
 
-    // Delete: Remove a category
     deleteCategory: builder.mutation<CategoryResponse, number>({
       query: id => ({
         url: `${endpoints.CategoryApi}${id.toString()}`, 

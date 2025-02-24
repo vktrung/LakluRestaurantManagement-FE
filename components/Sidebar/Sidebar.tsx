@@ -85,7 +85,11 @@ const mainAccordionItems = [
         href: '/staff',
         icon: <Users className="h-4 w-4" />,
       },
-      // ...
+      {
+        label: 'Mức Lương',
+        href: '/salary',
+        icon: <Users className="h-4 w-4" />,
+      },
     ],
   },
   {

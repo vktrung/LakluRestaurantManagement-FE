@@ -7,4 +7,5 @@ export const endpoints = {
     me: '/users/me',
     getListStaff: '/api/v1/users/',
   CategoryApi:'/api/v1/categories/',
+  SalaryRatesApi:'/api/v1/salary-rates/',
 };

@@ -5,5 +5,8 @@ export const endpoints = {
   requestResetPassword: '/auth/forgot-password',
   confirmResetPassword: '/auth/forgot-password/reset',
   me: '/users/me',
-  getListStaff: '/api/v1/users/'
-};
+  getListStaff: '/api/v1/users/',
+  getListCategory: '/api/v1/user',
+  // addStaff : '/api/v1/users',
+  getRoles: '/api/v1/roles/',
+}

@@ -1,5 +1,5 @@
 
-import Staff from "./components/StaffPage";
+import Staff from "./components/StaffPage/StaffPage";
 
 const StaffPage = () => {
     

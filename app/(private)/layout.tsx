@@ -1,4 +1,3 @@
-import { MobileSidebar } from '@/components/Sidebar/MobileSidebar';
 import { Sidebar } from '@/components/Sidebar/Sidebar';
 import type { Metadata } from 'next';
 
@@ -19,7 +18,7 @@ export default function RootLayout({
         <div className="flex">
           <Sidebar />
 
-          <main className=" p-4">{children}</main>
+          <main className="p-4 flex-1">{children}</main>
         </div>
       </body>
     </html>

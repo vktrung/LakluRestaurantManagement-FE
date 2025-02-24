@@ -14,13 +14,24 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 
-// lucide-react icons (ví dụ)
+// Thêm import cho dropdown
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuGroup,
+} from '@/components/ui/dropdown-menu';
+
+// lucide-react icons
 import {
   Menu,
   BarChart,
   FileText,
   Users,
-  Settings,
+  Settings as SettingsIcon,
   PieChart,
   DollarSign,
   Soup,
@@ -29,7 +40,6 @@ import {
 } from 'lucide-react';
 import { IoFastFood } from 'react-icons/io5';
 
-// Dữ liệu accordion (cha + con), có icon cho cả con
 const mainAccordionItems = [
   {
     label: 'Quản lý',
@@ -85,29 +95,27 @@ const mainAccordionItems = [
         href: '/staff',
         icon: <Users className="h-4 w-4" />,
       },
-      // ...
     ],
   },
   {
     label: 'Cài đặt',
     value: 'cai-dat',
-    icon: <Settings className="h-4 w-4" />,
+    icon: <SettingsIcon className="h-4 w-4" />,
     children: [
       {
         label: 'Vai trò',
-        href: '/cai-dat/vai-tro',
+        href: '/role',
         icon: <Users className="h-4 w-4" />,
       },
       {
         label: 'Quyền',
         href: '/cai-dat/quyen',
-        icon: <Settings className="h-4 w-4" />,
+        icon: <SettingsIcon className="h-4 w-4" />,
       },
     ],
   },
 ];
 
-// Mục “Nhà hàng” (không accordion) cũng có icon
 const singleSection = {
   sectionLabel: 'Nhà hàng',
   links: [
@@ -127,7 +135,6 @@ const singleSection = {
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function Sidebar({ className, ...props }: SidebarProps) {
-  // State đóng/mở toàn sidebar
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -139,7 +146,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       )}
       {...props}
     >
-      {/* Header: logo, nút toggle */}
+      {/* Header */}
       <div className="p-4 border-b dark:border-slate-800 flex items-center justify-between">
         {!collapsed && (
           <div>
@@ -160,27 +167,21 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       {/* Accordion Menu */}
       <nav className="flex-1 p-4 space-y-2">
         <Accordion type="single" collapsible>
-          {mainAccordionItems.map(item => (
+          {mainAccordionItems.map((item) => (
             <AccordionItem value={item.value} key={item.value}>
-              {/* AccordionTrigger */}
               <AccordionTrigger className="flex items-center gap-2">
-                {/* Icon cha hiển thị luôn */}
                 {item.icon}
-                {/* Thu nhỏ => ẩn text cha */}
                 {!collapsed && <span>{item.label}</span>}
               </AccordionTrigger>
 
               <AccordionContent className={!collapsed ? 'pl-6' : ''}>
-                {/* Sub items */}
-                {item.children.map(child => (
+                {item.children.map((child) => (
                   <Link
                     key={child.href}
                     href={child.href}
                     className="flex items-center gap-2 py-1 text-sm hover:underline"
                   >
-                    {/* Icon con */}
                     {child.icon}
-                    {/* Thu nhỏ => ẩn text con */}
                     {!collapsed && <span>{child.label}</span>}
                   </Link>
                 ))}
@@ -196,21 +197,20 @@ export function Sidebar({ className, ...props }: SidebarProps) {
               {singleSection.sectionLabel}
             </h3>
           )}
-          {singleSection.links.map(link => (
+          {singleSection.links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               className="flex items-center gap-2 py-1 text-sm hover:underline"
             >
               {link.icon}
-              {/* Thu nhỏ => ẩn text */}
               {!collapsed && <span>{link.label}</span>}
             </Link>
           ))}
         </div>
       </nav>
 
-      {/* Footer user info */}
+      {/* Footer với dropdown */}
       <div className="p-4 border-t dark:border-slate-800 flex items-center justify-between">
         {!collapsed && (
           <div className="text-sm">
@@ -220,9 +220,47 @@ export function Sidebar({ className, ...props }: SidebarProps) {
             </div>
           </div>
         )}
-        <Button variant="ghost" size="icon">
-          <Settings className="h-4 w-4" />
-        </Button>
+
+        {/* Dropdown Menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <SettingsIcon className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem asChild>
+                <Link href="/profile">Profile</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/billing">Billing</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings">Settings</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/keyboard-shortcuts">Keyboard shortcuts</Link>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem>Team</DropdownMenuItem>
+              <DropdownMenuItem>Invite users</DropdownMenuItem>
+              <DropdownMenuItem>New Team</DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="https://github.com">GitHub</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem>Support</DropdownMenuItem>
+            <DropdownMenuItem>API</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Log out</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </aside>
   );

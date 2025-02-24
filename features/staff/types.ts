@@ -14,3 +14,9 @@ export interface StaffResponse {
   timestamp: string;
   error: string | null;
 }
+export interface CreateStaffPayload {
+  username: string;
+  password: string;
+  email: string;
+  roleIds: number[];
+}

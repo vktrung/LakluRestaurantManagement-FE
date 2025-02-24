@@ -65,7 +65,7 @@ const mainAccordionItems = [
     children: [
       {
         label: 'Danh mục',
-        href: '/menu/danh-muc',
+        href: '/menu/category',
         icon: <BookOpen className="h-4 w-4" />,
       },
       {

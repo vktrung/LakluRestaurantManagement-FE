@@ -75,7 +75,7 @@ const mainAccordionItems = [
     children: [
       {
         label: 'Danh mục',
-        href: '/menu/danh-muc',
+        href: '/menu/category',
         icon: <BookOpen className="h-4 w-4" />,
       },
       {
@@ -93,6 +93,11 @@ const mainAccordionItems = [
       {
         label: 'Danh sách',
         href: '/staff',
+        icon: <Users className="h-4 w-4" />,
+      },
+      {
+        label: 'Mức Lương',
+        href: '/salary',
         icon: <Users className="h-4 w-4" />,
       },
     ],

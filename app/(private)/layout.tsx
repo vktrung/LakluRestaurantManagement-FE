@@ -12,18 +12,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-
     <html lang="en">
       <body>
         <div className="flex">
           <Sidebar />
 
-          <main className="p-4 flex-1">{children}</main>
+          <main className=" p-4 flex-1">{children}</main>
         </div>
       </body>
     </html>
-
-  
-
   );
 }

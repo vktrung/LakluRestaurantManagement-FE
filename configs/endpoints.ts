@@ -6,7 +6,8 @@ export const endpoints = {
   confirmResetPassword: '/auth/forgot-password/reset',
   me: '/users/me',
   getListStaff: '/api/v1/users/',
-  getListCategory: '/api/v1/user',
+  CategoryApi:'/api/v1/categories/',
+  SalaryRatesApi:'/api/v1/salary-rates/',
   // addStaff : '/api/v1/users',
   getRoles: '/api/v1/roles/',
 }

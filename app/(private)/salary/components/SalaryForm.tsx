@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { EmployeeSalaryRequest } from '@/features/salary/types';
 
 interface SalaryFormProps {
   initialData?: EmployeeSalaryRequest;
   onSubmit: (data: EmployeeSalaryRequest) => void;
   onCancel: () => void;
+  hideIsGlobal?: boolean; // New prop to conditionally hide 'isGlobal'
 }
 
 export default function SalaryForm({
   initialData,
   onSubmit,
   onCancel,
+  hideIsGlobal = false, // Default to false if not passed
 }: SalaryFormProps) {
   const [formData, setFormData] = useState<EmployeeSalaryRequest>(
     initialData || {
@@ -20,6 +22,12 @@ export default function SalaryForm({
       isGlobal: false,
     },
   );
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+    }
+  }, [initialData]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -82,27 +90,21 @@ export default function SalaryForm({
           <option value="SHIFTLY">Shiftly</option>
         </select>
       </div>
-      <div className="mb-4">
-        <label className="block mb-1">Toàn Cầu</label>
-        <input
-          type="checkbox"
-          name="isGlobal"
-          checked={formData.isGlobal}
-          onChange={handleChange}
-          className="mr-2"
-        />
-      </div>
+
+   
+    
+
       <div className="flex justify-end gap-2">
         <button
           type="button"
           onClick={onCancel}
-          className="bg-gray-500 text-white px-4 py-2 rounded"
+          className="bg-red-500 text-white px-4 py-2 rounded"
         >
           Hủy
         </button>
         <button
           type="submit"
-          className="bg-black-500 text-white px-4 py-2 rounded"
+          className="bg-gray-500 text-white px-4 py-2 rounded"
         >
           Lưu
         </button>

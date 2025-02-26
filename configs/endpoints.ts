@@ -10,4 +10,5 @@ export const endpoints = {
   SalaryRatesApi:'/api/v1/salary-rates/',
   // addStaff : '/api/v1/users',
   getRoles: '/api/v1/roles/',
+  getPermissions : '/api/v1/permissions/'
 }

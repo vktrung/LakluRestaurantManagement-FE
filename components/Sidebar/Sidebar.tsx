@@ -114,7 +114,7 @@ const mainAccordionItems = [
       },
       {
         label: 'Quyền',
-        href: '/cai-dat/quyen',
+        href: '/permission',
         icon: <SettingsIcon className="h-4 w-4" />,
       },
     ],

@@ -15,7 +15,6 @@ export default function AddSalaryModal({ isOpen, onClose }: AddSalaryModalProps)
 
   const handleSubmit = async (data: EmployeeSalaryRequest) => {
     try {
-      data.isGlobal = false;
       await createSalaryRate(data).unwrap();
       onClose();
       setError(null);
@@ -33,6 +32,7 @@ export default function AddSalaryModal({ isOpen, onClose }: AddSalaryModalProps)
 
         {error && <div className="text-red-500 text-sm">{error}</div>}
 
+        {/* ✅ Only Keep Buttons Inside SalaryForm, Remove Extra Buttons Here */}
         <SalaryForm onSubmit={handleSubmit} onCancel={onClose} />
       </DialogContent>
     </Dialog>

@@ -32,17 +32,16 @@ export default function EditSalaryModal({ salary, onClose }: EditSalaryModalProp
 
         {error && <div className="text-red-500 text-sm mb-2">{error}</div>}
 
-        {/* Pass initialData from salary to the SalaryForm for editing and hide the 'isGlobal' field */}
+        {/* ✅ Remove extra buttons here */}
         <SalaryForm
           initialData={{
             levelName: salary.levelName,
             amount: salary.amount,
             type: salary.type,
-            isGlobal: salary.isGlobal, // still keep isGlobal in the data but don't show it in the form
+            isGlobal: salary.isGlobal,
           }}
           onSubmit={handleSubmit}
           onCancel={onClose}
-          hideIsGlobal={true}  // New prop to hide the 'isGlobal' field
         />
       </DialogContent>
     </Dialog>

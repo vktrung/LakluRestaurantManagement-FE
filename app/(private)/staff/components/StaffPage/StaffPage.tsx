@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation"
 const StaffTable = () => {
   const { data } = useGetStaffQuery();
   const router = useRouter();
-  console.log('data', data);
+  // console.log('data', data);
 
   const handleView = (id) => {
     console.log('View staff with id:', id);

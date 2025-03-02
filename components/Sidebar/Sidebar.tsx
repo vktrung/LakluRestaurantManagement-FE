@@ -1,9 +1,10 @@
+// File: components/Sidebar/Sidebar.tsx
 'use client';
 
 import * as React from 'react';
-import { useState } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { useSidebar } from './SidebarContext';
 
 // shadcn-ui
 import {
@@ -140,12 +141,12 @@ const singleSection = {
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function Sidebar({ className, ...props }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  const { collapsed, toggleCollapsed } = useSidebar();
 
   return (
     <aside
       className={cn(
-        'flex flex-col border-r dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 h-screen',
+        'fixed top-0 left-0 flex flex-col border-r dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 h-screen overflow-y-auto z-40',
         collapsed ? 'w-16' : 'w-64',
         className,
       )}
@@ -160,19 +161,15 @@ export function Sidebar({ className, ...props }: SidebarProps) {
           </div>
         )}
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setCollapsed(!collapsed)}
-        >
+        <Button variant="ghost" size="icon" onClick={toggleCollapsed}>
           <Menu className="h-4 w-4" />
         </Button>
       </div>
 
       {/* Accordion Menu */}
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         <Accordion type="single" collapsible>
-          {mainAccordionItems.map((item) => (
+          {mainAccordionItems.map(item => (
             <AccordionItem value={item.value} key={item.value}>
               <AccordionTrigger className="flex items-center gap-2">
                 {item.icon}
@@ -180,7 +177,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
               </AccordionTrigger>
 
               <AccordionContent className={!collapsed ? 'pl-6' : ''}>
-                {item.children.map((child) => (
+                {item.children.map(child => (
                   <Link
                     key={child.href}
                     href={child.href}
@@ -195,14 +192,14 @@ export function Sidebar({ className, ...props }: SidebarProps) {
           ))}
         </Accordion>
 
-        {/* Single Section: “Nhà hàng” */}
+        {/* Single Section: "Nhà hàng" */}
         <div className="mt-4">
           {!collapsed && (
             <h3 className="text-sm text-gray-500 dark:text-gray-400 mb-2">
               {singleSection.sectionLabel}
             </h3>
           )}
-          {singleSection.links.map((link) => (
+          {singleSection.links.map(link => (
             <Link
               key={link.href}
               href={link.href}

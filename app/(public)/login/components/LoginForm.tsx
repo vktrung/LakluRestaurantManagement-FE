@@ -1,12 +1,12 @@
-"use client"
+'use client';
 
-import React, { useState } from "react"
+import React, { useState } from 'react';
 
 // RTK Query (giả sử bạn có sẵn hook này)
 
 // shadcn/ui
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogHeader,
@@ -14,61 +14,65 @@ import {
   DialogFooter,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog"
+} from '@/components/ui/dialog';
 
 // Giả sử đây là các component OTP của bạn
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
-} from "@/components/ui/input-otp"
-import { useLoginMutation } from "@/features/auth/authApiSlice"
-import { parseDuration } from "@/utils/dateTime"
-import { useRouter } from "next/navigation"
+} from '@/components/ui/input-otp';
+import { useLoginMutation } from '@/features/auth/authApiSlice';
+import { parseDuration } from '@/utils/dateTime';
+import { useRouter } from 'next/navigation';
+import { login } from '@/services/authService';
 
 export default function LoginPage() {
   // State
-  const [username, setUsername] = useState("")
-  const [otp, setOtp] = useState("") // Lưu giá trị OTP (4 ký tự)
-  const [showOtpModal, setShowOtpModal] = useState(false)
-  const [errorMessage, setErrorMessage] = useState("")
-  const router = useRouter()
+  const [username, setUsername] = useState('');
+  const [otp, setOtp] = useState(''); // Lưu giá trị OTP (4 ký tự)
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const router = useRouter();
 
-  // RTK Query
-  const [login, { isLoading }] = useLoginMutation()
+  // // RTK Query
+  // const [login, { isLoading }] = useLoginMutation();
 
   /**
    * Khi user bấm "Tiếp tục" sau khi nhập username
    */
   const handleCheckUsername = () => {
     if (!username) {
-      setErrorMessage("Vui lòng nhập username")
-      return
+      setErrorMessage('Vui lòng nhập username');
+      return;
     }
-    setErrorMessage("")
-    setShowOtpModal(true) // Mở dialog để nhập OTP
-  }
+    setErrorMessage('');
+    setShowOtpModal(true); // Mở dialog để nhập OTP
+  };
 
   /**
    * Khi bấm "Xác thực" => Gọi login
    */
   const handleLogin = async () => {
-    setErrorMessage("")
+    setErrorMessage('');
     if (!otp) {
-      setErrorMessage("Vui lòng nhập mã OTP")
-      return
+      setErrorMessage('Vui lòng nhập mã OTP');
+      return;
     }
 
     try {
-      const response = await login({ username, password: otp }).unwrap()
-      console.log('response', response)
+      const response = await login(username, otp);
+      console.log('response', response);
       // Giả sử server trả về { token }
-      document.cookie = `auth-token=${response.data.token}; path=/; max-age=${parseDuration('1h')};`
-      router.push('/')
+      // document.cookie = `auth_token=${
+      //   response.data.token
+      // }; path=/; max-age=${parseDuration('1h')};`;
+      router.push('/');
+      router.refresh();
     } catch (err: any) {
-      setErrorMessage(err?.data?.message || "Đăng nhập thất bại!")
+      setErrorMessage(err?.data?.message || 'Đăng nhập thất bại!');
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
@@ -82,15 +86,13 @@ export default function LoginPage() {
             type="text"
             placeholder="Nhập username..."
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={e => setUsername(e.target.value)}
           />
         </div>
 
         <Button onClick={handleCheckUsername}>Tiếp tục</Button>
 
-        {errorMessage && (
-          <p className="text-red-500 text-sm">{errorMessage}</p>
-        )}
+        {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
       </div>
 
       {/* Modal nhập OTP */}
@@ -102,7 +104,11 @@ export default function LoginPage() {
           </DialogHeader>
 
           <div className="my-4">
-            <InputOTP maxLength={4} pattern="[0-9]*" onChange={(val: string) => setOtp(val)}>
+            <InputOTP
+              maxLength={4}
+              pattern="[0-9]*"
+              onChange={(val: string) => setOtp(val)}
+            >
               <InputOTPGroup>
                 <InputOTPSlot index={0} />
                 <InputOTPSlot index={1} />
@@ -117,12 +123,10 @@ export default function LoginPage() {
           )}
 
           <DialogFooter>
-            <Button onClick={handleLogin} disabled={isLoading}>
-              {isLoading ? "Đang xử lý..." : "Xác thực"}
-            </Button>
+            <Button onClick={handleLogin}>Xác thực</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

@@ -1,34 +1,130 @@
 'use client';
-import styles from './Header.module.scss';
-import clsx from 'clsx';
-import { Navbar } from '@/components/Navbar/Navbar';
-import ProfilePopover from '@/components/ProfilePopover/ProfilePopover';
-import { useEffect, useState } from 'react';
-import ReactDOM from 'react-dom';
 
-export const Header = () => {
-  const [isClient, setIsClient] = useState(false);
-  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+import React from 'react';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { useSidebar } from '../Sidebar/SidebarContext';
+import { cn } from '@/lib/utils';
+import { ChevronRight, Home, Bell, Search, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
-  useEffect(() => {
-    setIsClient(true);
-    const target = document.getElementById('header-portal');
-    if (target) {
-      target.style.setProperty('visibility', 'visible');
-      target.style.setProperty('opacity', '1');
-    }
-    setPortalTarget(target);
-  }, []);
+interface BreadcrumbItem {
+  label: string;
+  href: string;
+}
 
-  if (!isClient || !portalTarget) return null;
-
-  return ReactDOM.createPortal(
-    <header className={clsx(styles.header, 'dark:bg-neutral-dark-md')}>
-      <Navbar />
-      <div className={clsx(styles.side)}>
-        <ProfilePopover />
-      </div>
-    </header>,
-    portalTarget,
-  );
+const pathMap: Record<string, string> = {
+  'quan-ly': 'Quản lý',
+  'tong-quat': 'Tổng quát',
+  'giao-dich': 'Giao dịch',
+  'mon-an': 'Món ăn',
+  luong: 'Lương',
+  menu: 'Menu',
+  category: 'Danh mục',
+  staff: 'Nhân viên',
+  salary: 'Mức Lương',
+  role: 'Vai trò',
+  permission: 'Quyền',
+  'nha-hang': 'Nhà hàng',
+  'may-pos': 'Máy POS',
+  'chon-mon': 'Chọn món',
 };
+
+export function Header({ className }: { className?: string }) {
+  const { collapsed } = useSidebar();
+  const pathname = usePathname();
+
+  // Generate breadcrumb items from pathname
+  const generateBreadcrumbs = (): BreadcrumbItem[] => {
+    if (!pathname || pathname === '/') {
+      return [{ label: 'Trang chủ', href: '/' }];
+    }
+
+    const segments = pathname.split('/').filter(Boolean);
+
+    return [
+      { label: 'Trang chủ', href: '/' },
+      ...segments.map((segment, index) => {
+        const href = `/${segments.slice(0, index + 1).join('/')}`;
+        const label = pathMap[segment] || segment;
+        return { label, href };
+      }),
+    ];
+  };
+
+  const breadcrumbs = generateBreadcrumbs();
+
+  return (
+    <header
+      className={cn(
+        'fixed top-0 right-0 bg-white dark:bg-slate-900 border-b dark:border-slate-800 h-16 z-30 transition-all duration-300',
+        collapsed ? 'left-16' : 'left-64',
+        className,
+      )}
+    >
+      <div className="flex items-center justify-between h-full px-4">
+        {/* Breadcrumb */}
+        <nav aria-label="Breadcrumb">
+          <ol className="flex items-center space-x-1">
+            {breadcrumbs.map((item, index) => (
+              <React.Fragment key={item.href}>
+                {index > 0 && (
+                  <li className="flex items-center">
+                    <ChevronRight className="h-4 w-4 text-gray-500" />
+                  </li>
+                )}
+                <li>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      'flex items-center text-sm',
+                      index === breadcrumbs.length - 1
+                        ? 'font-semibold text-black dark:text-white'
+                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300',
+                    )}
+                  >
+                    {index === 0 && <Home className="h-4 w-4 mr-1" />}
+                    <span>{item.label}</span>
+                  </Link>
+                </li>
+              </React.Fragment>
+            ))}
+          </ol>
+        </nav>
+
+        {/* Right side actions */}
+        <div className="flex items-center space-x-2">
+          <Button variant="ghost" size="icon">
+            <Search className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon">
+            <Bell className="h-5 w-5" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <User className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Tài khoản của tôi</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>Hồ sơ</DropdownMenuItem>
+              <DropdownMenuItem>Cài đặt</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>Đăng xuất</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </header>
+  );
+}

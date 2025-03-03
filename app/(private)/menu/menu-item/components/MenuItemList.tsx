@@ -42,7 +42,6 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
   const [deleteItemId, setDeleteItemId] = useState<number | null>(null);
   const [deleteItemName, setDeleteItemName] = useState<string>('');
  
-  // Update local state when items prop changes
   useEffect(() => {
     setMenuItems(items);
   }, [items]);
@@ -63,9 +62,7 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
     if (deleteItemId !== null) {
       try {
         await deleteMenuItem(deleteItemId).unwrap();
-        // Update local state
         setMenuItems((prevItems) => prevItems.filter((item) => item.id !== deleteItemId));
-        // Notify parent component to refetch
         onDelete();
       } catch (error) {
         console.error('Lỗi khi xóa menu item:', error);
@@ -87,9 +84,7 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
   };
 
   const handleFormSuccess = (newItem: MenuItem) => {
-    // Update local state with the new item
     setMenuItems((prevItems) => [...prevItems, newItem]);
-    // Notify parent to refetch for consistency
     onAddSuccess();
   };
 

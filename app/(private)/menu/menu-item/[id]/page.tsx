@@ -52,7 +52,6 @@ export default function Page() {
   const menu: Menu | null = data?.data ?? null;
   if (!menu) return <div>Loading menu...</div>;
 
-  // Extract menu items
   const menuItems: MenuItem[] = Array.isArray(menu.menuItems) ? menu.menuItems : [];
 
   return (
@@ -60,7 +59,7 @@ export default function Page() {
       <h1 className="text-2xl font-bold mb-4">Danh Sách Mục Menu: {menu.name}</h1>
       
       <MenuItemList
-        key={refreshKey} // Force re-render when refreshKey changes
+        key={refreshKey} 
         items={menuItems}
         onDelete={handleRefresh} 
         onSelect={(id) => console.log(`Select menu item with ID: ${id}`)}

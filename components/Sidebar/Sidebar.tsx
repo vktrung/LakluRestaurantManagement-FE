@@ -80,8 +80,13 @@ const mainAccordionItems = [
         icon: <BookOpen className="h-4 w-4" />,
       },
       {
+        label: 'Thực đơn',
+        href: '/menu/menu-info',
+        icon: <IoFastFood className="h-4 w-4" />,
+      },
+      {
         label: 'Món ăn',
-        href: '/menu/mon-an',
+        href: '/menu/dish',
         icon: <IoFastFood className="h-4 w-4" />,
       },
     ],

@@ -15,7 +15,13 @@ export interface CategoryResponse {
   timestamp: string;
   error: null | string;
 }
-
+export interface CategoryByIdResponse {
+  data: Category;
+  message: string;
+  httpStatus: number;
+  timestamp: string;
+  error: null | string;
+}
 export interface CategoryRequest {
   name: string;
   description: string;

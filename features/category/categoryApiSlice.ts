@@ -1,7 +1,7 @@
 import { endpoints } from '@/configs/endpoints';
 import baseQuery from '@/features/baseQuery';
 import { createApi } from '@reduxjs/toolkit/query/react'; 
-import { Category, CategoryResponse, CategoryRequest } from './types';
+import { Category, CategoryResponse, CategoryRequest, CategoryByIdResponse } from './types';
 
 export const categoryApiSlice = createApi({
   reducerPath: 'categoryApi',
@@ -16,7 +16,7 @@ export const categoryApiSlice = createApi({
       providesTags: ['category-list'],
     }),
 
-    getCategoryById: builder.query<Category, number>({
+    getCategoryById: builder.query<CategoryByIdResponse, number>({
       query: id => ({
         url: `${endpoints.CategoryApi}${id.toString()}`, 
         method: 'GET',

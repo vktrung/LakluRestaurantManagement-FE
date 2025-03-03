@@ -16,11 +16,11 @@ export default function DeleteCategoryPage() {
 
 
   const [deleteCategory, { isLoading: isDeleting, isError: deleteError }] = useDeleteCategoryMutation();
-  const [isDialogOpen, setIsDialogOpen] = useState(true); // Dialog opens immediately
+  const [isDialogOpen, setIsDialogOpen] = useState(true); 
 
   useEffect(() => {
     if (!categoryId) {
-      router.push('/menu/category'); // If ID is missing, redirect back
+      router.push('/menu/category'); 
     }
   }, [categoryId, router]);
 

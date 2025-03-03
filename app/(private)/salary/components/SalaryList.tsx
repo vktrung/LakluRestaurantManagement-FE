@@ -1,7 +1,8 @@
 import { useGetSalaryRatesQuery } from '@/features/salary/salaryApiSlice';
 import EditSalaryModal from './EditSalaryModal';
 import DeleteSalaryConfirm from './DeleteSalaryConfirm';
-import AddSalaryModal from './AddSalaryModal';
+import AddSalaryModal from './AddSalaryModal'; 
+
 import { useState } from 'react';
 import { EmployeeSalaryResponse } from '@/features/salary/types';
 import { Button } from '@/components/ui/button';

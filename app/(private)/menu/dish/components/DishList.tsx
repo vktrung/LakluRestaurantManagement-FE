@@ -12,15 +12,21 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import Image from 'next/image';
-import { CalendarIcon, InfoIcon, Edit2Icon, Trash2Icon } from 'lucide-react';
+import { CalendarIcon, InfoIcon } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { MdDeleteOutline } from "react-icons/md";
+import { GrUpdate } from "react-icons/gr";
+import { IoAddCircleSharp } from "react-icons/io5";
 
 export interface DishListProps {
-  onEdit: (id: number, dish: any) => void; // Updated to pass dish object
+  onEdit: (id: number, dish: any) => void;
   onDelete: (id: number) => void;
+  dishes?: any[];
+  searchTerm?: string;
 }
 
-const DishList: React.FC<DishListProps> = ({ onEdit, onDelete }) => {
+const DishList: React.FC<DishListProps> = ({ onEdit, onDelete, dishes: propDishes, searchTerm = "" }) => {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -28,31 +34,36 @@ const DishList: React.FC<DishListProps> = ({ onEdit, onDelete }) => {
   }, []);
 
   const { data: dishResponse, isLoading, error } = useGetAllDishesQuery();
+  
+  // If dishes are provided as props, use them; otherwise, use the query result
+  const dishes = propDishes || dishResponse?.data || [];
 
   if (!isMounted) return null;
-  if (isLoading)
+  if (isLoading && !propDishes)
     return (
       <div className="flex items-center justify-center h-40 w-full">
         <div className="text-gray-500 font-medium">Đang tải danh sách món ăn...</div>
       </div>
     );
-  if (error)
+  if (error && !propDishes)
     return (
       <div className="p-6 rounded-lg bg-gray-50 border border-gray-200">
         <div className="text-red-500 text-center">Lỗi khi tải danh sách: {JSON.stringify(error)}</div>
       </div>
     );
 
-  const dishes = dishResponse?.data || [];
+  // Filter dishes based on search term if provided
+  const filteredDishes = searchTerm 
+    ? dishes.filter((dish: any) => 
+        dish.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        dish.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : dishes;
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4">
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900">Danh Sách Món Ăn</h2>
-        <Separator className="mt-4 bg-gray-200" />
-      </div>
+    <div className="w-full">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {dishes.map((dish) => (
+        {filteredDishes.map((dish) => (
           <Card
             key={dish.id}
             className="overflow-hidden border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex flex-col h-full"
@@ -101,31 +112,31 @@ const DishList: React.FC<DishListProps> = ({ onEdit, onDelete }) => {
             </CardContent>
             <CardFooter className="flex justify-end gap-3 pt-3 pb-4 border-t border-gray-200">
               <Button
-                variant="outline"
+                onClick={() => onEdit(dish.id, dish)}
+                className="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600 text-white"
                 size="sm"
-                className="rounded-md border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-black transition-colors"
-                onClick={() => onEdit(dish.id, dish)} // Pass full dish object
               >
-                <Edit2Icon className="h-4 w-4 mr-1.5" />
+                <GrUpdate className="text-xl text-white" />
                 Sửa
               </Button>
               <Button
                 variant="destructive"
                 size="sm"
-                className="rounded-md bg-black text-white hover:bg-gray-800 border-none transition-colors"
                 onClick={() => onDelete(dish.id)}
               >
-                <Trash2Icon className="h-4 w-4 mr-1.5" />
+                <MdDeleteOutline className="mr-1" />
                 Xóa
               </Button>
             </CardFooter>
           </Card>
         ))}
       </div>
-      {dishes.length === 0 && (
+      {filteredDishes.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 px-4 bg-gray-50 rounded-lg border border-gray-200">
           <InfoIcon className="h-12 w-12 text-gray-400 mb-4" />
-          <p className="text-gray-600 font-medium text-lg">Không có món ăn nào trong danh sách</p>
+          <p className="text-gray-600 font-medium text-lg">
+            {searchTerm ? "Không tìm thấy món ăn nào phù hợp" : "Không có món ăn nào trong danh sách"}
+          </p>
         </div>
       )}
     </div>

@@ -96,13 +96,13 @@ export default function SalaryForm({
         <button
           type="button"
           onClick={onCancel}
-          className="bg-gray-500 text-white px-4 py-2 rounded"
+          className="bg-red-500 text-white px-4 py-2 rounded"
         >
           Hủy
         </button>
         <button
           type="submit"
-          className="bg-black-500 text-white px-4 py-2 rounded"
+          className="bg-gray-500 text-white px-4 py-2 rounded"
         >
           Lưu
         </button>

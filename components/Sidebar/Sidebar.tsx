@@ -79,8 +79,13 @@ const mainAccordionItems = [
         icon: <BookOpen className="h-4 w-4" />,
       },
       {
+        label: 'Thực đơn',
+        href: '/menu/menu-info',
+        icon: <IoFastFood className="h-4 w-4" />,
+      },
+      {
         label: 'Món ăn',
-        href: '/menu/mon-an',
+        href: '/menu/dish',
         icon: <IoFastFood className="h-4 w-4" />,
       },
     ],
@@ -172,7 +177,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       {/* Accordion Menu */}
       <nav className="flex-1 p-4 space-y-2">
         <Accordion type="single" collapsible>
-          {mainAccordionItems.map((item) => (
+          {mainAccordionItems.map(item => (
             <AccordionItem value={item.value} key={item.value}>
               <AccordionTrigger className="flex items-center gap-2">
                 {item.icon}
@@ -180,7 +185,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
               </AccordionTrigger>
 
               <AccordionContent className={!collapsed ? 'pl-6' : ''}>
-                {item.children.map((child) => (
+                {item.children.map(child => (
                   <Link
                     key={child.href}
                     href={child.href}
@@ -202,7 +207,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
               {singleSection.sectionLabel}
             </h3>
           )}
-          {singleSection.links.map((link) => (
+          {singleSection.links.map(link => (
             <Link
               key={link.href}
               href={link.href}

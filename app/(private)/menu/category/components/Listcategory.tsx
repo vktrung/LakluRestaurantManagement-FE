@@ -17,6 +17,7 @@ export default function DanhSachDanhMuc() {
 
   useEffect(() => {
     if (danhMucResponse?.data) {
+      // Assuming data is an array of Category, so filtering non-deleted categories
       const danhMucLoc = danhMucResponse.data.filter(
         danhMuc => danhMuc.isDeleted === false,
       );
@@ -76,7 +77,7 @@ export default function DanhSachDanhMuc() {
             </thead>
             <tbody>
               {danhMuc.length > 0 ? (
-                danhMuc.map(danhMuc => (
+                danhMuc.map((danhMuc) => (
                   <tr key={danhMuc.id} className="border-t hover:bg-gray-100">
                     <td className="px-4 py-2 text-sm text-gray-800">
                       {danhMuc.name}

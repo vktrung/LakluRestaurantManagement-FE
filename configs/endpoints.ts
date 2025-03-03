@@ -10,4 +10,8 @@ export const endpoints = {
   SalaryRatesApi:'/api/v1/salary-rates/',
   // addStaff : '/api/v1/users',
   getRoles: '/api/v1/roles/',
+  DishApi:'/api/v1/dishes/',
+  MenuApi:'/api/v1/menus/',
+  MenuItemApi: '/api/v1/menu-items/',
+  FileAttachmentApi: '/api/v1/attachments',
 }

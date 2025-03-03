@@ -14,11 +14,11 @@ import { Button } from '@/components/ui/button';
 import { PlusIcon } from 'lucide-react';
 import DishFormAddOnly from './DishFormAddOnly';
 import { useGetDishByIdQuery } from '@/features/dish/dishApiSlice';
-import { MenuItem } from '@/features/menu/types'; // 🔥 Thêm dòng này
+import { MenuItem } from '@/features/menu/types';
 
 interface MenuItemFormProps {
   selectedItem: number | null;
-  onSuccess: (newItem: MenuItem) => void; // 🆕 Callback để cập nhật UI
+  onSuccess: (newItem: MenuItem) => void;
   onClose: () => void;
   menuId: number;
 }
@@ -33,32 +33,35 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
   const [updateMenuItem] = useUpdateMenuItemMutation();
   const [formData, setFormData] = useState<MenuItemRequest>({
     dishId: 0,
-    menuId: menuId || 0, // Use menuId from prop as default
+    menuId: menuId || 0,
     categoryId: 0,
     price: 0,
-    status: 'enable', // Default status
+    status: 'enable',
   });
 
   const {
     data: dishes,
     isLoading: dishesLoading,
-    refetch,
+    refetch: refetchDishes,
   } = useGetAllDishesQuery();
+  
   const { data: categories, isLoading: categoriesLoading } =
     useGetCategoriesQuery();
+  
   const { data: menus, isLoading: menusLoading } = useGetMenusQuery();
 
   const { data: menuItemData, isLoading: menuItemLoading } =
     useGetMenuItemByIdQuery(selectedItem!, {
-      skip: !selectedItem, // Skip query if no selectedItem
+      skip: !selectedItem,
     });
+  
   const { data: selectedDishData } = useGetDishByIdQuery(formData.dishId, {
     skip: formData.dishId === 0,
   });
 
   const originalPrice = selectedDishData?.data?.price || 0;
   const [isDishFormOpen, setIsDishFormOpen] = useState(false);
-  const [isClient, setIsClient] = useState(false); // Use isClient instead of isMounted for hydration
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -88,22 +91,25 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
       let response;
       if (selectedItem) {
         response = await updateMenuItem({ id: selectedItem, body: formData }).unwrap();
+        onSuccess(response.data[0]);
       } else {
         response = await createMenuItem(formData).unwrap();
-        onSuccess(response.data[0]); 
+        // Make sure to pass the new item to onSuccess
+        onSuccess(response.data[0]);
       }
-      onClose(); 
+      onClose();
     } catch (error) {
       console.error("Lỗi khi thêm/cập nhật menu item:", error);
     }
   };
-  
 
   const handleDishFormClose = () => {
     setIsDishFormOpen(false);
+    // Refresh dishes list when dish form is closed
+    refetchDishes();
   };
 
-  if (dishesLoading || categoriesLoading || menusLoading || menuItemLoading) {
+  if (dishesLoading || categoriesLoading || menusLoading || (menuItemLoading && selectedItem)) {
     return <div>Loading...</div>;
   }
 
@@ -141,8 +147,7 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
                 size="icon"
                 className="rounded-md border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-black transition-colors"
                 onClick={e => {
-                  e.stopPropagation(); // Prevents event bubbling
-
+                  e.stopPropagation();
                   setIsDishFormOpen(true);
                 }}
               >
@@ -253,7 +258,7 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
             </div>
           </div>
 
-          {/* Submit Button (matches DishFormAddOnly's CardFooter) */}
+          {/* Submit Button */}
           <div className="mt-6">
             <Button
               type="submit"

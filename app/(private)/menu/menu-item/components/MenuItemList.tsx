@@ -18,54 +18,55 @@ import { Separator } from '@/components/ui/separator';
 import { MenuItemForm } from './MenuItemForm';
 import { useDeleteMenuItemMutation } from '@/features/menu-item/menuItemApiSlice';
 import DeleteConfirmation from './DeleteConfirmation';
+
 interface MenuItemListProps {
   items: MenuItem[];
-  onDelete: (id: number, name : string) => void;
+  onDelete: () => void;
   onSelect: (id: number) => void;
   menuId: number;
-  onAddSuccess: (newItem : MenuItem) =>void;
+  onAddSuccess: () => void;
 }
+
 export const MenuItemList: React.FC<MenuItemListProps> = ({
   items,
   menuId,
+  onDelete,
+  onAddSuccess
 }) => {
   const [isMounted, setIsMounted] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>(items);
-  const handleAddSuccess = (newItem: MenuItem) => {
-    setMenuItems((prevItems) => [...prevItems, newItem]);
-  };
   const [deleteMenuItem] = useDeleteMenuItemMutation();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteItemId, setDeleteItemId] = useState<number | null>(null);
   const [deleteItemName, setDeleteItemName] = useState<string>('');
  
+  // Update local state when items prop changes
+  useEffect(() => {
+    setMenuItems(items);
+  }, [items]);
+  
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
+  if (!isMounted) return null;
+  
   const handleDeleteClick = (id: number, name: string) => {
     setDeleteItemId(id);
     setDeleteItemName(name);
     setIsDeleteModalOpen(true);
   };
- 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-  if (!isMounted) return null;
-  if (menuItems.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 px-4 bg-gray-50 rounded-lg border border-gray-200">
-        <CalendarIcon className="h-12 w-12 text-gray-400 mb-4" />
-        <p className="text-gray-600 font-medium text-lg">
-          Không có mục menu nào trong danh sách
-        </p>
-      </div>
-    );
-  }
+
   const confirmDelete = async () => {
     if (deleteItemId !== null) {
       try {
         await deleteMenuItem(deleteItemId).unwrap();
+        // Update local state
         setMenuItems((prevItems) => prevItems.filter((item) => item.id !== deleteItemId));
+        // Notify parent component to refetch
+        onDelete();
       } catch (error) {
         console.error('Lỗi khi xóa menu item:', error);
       }
@@ -74,48 +75,65 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
     setDeleteItemId(null);
     setDeleteItemName('');
   };
+  
   const handleEdit = (id: number) => {
     setSelectedItemId(id);
     setIsFormOpen(true);
   };
+  
   const handleAdd = () => {
     setSelectedItemId(null);
     setIsFormOpen(true);
   };
+
+  const handleFormSuccess = (newItem: MenuItem) => {
+    // Update local state with the new item
+    setMenuItems((prevItems) => [...prevItems, newItem]);
+    // Notify parent to refetch for consistency
+    onAddSuccess();
+  };
+
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setSelectedItemId(null);
+  };
+  
+  const renderContent = () => {
+    if (menuItems.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-16 px-4 bg-gray-50 rounded-lg border border-gray-200">
+          <CalendarIcon className="h-12 w-12 text-gray-400 mb-4" />
+          <p className="text-gray-600 font-medium text-lg">
+            Không có mục menu nào trong danh sách
+          </p>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {menuItems
+          .filter(item => item !== undefined && item !== null)
+          .map(item => (
+            <MenuItemCard
+              key={item.id}
+              item={item}
+              onDelete={handleDeleteClick}
+              onSelect={handleEdit}
+            />
+          ))}
+      </div>
+    );
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4">
       <div className="mb-8">
         <Separator className="mt-4 bg-gray-200" />
       </div>
 
+      {renderContent()}
 
-      {/* If No Menu Items, Show Message */}
-      {menuItems.length === 0 ? (
-  <div className="flex flex-col items-center justify-center py-16 px-4 bg-gray-50 rounded-lg border border-gray-200">
-    <CalendarIcon className="h-12 w-12 text-gray-400 mb-4" />
-    <p className="text-gray-600 font-medium text-lg">
-      Không có mục menu nào trong danh sách
-    </p>
-  </div>
-) : (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
- {menuItems?.length > 0 ? (
-  menuItems
-    .filter(item => item !== undefined && item !== null) 
-    .map(item => (
-      <MenuItemCard
-        key={item.id} 
-        item={item}
-        onDelete={handleDeleteClick}
-        onSelect={handleEdit}
-      />
-    ))
-) : (
-  <p className="text-gray-600 text-center">Không có mục menu nào.</p>
-)}
-
-  </div>
-)}
       {/* Always Show Add Button */}
       <div className="flex justify-center mt-6">
         <Button
@@ -127,28 +145,26 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
         </Button>
       </div>
 
-
       {/* MenuItemForm Modal */}
       {isFormOpen && (
         <MenuItemForm
           selectedItem={selectedItemId}
-          onClose={() => {
-            setIsFormOpen(false);
-            setSelectedItemId(null);
-          }}
-          onSuccess={handleAddSuccess}  
+          onClose={handleFormClose}
+          onSuccess={handleFormSuccess}
           menuId={menuId}
         />
       )}
+      
       <DeleteConfirmation
-  isOpen={isDeleteModalOpen}
-  onClose={() => setIsDeleteModalOpen(false)}
-  onConfirm={confirmDelete}
-  itemName={deleteItemName}
-/>
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        itemName={deleteItemName}
+      />
     </div>
   );
 };
+
 const MenuItemCard: React.FC<{
   item: MenuItem;
   onDelete: (id: number, name: string) => void;
@@ -160,6 +176,7 @@ const MenuItemCard: React.FC<{
   const dish = dishData?.data;
   const category = categoryData?.data;
   const menu = menuData?.data;
+
   return (
     <Card className="overflow-hidden border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex flex-col h-full">
       <div className="relative h-52 w-full bg-gray-100 overflow-hidden group">
@@ -215,20 +232,16 @@ const MenuItemCard: React.FC<{
           Sửa
         </Button>
         <Button
-  variant="destructive"
-  size="sm"
-  onClick={() => onDelete(item.id, dish?.name || 'mục này')}
->
-  <Trash2Icon className="h-4 w-4 mr-1.5" />
-  Xóa
-</Button>
-
-
+          variant="destructive"
+          size="sm"
+          onClick={() => onDelete(item.id, dish?.name || 'mục này')}
+        >
+          <Trash2Icon className="h-4 w-4 mr-1.5" />
+          Xóa
+        </Button>
       </CardFooter>
     </Card>
   );
 };
+
 export default MenuItemList;
-
-
-

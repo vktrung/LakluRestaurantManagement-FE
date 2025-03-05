@@ -1,4 +1,4 @@
-type SalaryType = "MONTHLY" | "HOURLY" | "SHIFTLY";
+export type SalaryType = "MONTHLY" | "HOURLY" | "SHIFTLY";
 
 export interface EmployeeSalaryRequest {
   levelName: string;

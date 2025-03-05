@@ -31,7 +31,7 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
   items,
   menuId,
   onDelete,
-  onAddSuccess
+  onAddSuccess,
 }) => {
   const [isMounted, setIsMounted] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -41,17 +41,17 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteItemId, setDeleteItemId] = useState<number | null>(null);
   const [deleteItemName, setDeleteItemName] = useState<string>('');
- 
+
   useEffect(() => {
     setMenuItems(items);
   }, [items]);
-  
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
-  
+
   if (!isMounted) return null;
-  
+
   const handleDeleteClick = (id: number, name: string) => {
     setDeleteItemId(id);
     setDeleteItemName(name);
@@ -62,7 +62,9 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
     if (deleteItemId !== null) {
       try {
         await deleteMenuItem(deleteItemId).unwrap();
-        setMenuItems((prevItems) => prevItems.filter((item) => item.id !== deleteItemId));
+        setMenuItems(prevItems =>
+          prevItems.filter(item => item.id !== deleteItemId),
+        );
         onDelete();
       } catch (error) {
         console.error('Lỗi khi xóa menu item:', error);
@@ -72,19 +74,19 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
     setDeleteItemId(null);
     setDeleteItemName('');
   };
-  
+
   const handleEdit = (id: number) => {
     setSelectedItemId(id);
     setIsFormOpen(true);
   };
-  
+
   const handleAdd = () => {
     setSelectedItemId(null);
     setIsFormOpen(true);
   };
 
   const handleFormSuccess = (newItem: MenuItem) => {
-    setMenuItems((prevItems) => [...prevItems, newItem]);
+    setMenuItems(prevItems => [...prevItems, newItem]);
     onAddSuccess();
   };
 
@@ -92,7 +94,7 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
     setIsFormOpen(false);
     setSelectedItemId(null);
   };
-  
+
   const renderContent = () => {
     if (menuItems.length === 0) {
       return (
@@ -104,7 +106,7 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
         </div>
       );
     }
-    
+
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {menuItems
@@ -123,14 +125,8 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4">
-      <div className="mb-8">
-        <Separator className="mt-4 bg-gray-200" />
-      </div>
-
-      {renderContent()}
-
-      {/* Always Show Add Button */}
-      <div className="flex justify-center mt-6">
+      
+      <div className="flex justify-end mt-6 mb-4">
         <Button
           onClick={handleAdd}
           className="bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors"
@@ -138,6 +134,14 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
           <PlusIcon className="h-4 w-4 mr-1.5" />
           Thêm Mục Menu
         </Button>
+      </div>
+  
+      <div className="mb-8">
+        <Separator className="mt-4 bg-gray-200" />
+      </div>
+  
+      <div className="ml-auto">
+        {renderContent()}
       </div>
 
       {/* MenuItemForm Modal */}
@@ -149,7 +153,7 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
           menuId={menuId}
         />
       )}
-      
+
       <DeleteConfirmation
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}

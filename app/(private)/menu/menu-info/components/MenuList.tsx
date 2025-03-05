@@ -34,12 +34,10 @@ const MenuList = () => {
 
   const menus = data?.data || [];
 
-  // Handle search
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
   };
 
-  // Filter menus based on search term
   const filteredMenus = menus.filter((menu) =>
     menu.name.toLowerCase().includes(searchTerm.toLowerCase())
   );

@@ -77,21 +77,12 @@ export default function SalaryForm({
           onChange={handleChange}
           className="w-full p-2 border rounded"
         >
-          <option value="MONTHLY">Monthly</option>
-          <option value="HOURLY">Hourly</option>
-          <option value="SHIFTLY">Shiftly</option>
+          <option value="MONTHLY">Hàng Tháng</option>
+          <option value="HOURLY">Theo Giờ</option>
+          <option value="SHIFTLY">Theo Ca</option>
         </select>
       </div>
-      <div className="mb-4">
-        <label className="block mb-1">Toàn Cầu</label>
-        <input
-          type="checkbox"
-          name="isGlobal"
-          checked={formData.isGlobal}
-          onChange={handleChange}
-          className="mr-2"
-        />
-      </div>
+   
       <div className="flex justify-end gap-2">
         <button
           type="button"

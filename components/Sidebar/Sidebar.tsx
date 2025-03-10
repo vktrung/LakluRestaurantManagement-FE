@@ -67,6 +67,16 @@ const mainAccordionItems = [
         href: '/quan-ly/luong',
         icon: <Briefcase className="h-4 w-4" />,
       },
+      {
+        label: 'Bàn ăn',
+        href: '/table',
+        icon: <PieChart className="h-4 w-4" />,
+      },
+      {
+        label: 'Đặt bàn',
+        href: '/reservation',
+        icon: <PieChart className="h-4 w-4" />,
+      },
     ],
   },
   {

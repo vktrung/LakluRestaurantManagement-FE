@@ -14,7 +14,7 @@ import { dishApiSlice } from './features/dish/dishApiSlice';
 import {menuApiSlice} from './features/menu/menuApiSlice';
 import {menuItemApiSlice} from './features/menu-item/menuItemApiSlice';
 import {fileAttachmentApiSlice} from './features/file-attachment/fileAttachmentApiSlice';
-
+import { tableApiSlice } from './features/table/tableApiSlice';
 export const store = configureStore({
   reducer: {
     [authApiSlice.reducerPath]: authApiSlice.reducer,
@@ -27,6 +27,7 @@ export const store = configureStore({
     [menuApiSlice.reducerPath]: menuApiSlice.reducer,
     [menuItemApiSlice.reducerPath]: menuItemApiSlice.reducer,
     [fileAttachmentApiSlice.reducerPath]: fileAttachmentApiSlice.reducer,
+    [tableApiSlice.reducerPath]: tableApiSlice.reducer,
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware()
@@ -40,7 +41,8 @@ export const store = configureStore({
   .concat(dishApiSlice.middleware)
   .concat(menuApiSlice.middleware)
   .concat(menuItemApiSlice.middleware)
-  .concat(fileAttachmentApiSlice.middleware),
+  .concat(fileAttachmentApiSlice.middleware)
+  .concat(tableApiSlice.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

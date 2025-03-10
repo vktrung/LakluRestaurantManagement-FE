@@ -1,21 +1,40 @@
-// Kiểu cho đặt chỗ khi tạo (POST)
+// Các trạng thái đặt chỗ
+export type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' ;
+
+// Kiểu đặt chỗ dùng khi tạo mới (POST)
+// Lưu ý: field id là optional vì nó thường do backend tạo
 export interface Reservation {
+  id?: number;
   customerName: string;
   customerPhone: string;
-  reservationTime: string; // ISO string, ví dụ: "2025-03-09T14:14:07.391Z"
-  checkIn: string;         // ISO string, ví dụ: "2025-03-09T14:14:07.391Z"
+  reservationTime: string; // ISO string, ví dụ: "2025-03-10T17:23:04.619Z"
+  checkIn: string;         // ISO string
   tableIds: number[];
   numberOfPeople: number;
+  status: ReservationStatus; // Khi tạo mới, bạn có thể gán mặc định là "pending" hoặc "confirmed" tùy theo nghiệp vụ
 }
 
-// Kiểu dữ liệu cho thông tin chi tiết của đặt chỗ (trong response GET)
+// Kiểu dùng cho request update (PUT)
+// Các field là optional để hỗ trợ cập nhật từng phần
+export interface UpdateReservationRequest {
+  id: number;
+  customerName?: string;
+  customerPhone?: string;
+  reservationTime?: string;
+  checkIn?: string;
+  tableIds?: number[];
+  numberOfPeople?: number;
+  status?: ReservationStatus;
+}
+
+// Kiểu chi tiết đặt chỗ (GET response)
 export interface ReservationDetail {
   id: number;
   customerName: string;
   customerPhone: string;
   reservationTime: string | null;
-  status: string;        // ví dụ: "PENDING"
-  createBy: string;
+  status: ReservationStatus;
+  createdBy: string;
   numberOfPeople: number;
   checkIn: string;
   checkOut: string | null;

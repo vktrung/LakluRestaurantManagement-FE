@@ -69,12 +69,12 @@ const mainAccordionItems = [
       },
       {
         label: 'Bàn ăn',
-        href: '/table',
+        href: '/quan-ly/table',
         icon: <PieChart className="h-4 w-4" />,
       },
       {
         label: 'Đặt bàn',
-        href: '/reservation',
+        href: '/quan-ly/reservation',
         icon: <PieChart className="h-4 w-4" />,
       },
     ],
@@ -98,6 +98,11 @@ const mainAccordionItems = [
         label: 'Món ăn',
         href: '/menu/dish',
         icon: <IoFastFood className="h-4 w-4" />,
+      },
+      {
+        label: 'Bàn ăn',
+        href: '/table',
+        icon: <PieChart className="h-4 w-4" />,
       },
     ],
   },

@@ -29,21 +29,23 @@ export const tableApiSlice = createApi({
       }),
       invalidatesTags: ['table-list'],
     }),
-    updateTable: builder.mutation<ITable, IUpdateTableRequest>({
-      query: ({ id, ...patch }) => ({
-        url: `${endpoints.TableApi}/${id}`,
-        method: 'PUT',
-        body: patch,
-      }),
-      invalidatesTags: (result, error, arg) => [{ type: 'table', id: arg.id }],
-    }),
-    deleteTable: builder.mutation<{ message: string }, IDeleteTableRequest>({
-      query: ({ id }) => ({
-        url: `${endpoints.TableApi}/${id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: (result, error, arg) => [{ type: 'table', id: arg.id }],
-    }),
+   // Trong tableApiSlice.ts
+updateTable: builder.mutation<ITable, IUpdateTableRequest>({
+  query: ({ id, ...patch }) => ({
+    url: `${endpoints.TableApi}${id}`,
+    method: 'PUT',
+    body: patch,
+  }),
+  // Thay vì invalidatesTags theo id, invalidate luôn "table-list" để cập nhật lại danh sách
+  invalidatesTags: ['table-list'],
+}),
+deleteTable: builder.mutation<{ message: string }, IDeleteTableRequest>({
+  query: ({ id }) => ({
+    url: `${endpoints.TableApi}${id}`,
+    method: 'DELETE',
+  }),
+  invalidatesTags: ['table-list'],
+}),
   }),
 });
 

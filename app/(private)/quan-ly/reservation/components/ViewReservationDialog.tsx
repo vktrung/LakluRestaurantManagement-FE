@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { format } from "date-fns"
-import { vi } from "date-fns/locale"
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
 
 import {
   Dialog,
@@ -10,16 +10,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ReservationEntry } from "@/features/reservation/type"
-// import type { ReservationEntry } from "../types"
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
+import { ReservationResponse } from "@/features/reservation/type";
 
 interface ViewReservationDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  reservation: ReservationEntry
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  reservation: ReservationResponse;
 }
 
 export default function ViewReservationDialog({ open, onOpenChange, reservation }: ViewReservationDialogProps) {
@@ -85,7 +85,7 @@ export default function ViewReservationDialog({ open, onOpenChange, reservation 
           </div>
           <div className="grid grid-cols-3 items-center gap-4">
             <span className="font-medium">Bàn:</span>
-            <span className="col-span-2">{reservation.detail.tableName.join(", ")}</span>
+            <span className="col-span-2">{reservation.detail.tableIds?.join(", ") || "N/A"}</span>
           </div>
           <div className="grid grid-cols-3 items-center gap-4">
             <span className="font-medium">Ngày đặt bàn:</span>
@@ -105,7 +105,7 @@ export default function ViewReservationDialog({ open, onOpenChange, reservation 
           </div>
           <div className="grid grid-cols-3 items-center gap-4">
             <span className="font-medium">Người tạo:</span>
-            <span className="col-span-2">{reservation.detail.createdBy}</span>
+            <span className="col-span-2">{reservation.detail.createBy}</span>
           </div>
         </div>
         <DialogFooter>

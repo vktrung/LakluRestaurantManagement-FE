@@ -24,7 +24,7 @@ export interface UpdateReservationRequest {
   checkIn?: string;
   tableIds?: number[];
   numberOfPeople?: number;
-  status?: ReservationStatus;
+  // status?: ReservationStatus;
 }
 
 // Kiểu chi tiết đặt chỗ (GET response)

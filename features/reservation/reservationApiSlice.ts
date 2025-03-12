@@ -29,7 +29,7 @@ export const reservationApiSlice = createApi({
     // Mutation sửa đặt chỗ (update)
     updateReservation: builder.mutation<Reservation, UpdateReservationRequest>({
       query: ({ id, ...changes }) => ({
-        url: `${endpoints.ReservationApi}/${id}`,
+        url: `${endpoints.ReservationApi}${id}`,
         method: 'PUT',
         body: changes,
       }),

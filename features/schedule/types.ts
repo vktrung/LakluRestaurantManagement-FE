@@ -1,0 +1,66 @@
+export type Shift = {
+  id: number;
+  date: string;        
+  dayOfWeek: string;   
+  timeIn: string;      
+  timeOut: string;     
+  detail: {
+    id: number;
+    manager: string | null;  
+    numberOfStaff: number;   
+    usernames: string[];    
+    note: string;           
+  };
+};
+export type GetShiftsByDateRangeRequest = {
+  startDate: string;  
+  endDate: string;    
+};
+
+export type GetShiftsByDateRangeResponse = {
+  data: Shift[];  
+  message: string;
+  httpStatus: number;
+  timestamp: string;
+  error?: any;
+};
+
+export type GetAllShiftsResponse = {
+  data: Shift[];
+  message: string;
+  httpStatus: number;
+  timestamp: string;
+  error: any;
+};
+export type GetShiftById = {
+  data: AddShiftRequest;
+  message: string;
+  httpStatus: number;
+  timestamp: string;
+  error: any;
+};
+export interface Staff {
+  id: number;
+  username: string;
+  email: string;
+}
+export type UserShift = {
+  staffId: number;
+  isManager: boolean;
+};
+
+export type AddShiftRequest = {
+  user: UserShift[];
+  shiftStart: string;
+  shiftEnd: string;  
+  shiftType: 'MORNING' | 'EVENING' | 'NIGHT';
+  note: string;
+};
+
+export type UpdateShiftRequest = {
+  user: UserShift[];
+  shiftStart: string;
+  shiftEnd: string;
+  shiftType: 'MORNING' | 'EVENING' | 'NIGHT';
+  note: string;
+};

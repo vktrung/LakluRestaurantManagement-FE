@@ -16,5 +16,5 @@ export const endpoints = {
   MenuApi:'/api/v1/menus/',
   MenuItemApi: '/api/v1/menu-items/',
   FileAttachmentApi: '/api/v1/attachments',
-
+  ScheduleApi:'/api/v1/schedule/'
 }

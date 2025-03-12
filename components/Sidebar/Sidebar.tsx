@@ -106,6 +106,11 @@ const mainAccordionItems = [
         href: '/salary',
         icon: <Users className="h-4 w-4" />,
       },
+      {
+        label: 'Lịch làm việc',
+        href: '/schedule',
+        icon: <Users className="h-4 w-4" />,
+      },
     ],
   },
   {

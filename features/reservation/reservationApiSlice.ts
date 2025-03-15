@@ -2,7 +2,7 @@ import { endpoints } from '@/configs/endpoints';
 
 import baseQuery from '@/features/baseQuery';
 import { createApi } from '@reduxjs/toolkit/query/react';
-import { GetReservationResponse, Reservation, UpdateReservationRequest } from './type';
+import {  GetReservationsResponse, Reservation, ReservationDetail, ReservationResponse } from './type';
 
 export const reservationApiSlice = createApi({
   reducerPath: 'reservationApi',
@@ -10,16 +10,16 @@ export const reservationApiSlice = createApi({
   tagTypes: ['reservation-list', 'reservation'],
   endpoints: (builder) => ({
     // Mutation tạo đặt chỗ mới
-    createReservation: builder.mutation<Reservation, Reservation>({
-      query: (reservation) => ({
+     createReservation: builder.mutation<{ message: string }, Reservation>({
+      query: (newReservation) => ({
         url: `${endpoints.ReservationApi}`,
         method: 'POST',
-        body: reservation,
+        body: newReservation,
       }),
       invalidatesTags: ['reservation-list'],
     }),
     // Query lấy danh sách đặt chỗ
-    getReservations: builder.query<GetReservationResponse, void>({
+       getReservations: builder.query<GetReservationsResponse, void>({
       query: () => ({
         url: `${endpoints.ReservationApi}`,
         method: 'GET',
@@ -27,11 +27,11 @@ export const reservationApiSlice = createApi({
       providesTags: ['reservation-list'],
     }),
     // Mutation sửa đặt chỗ (update)
-    updateReservation: builder.mutation<Reservation, UpdateReservationRequest>({
-      query: ({ id, ...changes }) => ({
+      updateReservation: builder.mutation<{ message: string }, { id: number; data: Reservation }>({
+      query: ({ id, data }) => ({
         url: `${endpoints.ReservationApi}${id}`,
         method: 'PUT',
-        body: changes,
+        body: data,
       }),
       invalidatesTags: (result, error, arg) => [
         { type: 'reservation', id: arg.id },
@@ -43,7 +43,7 @@ export const reservationApiSlice = createApi({
 
 // Export các hook để sử dụng trong component
 export const {
-  useCreateReservationMutation,
   useGetReservationsQuery,
+   useCreateReservationMutation,
   useUpdateReservationMutation,
 } = reservationApiSlice;

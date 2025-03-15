@@ -21,9 +21,9 @@ const ReservationPage = () => {
   return (
     <div>
       <ReservationList reservations={reservations} />
-      <div>
-        <h1>Hellp</h1>
-      </div>
+      {/* <div> */}
+        {/* <h1>Hellp</h1> */}
+      {/* </div> */}
     </div>
   );
 };

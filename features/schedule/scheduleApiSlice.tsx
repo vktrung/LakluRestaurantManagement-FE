@@ -1,7 +1,17 @@
 import { endpoints } from '@/configs/endpoints';
 import baseQuery from '@/features/baseQuery';
 import { createApi } from '@reduxjs/toolkit/query/react';
-import { GetShiftById, AddShiftRequest, UpdateShiftRequest, GetAllShiftsResponse,GetShiftsByDateRangeResponse,GetShiftsByDateRangeRequest } from './types';  // Import các types từ file types.ts
+import {
+  CheckinSuccessResponse,
+  CheckInSuccessRequest,
+  GetShiftById,
+  AddShiftRequest,
+  UpdateShiftRequest,
+  GetAllShiftsResponse,
+  GetShiftsByDateRangeResponse,
+  GetShiftsByDateRangeRequest,
+  CheckinResponse,
+} from './types';
 
 export const scheduleApiSlice = createApi({
   reducerPath: 'scheduleApi',
@@ -10,23 +20,28 @@ export const scheduleApiSlice = createApi({
   endpoints: builder => ({
     getAllShifts: builder.query<GetAllShiftsResponse, void>({
       query: () => ({
-        url: endpoints.ScheduleApi,  
+        url: endpoints.ScheduleApi,
         method: 'GET',
       }),
       providesTags: ['schedule-list'],
     }),
-    getShiftsByDateRange: builder.query<GetShiftsByDateRangeResponse, GetShiftsByDateRangeRequest>({
+    getShiftsByDateRange: builder.query<
+      GetShiftsByDateRangeResponse,
+      GetShiftsByDateRangeRequest
+    >({
       query: ({ startDate, endDate }) => ({
-        url: endpoints.ScheduleApi + "by-date-range",
+        url: endpoints.ScheduleApi + 'by-date-range',
         params: { startDate, endDate },
       }),
-      providesTags: (result, error, arg) => [{ type: 'schedule-list', id: arg.startDate + "_" + arg.endDate }],
+      providesTags: (result, error, arg) => [
+        { type: 'schedule-list', id: arg.startDate + '_' + arg.endDate },
+      ],
       keepUnusedDataFor: 0,
     }),
 
     getShiftById: builder.query<GetShiftById, number>({
       query: id => ({
-        url: `${endpoints.ScheduleApi}${id.toString()}`,  
+        url: `${endpoints.ScheduleApi}${id.toString()}`,
         method: 'GET',
       }),
       providesTags: ['schedule'],
@@ -34,28 +49,112 @@ export const scheduleApiSlice = createApi({
 
     createShift: builder.mutation<GetAllShiftsResponse, AddShiftRequest>({
       query: body => ({
-        url: endpoints.ScheduleApi,  
+        url: endpoints.ScheduleApi,
         method: 'POST',
         body,
       }),
       invalidatesTags: ['schedule-list'],
     }),
 
-    updateShift: builder.mutation<GetAllShiftsResponse, { id: number; body: UpdateShiftRequest }>({
+    createShiftAttend: builder.mutation<
+      CheckinSuccessResponse,
+      CheckInSuccessRequest
+    >({
+      query: body => ({
+        url: endpoints.ScheduleApi + 'schedule-check-in',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['schedule-list'],
+    }),
+
+    CreateQr: builder.mutation<CheckinResponse, number>({
+      query: id => ({
+        url: `${endpoints.ScheduleApi}check-in-qr-code/${id.toString()}`,
+        method: 'POST',
+        responseHandler: async response => {
+          const contentType = response.headers.get('Content-Type');
+          if (contentType && contentType.includes('image/png')) {
+            return response.blob(); // Trả về Blob để xử lý trong transformResponse
+          } else {
+            return response.json(); // Trả về JSON nếu là lỗi
+          }
+        },
+        headers: {
+          Accept: 'image/png',
+        },
+      }),
+      transformResponse: (
+        response: Blob | { message: string; httpStatus: number },
+      ) => {
+        if (response instanceof Blob) {
+          const qrImageUrl = URL.createObjectURL(response);
+          return { url: qrImageUrl };
+        }
+        return response;
+      },
+      invalidatesTags: ['schedule-list'],
+    }),
+
+    createShiftCheckout: builder.mutation<
+      CheckinSuccessResponse,
+      CheckInSuccessRequest
+    >({
+      query: body => ({
+        url: endpoints.ScheduleApi + 'schedule-check-out',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['schedule-list'],
+    }),
+
+    CreateQrCheckout: builder.mutation<CheckinResponse, number>({
+      query: id => ({
+        url: `${endpoints.ScheduleApi}check-out-qr-code/${id.toString()}`, 
+        method: 'POST',
+        responseHandler: async response => {
+          const contentType = response.headers.get('Content-Type');
+          if (contentType && contentType.includes('image/png')) {
+            return response.blob();
+          } else {
+            return response.json(); 
+          }
+        },
+        headers: {
+          Accept: 'image/png',
+        },
+      }),
+
+      transformResponse: (
+        response: Blob | { message: string; httpStatus: number },
+      ) => {
+        if (response instanceof Blob) {
+          const qrImageUrl = URL.createObjectURL(response);
+          return { url: qrImageUrl };
+        }
+        return response;
+      },
+      invalidatesTags: ['schedule-list'],
+    }),
+
+    updateShift: builder.mutation<
+      GetAllShiftsResponse,
+      { id: number; body: UpdateShiftRequest }
+    >({
       query: ({ id, body }) => ({
-        url: `${endpoints.ScheduleApi}${id.toString()}`,  
+        url: `${endpoints.ScheduleApi}${id.toString()}`,
         method: 'PUT',
         body,
       }),
-      invalidatesTags: ['schedule-list', 'schedule'], 
+      invalidatesTags: ['schedule-list', 'schedule'],
     }),
 
     deleteShift: builder.mutation<GetAllShiftsResponse, number>({
       query: id => ({
-        url: `${endpoints.ScheduleApi}${id.toString()}`, 
+        url: `${endpoints.ScheduleApi}${id.toString()}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['schedule-list'],  
+      invalidatesTags: ['schedule-list'],
     }),
   }),
 });
@@ -65,6 +164,10 @@ export const {
   useGetShiftsByDateRangeQuery,
   useGetShiftByIdQuery,
   useCreateShiftMutation,
+  useCreateShiftAttendMutation,
+  useCreateQrMutation,
+  useCreateShiftCheckoutMutation, // Hook cho check-out
+  useCreateQrCheckoutMutation, // Hook cho tạo mã QR check-out
   useUpdateShiftMutation,
   useDeleteShiftMutation,
 } = scheduleApiSlice;

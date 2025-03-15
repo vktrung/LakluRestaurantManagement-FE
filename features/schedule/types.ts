@@ -64,3 +64,20 @@ export type UpdateShiftRequest = {
   shiftType: 'MORNING' | 'EVENING' | 'NIGHT';
   note: string;
 };
+export type  CheckInSuccessRequest ={ 
+  scheduleId: Number;
+  expiry: number;
+  signature: string;
+  username: string;
+  password: string;
+};
+export type  CheckinSuccessResponse ={ 
+  data: string;
+  message: string;
+  httpStatus: number;
+  timestamp: string;
+  error: any;
+};
+export type CheckinResponse =
+  | { url: string } 
+  | { message: string; httpStatus: number; timestamp?: string; error?: any };

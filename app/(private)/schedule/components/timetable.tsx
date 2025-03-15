@@ -10,14 +10,21 @@ import { useSchedule } from './useSchedule';
 import { addWeeks, subWeeks } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import EventForm from './EventForm';
-import { AddShiftRequest, UpdateShiftRequest,Shift } from '@/features/schedule/types';
+import {
+  AddShiftRequest,
+  UpdateShiftRequest,
+  Shift,
+} from '@/features/schedule/types';
 
 export default function Timetable() {
-  const [selectedMonth, setSelectedMonth] = useState<string>(new Date().getMonth() + 1 + '');
+  const [selectedMonth, setSelectedMonth] = useState<string>(
+    new Date().getMonth() + 1 + '',
+  );
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'week' | 'list'>('week');
-  const [selectedShiftId, setSelectedShiftId] = useState<number | undefined>(undefined);
-
+  const [selectedShiftId, setSelectedShiftId] = useState<number | undefined>(
+    undefined,
+  );
 
   const goToPreviousWeek = () => setCurrentDate(prev => subWeeks(prev, 1));
   const goToNextWeek = () => setCurrentDate(prev => addWeeks(prev, 1));
@@ -33,6 +40,8 @@ export default function Timetable() {
     setIsUpdateDialogOpen,
     selectedShiftResponse,
     handleSubmit,
+    handleGetQrCode,
+    handleGetQrCodeCheckout, // Thêm handleGetQrCodeCheckout từ useSchedule
   } = useSchedule(currentDate);
 
   const handleOpenUpdateDialogWithId = (shift: Shift) => {
@@ -40,9 +49,10 @@ export default function Timetable() {
     handleOpenUpdateDialog(shift);
   };
 
-  // Hàm wrapper để truyền shiftId vào handleSubmit
-  const wrappedHandleSubmit = async (formData: AddShiftRequest | UpdateShiftRequest): Promise<void> => {
-    console.log("Selected Shift ID in Timetable:", selectedShiftId);
+  const wrappedHandleSubmit = async (
+    formData: AddShiftRequest | UpdateShiftRequest,
+  ): Promise<void> => {
+    console.log('Selected Shift ID in Timetable:', selectedShiftId);
     await handleSubmit(formData, selectedShiftId);
   };
 
@@ -54,11 +64,18 @@ export default function Timetable() {
         currentDate={currentDate}
       />
 
-      <ScheduleNavigation goToPreviousWeek={goToPreviousWeek} goToNextWeek={goToNextWeek} />
+      <ScheduleNavigation
+        goToPreviousWeek={goToPreviousWeek}
+        goToNextWeek={goToNextWeek}
+      />
 
       <ScheduleActions handleOpenAddDialog={handleOpenAddDialog} />
 
-      <Tabs value={viewMode} onValueChange={val => setViewMode(val as 'week' | 'list')} className="w-full">
+      <Tabs
+        value={viewMode}
+        onValueChange={val => setViewMode(val as 'week' | 'list')}
+        className="w-full"
+      >
         <TabsList className="mb-4">
           <TabsTrigger value="week">Tuần</TabsTrigger>
           <TabsTrigger value="list">Danh sách</TabsTrigger>
@@ -66,6 +83,8 @@ export default function Timetable() {
 
         <TabsContent value="week">
           <ScheduleWeekView
+            handleGetQrCode={handleGetQrCode}
+            handleGetQrCodeCheckout={handleGetQrCodeCheckout} 
             formattedSchedule={formattedSchedule}
             handleOpenDialog={handleOpenUpdateDialogWithId}
             handleDelete={handleDelete}

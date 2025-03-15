@@ -55,7 +55,19 @@ export interface RegisterCredentials {
   role?: UserRole;
   password: string;
 }
-
+export interface UserMeResponse {
+  data: {
+    id: number;
+    username: string;
+    email: string;
+    permissions: string[];
+    nameSalary: string; 
+  };
+  message: string;
+  httpStatus: number;
+  timestamp: string;
+  error: string | null;
+}
 export interface RegisterApiResponse {
   username: string;
   email: string;

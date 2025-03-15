@@ -9,17 +9,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, Info, Moon, Clock, User } from 'lucide-react';
+import { Edit, Trash2, Info, Moon, Clock, User } from 'lucide-react';
 import type { Shift } from '@/features/schedule/types';
 import { format, parseISO, isAfter, differenceInDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +23,12 @@ interface ScheduleWeekViewProps {
   };
   handleOpenDialog: (shift: Shift) => void;
   handleDelete: (id: number) => void;
+  handleGetQrCode: (
+    id: number,
+  ) => Promise<{ url: string; expiration?: Date } | null>;
+  handleGetQrCodeCheckout: ( // Thêm prop cho check-out
+    id: number,
+  ) => Promise<{ url: string; expiration?: Date } | null>;
 }
 
 type DayName =
@@ -44,6 +44,8 @@ export default function ScheduleWeekView({
   formattedSchedule,
   handleOpenDialog,
   handleDelete,
+  handleGetQrCode,
+  handleGetQrCodeCheckout, 
 }: ScheduleWeekViewProps) {
   const fullWeekDays: DayName[] = [
     'Thứ 2',
@@ -80,6 +82,13 @@ export default function ScheduleWeekView({
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [shiftToDelete, setShiftToDelete] = useState<number | null>(null);
 
+  const [isQrDialogOpen, setIsQrDialogOpen] = useState(false);
+  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
+  const [qrExpirationTime, setQrExpirationTime] = useState<Date | null>(null);
+
+  // Lấy ngày hiện tại
+  const currentDate = new Date();
+
   useEffect(() => {
     const overnight: {
       shift: Shift;
@@ -99,7 +108,7 @@ export default function ScheduleWeekView({
               const spanDays = getSpanDays(shift.timeIn, shift.timeOut);
               let endDayIndex = startDayIndex + spanDays - 1;
               if (endDayIndex >= fullWeekDays.length) {
-                endDayIndex = endDayIndex % fullWeekDays.length; // Xử lý khi vượt qua Chủ Nhật
+                endDayIndex = endDayIndex % fullWeekDays.length;
               }
               const endDay = fullWeekDays[endDayIndex];
 
@@ -119,12 +128,21 @@ export default function ScheduleWeekView({
     setOvernightShifts(overnight);
   }, [safeFormattedSchedule]);
 
+  // Giải phóng URL khi component unmount hoặc đóng pop-up
+  useEffect(() => {
+    return () => {
+      if (qrImageUrl) {
+        URL.revokeObjectURL(qrImageUrl);
+      }
+    };
+  }, [qrImageUrl]);
+
   const getSpanDays = (timeIn: string, timeOut: string) => {
     try {
       const inTime = parseISO(timeIn);
       const outTime = parseISO(timeOut);
       if (isAfter(outTime, inTime)) {
-        const span = differenceInDays(outTime, inTime) + 1; // Tính đúng số ngày bao gồm cả ngày bắt đầu
+        const span = differenceInDays(outTime, inTime) + 1;
         return span > 0 ? span : 1;
       }
       return 1;
@@ -164,8 +182,8 @@ export default function ScheduleWeekView({
       const startIndex = dayIndices[overnightShift.startDay];
       const endIndex = dayIndices[overnightShift.endDay];
       let colSpan = endIndex - startIndex + 1;
-      if (colSpan < 0) colSpan += fullWeekDays.length; // Xử lý khi vượt qua Chủ Nhật
-      return Math.min(colSpan, fullWeekDays.length - startIndex); // Đảm bảo không vượt quá tuần
+      if (colSpan < 0) colSpan += fullWeekDays.length;
+      return Math.min(colSpan, fullWeekDays.length - startIndex);
     }
     return 1;
   };
@@ -186,6 +204,10 @@ export default function ScheduleWeekView({
     } catch (error) {
       return '';
     }
+  };
+
+  const formatDateTime = (date: Date) => {
+    return format(date, 'HH:mm, dd/MM/yyyy', { locale: vi });
   };
 
   const getDayNameFromDate = (dateString: string): string => {
@@ -228,37 +250,68 @@ export default function ScheduleWeekView({
     }
   };
 
+  const onCheckIn = async (id: number) => {
+    try {
+      const qrData = await handleGetQrCode(id);
+      if (qrData) {
+        setQrImageUrl(qrData.url);
+        setQrExpirationTime(qrData.expiration || null);
+        setIsQrDialogOpen(true);
+      } else {
+        alert('Không thể lấy mã QR check-in, vui lòng thử lại!');
+      }
+    } catch (error) {
+      console.error('Lỗi khi lấy mã QR check-in:', error);
+    }
+  };
+
+  // Thêm hàm onCheckOut
+  const onCheckOut = async (id: number) => {
+    try {
+      const qrData = await handleGetQrCodeCheckout(id);
+      if (qrData) {
+        setQrImageUrl(qrData.url);
+        setQrExpirationTime(qrData.expiration || null);
+        setIsQrDialogOpen(true);
+      } else {
+        alert('Không thể lấy mã QR check-out, vui lòng thử lại!');
+      }
+    } catch (error) {
+      console.error('Lỗi khi lấy mã QR check-out:', error);
+    }
+  };
+
+  const shouldShowCheckInButton = (shift: Shift) => {
+    const currentTime = currentDate;
+    const timeOut = parseISO(shift.timeOut);
+
+    const shiftEndDate = new Date(timeOut);
+    const currentDay = format(currentDate, 'yyyy-MM-dd');
+    const shiftEndDay = format(shiftEndDate, 'yyyy-MM-dd');
+
+    // Điều kiện 1: Ngày hiện tại phải khớp với ngày của ca hoặc ca liên ngày
+    const isSameDayOrOvernight =
+      currentDay === shiftEndDay ||
+      isOvernightShift(shift.timeIn, shift.timeOut);
+
+    // Điều kiện 2: Thời gian hiện tại chưa vượt qua timeOut
+    const isBeforeEndTime = !isAfter(currentTime, timeOut);
+
+    return isSameDayOrOvernight && isBeforeEndTime;
+  };
+
   return (
-    <div className="p-4 bg-gray-50 rounded-lg shadow-sm">
-      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-md">
+    <div className="p-4 bg-white rounded-lg">
+      <div className="overflow-x-auto">
         <table className="w-full border-collapse min-w-[800px]">
           <thead>
-            <tr className="bg-blue-50">
+            <tr>
               {fullWeekDays.map(day => (
                 <th
                   key={day}
-                  className="border-b border-gray-200 p-4 text-left text-gray-700 font-semibold"
+                  className="border-b border-gray-100 p-3 text-left text-gray-700 font-medium"
                 >
-                  <div className="flex justify-between items-center">
-                    <span>{day}</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 bg-white hover:bg-blue-100 border-gray-300"
-                            onClick={() => handleOpenDialog({} as Shift)}
-                          >
-                            <Plus className="h-4 w-4 text-blue-600" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">
-                          <p>Thêm ca làm mới</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
+                  <span>{day}</span>
                 </th>
               ))}
             </tr>
@@ -289,89 +342,57 @@ export default function ScheduleWeekView({
                           <Card
                             key={shift.id}
                             className={cn(
-                              'border-l-4 shadow-sm transition-all',
+                              'border shadow-sm transition-all hover:shadow-md',
                               isOvernightShift(shift.timeIn, shift.timeOut)
-                                ? 'border-indigo-500 bg-indigo-50'
-                                : 'border-blue-500 bg-white',
+                                ? 'border-violet-400 bg-violet-50'
+                                : 'border-blue-400 bg-white',
                             )}
                           >
-                            <CardContent className="p-4 relative">
+                            <CardContent className="p-3">
                               <div className="flex justify-between items-start">
                                 <div className="flex items-center gap-2">
-                                  <User className="h-5 w-5 text-indigo-600" />
-                                  <div>
-                                    <p className="text-sm font-medium text-gray-800">
-                                      {shift.detail.manager ||
-                                        'Không có quản lý'}
-                                    </p>
-                                    {isOvernightShift(
-                                      shift.timeIn,
-                                      shift.timeOut,
-                                    ) && (
-                                      <Badge className="mt-1 bg-indigo-100 text-indigo-800 text-xs py-1 px-2 rounded">
-                                        <Moon className="h-3 w-3 mr-1" /> Ca đêm
-                                      </Badge>
-                                    )}
-                                  </div>
+                                  <User className="h-4 w-4 text-gray-600" />
+                                  <p className="text-sm font-medium text-gray-800">
+                                    {shift.detail.manager || 'Không có quản lý'}
+                                  </p>
+                                  {isOvernightShift(
+                                    shift.timeIn,
+                                    shift.timeOut,
+                                  ) && (
+                                    <Badge className="bg-violet-100 text-violet-800 text-xs">
+                                      Ca đêm
+                                    </Badge>
+                                  )}
                                 </div>
                                 <div className="flex gap-1">
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-8 w-8 text-blue-600 hover:bg-blue-100"
-                                          onClick={() =>
-                                            handleOpenDialog(shift)
-                                          }
-                                        >
-                                          <Edit className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="bottom">
-                                        <p>Chỉnh sửa</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-8 w-8 text-red-600 hover:bg-red-100"
-                                          onClick={() =>
-                                            confirmDelete(shift.id)
-                                          }
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="bottom">
-                                        <p>Xóa ca làm</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-8 w-8 text-gray-600 hover:bg-gray-100"
-                                          onClick={() =>
-                                            setSelectedShift(shift)
-                                          }
-                                        >
-                                          <Info className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="bottom">
-                                        <p>Xem chi tiết</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-gray-500 hover:text-blue-600"
+                                    onClick={() => handleOpenDialog(shift)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-gray-500 hover:text-red-600"
+                                    onClick={() => confirmDelete(shift.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-gray-500 hover:text-gray-600"
+                                    onClick={() => setSelectedShift(shift)}
+                                  >
+                                    <Info className="h-4 w-4" />
+                                  </Button>
                                 </div>
                               </div>
                               <div className="mt-2 text-sm text-gray-600">
-                                <Clock className="h-4 w-4 text-indigo-600 inline-block mr-2" />
+                                <Clock className="h-4 w-4 text-gray-500 inline-block mr-2" />
                                 {isOvernightShift(
                                   shift.timeIn,
                                   shift.timeOut,
@@ -395,21 +416,38 @@ export default function ScheduleWeekView({
                                 )}
                               </div>
                               <div className="mt-2 text-sm text-gray-600">
-                                <User className="h-4 w-4 text-indigo-600 inline-block mr-2" />
+                                <User className="h-4 w-4 text-gray-500 inline-block mr-2" />
                                 {shift.detail.numberOfStaff} nhân viên
+                              </div>
+                              <div className="flex gap-2 mt-2">
+                                {shouldShowCheckInButton(shift) && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full flex items-center justify-center text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                    onClick={() => onCheckIn(shift.id)}
+                                  >
+                                    Check-in
+                                  </Button>
+                                )}
+                                {shouldShowCheckInButton(shift) && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full flex items-center justify-center text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                    onClick={() => onCheckOut(shift.id)}
+                                  >
+                                    Check-out
+                                  </Button>
+                                )}
                               </div>
                             </CardContent>
                           </Card>
                         ))}
                         {!shifts.length && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleOpenDialog({} as Shift)}
-                            className="w-full flex items-center justify-center text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                          >
-                            <Plus className="h-4 w-4 mr-2" /> Thêm ca làm
-                          </Button>
+                          <div className="py-3 text-center text-gray-400 text-sm">
+                            Không có ca làm
+                          </div>
                         )}
                       </div>
                     </td>
@@ -421,19 +459,66 @@ export default function ScheduleWeekView({
         </table>
       </div>
 
+      {/* Pop-up hiển thị mã QR */}
+      <Dialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
+        <DialogContent className="sm:max-w-md rounded-xl shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl text-slate-800">
+              <Clock className="h-5 w-5 text-sky-600" />
+              Mã QR Check-in/Check-out
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center space-y-4">
+            {qrImageUrl ? (
+              <img
+                src={qrImageUrl || '/placeholder.svg'}
+                alt="QR Code"
+                className="w-48 h-48 object-contain"
+              />
+            ) : (
+              <p className="text-slate-600">Không thể tải mã QR.</p>
+            )}
+            {qrExpirationTime && (
+              <p className="text-sm text-slate-700">
+                Hết hiệu lực lúc:{' '}
+                <span className="font-semibold">
+                  {formatDateTime(qrExpirationTime)}
+                </span>
+              </p>
+            )}
+          </div>
+          <DialogFooter className="mt-4">
+            <Button
+              variant="outline"
+              className="bg-white hover:bg-gray-100 text-slate-700"
+              onClick={() => {
+                setIsQrDialogOpen(false);
+                if (qrImageUrl) {
+                  URL.revokeObjectURL(qrImageUrl);
+                  setQrImageUrl(null);
+                }
+                setQrExpirationTime(null);
+              }}
+            >
+              Đóng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Modal chi tiết */}
       {selectedShift && (
         <Dialog open={true} onOpenChange={() => setSelectedShift(null)}>
-          <DialogContent className="sm:max-w-md rounded-lg shadow-lg">
+          <DialogContent className="sm:max-w-md rounded-xl shadow-xl">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-xl text-gray-800">
-                <Info className="h-5 w-5 text-blue-600" />
+              <DialogTitle className="flex items-center gap-2 text-xl text-slate-800">
+                <Info className="h-5 w-5 text-sky-600" />
                 Chi tiết ca làm
                 {isOvernightShift(
                   selectedShift.timeIn,
                   selectedShift.timeOut,
                 ) && (
-                  <Badge className="bg-indigo-100 text-indigo-800 text-xs py-1 px-2 rounded-full">
+                  <Badge className="bg-purple-100 text-purple-800 text-xs py-1 px-2 rounded-full">
                     <Moon className="h-3 w-3 mr-1" /> Ca đêm
                   </Badge>
                 )}
@@ -442,8 +527,8 @@ export default function ScheduleWeekView({
             <div className="space-y-4">
               <Card className="border-gray-200 shadow-sm">
                 <CardContent className="p-4">
-                  <div className="flex items-start gap-2 text-gray-700">
-                    <Clock className="h-5 w-5 text-blue-600 mt-1" />
+                  <div className="flex items-start gap-2 text-slate-700">
+                    <Clock className="h-5 w-5 text-sky-600 mt-1" />
                     <div>
                       <p className="font-semibold">Thời gian</p>
                       {isOvernightShift(
@@ -474,11 +559,11 @@ export default function ScheduleWeekView({
               </Card>
               <Card className="border-gray-200 shadow-sm">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <User className="h-5 w-5 text-blue-600" />
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <User className="h-5 w-5 text-sky-600" />
                     <div>
                       <p className="font-semibold">Quản lý</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-slate-600">
                         {selectedShift.detail.manager || 'Không có'}
                       </p>
                     </div>
@@ -487,24 +572,24 @@ export default function ScheduleWeekView({
               </Card>
               <Card className="border-gray-200 shadow-sm">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <User className="h-5 w-5 text-blue-600" />
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <User className="h-5 w-5 text-sky-600" />
                     <div>
                       <p className="font-semibold">Số nhân viên</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-slate-600">
                         {selectedShift.detail.numberOfStaff} nhân viên
                       </p>
                     </div>
                   </div>
                 </CardContent>
                 <CardContent className="p-4">
-                  <div className="flex items-start gap-2 text-gray-700">
-                    <User className="h-5 w-5 text-blue-600" />{' '}
+                  <div className="flex items-start gap-2 text-slate-700">
+                    <User className="h-5 w-5 text-sky-600" />
                     <div>
                       <p className="font-semibold">Danh sách nhân viên</p>
                       {selectedShift.detail.usernames &&
                       selectedShift.detail.usernames.length > 0 ? (
-                        <ul className="text-sm text-gray-600 list-disc list-inside">
+                        <ul className="text-sm text-slate-600 list-disc list-inside">
                           {selectedShift.detail.usernames.map(
                             (username, index) => (
                               <li key={index}>{username}</li>
@@ -512,7 +597,7 @@ export default function ScheduleWeekView({
                           )}
                         </ul>
                       ) : (
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-slate-600">
                           Không có danh sách nhân viên
                         </p>
                       )}
@@ -522,11 +607,11 @@ export default function ScheduleWeekView({
               </Card>
               <Card className="border-gray-200 shadow-sm">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <Info className="h-5 w-5 text-blue-600" />
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <Info className="h-5 w-5 text-sky-600" />
                     <div>
                       <p className="font-semibold">Ghi chú</p>
-                      <p className="text-sm text-gray-600 italic">
+                      <p className="text-sm text-slate-600 italic">
                         {selectedShift.detail.note || 'Không có ghi chú'}
                       </p>
                     </div>
@@ -537,7 +622,7 @@ export default function ScheduleWeekView({
             <DialogFooter className="mt-4">
               <Button
                 variant="outline"
-                className="bg-white hover:bg-gray-100 text-gray-700"
+                className="bg-white hover:bg-gray-100 text-slate-700"
                 onClick={() => setSelectedShift(null)}
               >
                 Đóng
@@ -558,14 +643,14 @@ export default function ScheduleWeekView({
 
       {/* Delete confirmation dialog */}
       <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-        <DialogContent className="sm:max-w-md rounded-lg shadow-lg">
+        <DialogContent className="sm:max-w-md rounded-xl shadow-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
               <Trash2 className="h-5 w-5" />
               Xác nhận xóa ca làm
             </DialogTitle>
           </DialogHeader>
-          <div className="py-4 text-gray-700">
+          <div className="py-4 text-slate-700">
             <p>
               Bạn có chắc chắn muốn xóa ca làm này? Hành động này không thể hoàn
               tác.
@@ -574,7 +659,7 @@ export default function ScheduleWeekView({
           <DialogFooter className="gap-2">
             <Button
               variant="outline"
-              className="bg-white hover:bg-gray-100 text-gray-700"
+              className="bg-white hover:bg-gray-100 text-slate-700"
               onClick={() => setIsDeleteConfirmOpen(false)}
             >
               Hủy

@@ -11,10 +11,20 @@ import {
   RequestResetPasswordApiResponse,
   RequestResetPasswordCredentials,
   CheckUsernameRequest,
-  CheckUsernameResponse,CheckPasswordRequest,CheckPasswordResponse
+  CheckUsernameResponse,CheckPasswordRequest,CheckPasswordResponse,UserMeResponse
 } from '@/features/auth/types';
 import baseQuery from '@/features/baseQuery';
 import { createApi } from '@reduxjs/toolkit/query/react';
+
+const getAuthToken = () => {
+  if (typeof document !== 'undefined') {
+    const match = document.cookie.match('(^|;)\\s*auth_token\\s*=\\s*([^;]+)');
+    const token = match ? match.pop() : null;
+    console.log("Auth token from cookie:", token); 
+    return token;
+  }
+  return null;
+};
 
 export const authApiSlice = createApi({
   reducerPath: 'authApi',
@@ -86,9 +96,25 @@ export const authApiSlice = createApi({
         };
       },
     }),
+    getUserMe: builder.query<UserMeResponse, void>({
+      query: () => {
+        const token = getAuthToken();
+        if (!token) {
+          throw new Error('Không tìm thấy token trong cookie!');
+        }
+        return {
+          url: '/api/v1/auth/me',
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        };
+      },
+  // @ts-ignore
+  pollingInterval: 0,
+    }),
   }),
 });
-
 export const {
   useLoginMutation,
   useRegisterMutation,
@@ -97,4 +123,5 @@ export const {
   useLogoutMutation,
   useCheckUsernameMutation,
   useCheckPasswordMutation,
+  useGetUserMeQuery,
 } = authApiSlice;

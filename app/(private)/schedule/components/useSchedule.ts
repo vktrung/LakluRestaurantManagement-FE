@@ -5,9 +5,12 @@ import {
   useCreateShiftMutation,
   useUpdateShiftMutation,
   useDeleteShiftMutation,
+  useCreateQrMutation,
+  useCreateShiftAttendMutation,
+  useCreateQrCheckoutMutation, 
 } from "@/features/schedule/scheduleApiSlice";
-import { startOfWeek, endOfWeek, format } from "date-fns";
-import { Shift,AddShiftRequest,UpdateShiftRequest} from "@/features/schedule/types";
+import { startOfWeek, endOfWeek, format, addMinutes } from "date-fns";
+import { Shift, AddShiftRequest, UpdateShiftRequest, CheckinSuccessResponse, CheckInSuccessRequest } from "@/features/schedule/types";
 
 export function useSchedule(currentDate: Date) {
   const weekStart = format(startOfWeek(currentDate, { weekStartsOn: 1 }), "dd/MM/yyyy");
@@ -44,20 +47,20 @@ export function useSchedule(currentDate: Date) {
   const [createShift] = useCreateShiftMutation();
   const [updateShift] = useUpdateShiftMutation();
   const [deleteShift] = useDeleteShiftMutation();
-
+  const [createQr] = useCreateQrMutation(); 
+  const [createQrCheckout] = useCreateQrCheckoutMutation(); // Hook cho check-out
+  const [createShiftAttend] = useCreateShiftAttendMutation();
+  
   const [selectedShiftId, setSelectedShiftId] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
   const shifts = data?.data || [];
 
-  // Theo dõi sự thay đổi của selectedShiftId
   useEffect(() => {
     if (selectedShiftId !== null) {
-      console.log("🛠 selectedShiftId has been updated to:", selectedShiftId);
     }
   }, [selectedShiftId]);
 
-  // Lấy thông tin shift theo ID
   const { data: selectedShiftResponse, isLoading: isLoadingShift } = useGetShiftByIdQuery(
     selectedShiftId!, { skip: !selectedShiftId }
   );
@@ -73,38 +76,82 @@ export function useSchedule(currentDate: Date) {
   // Hàm mở dialog Cập nhật
   const handleOpenUpdateDialog = (shift: Shift) => {
     if (shift && shift.id) {
-      console.log("🛠 Opening Update Dialog with Shift ID:", shift.id);
-      setSelectedShiftId(shift.id); // Cập nhật state để UI phản ánh
+      setSelectedShiftId(shift.id);
       setIsUpdateDialogOpen(true);
-    } else {
-      console.warn("⚠️ Không có shift ID để cập nhật");
     }
   };
 
-  // Hàm tạo shift
-  const handleCreateShift = async (formData: any) => {
-    console.log("➕ Creating new shift");
-    await createShift(formData);
-    console.log("🔒 Closing dialog...");
-    setIsDialogOpen(false);
-    console.log("✅ New shift created.");
+  const handleCheckInFromQR = async (
+    scheduleId: number,
+    expiry: number,
+    signature: string,
+    username: string,
+    password: string
+  ): Promise<CheckinSuccessResponse> => {
+    try {
+      const checkInRequest: CheckInSuccessRequest = {
+        scheduleId,
+        expiry,
+        signature,
+        username,
+        password,
+      };
+
+      const response = await createShiftAttend(checkInRequest).unwrap();
+      return response;
+    } catch (error) {
+      console.error("Lỗi khi check-in:", error);
+      throw error;
+    }
   };
 
-  // Hàm cập nhật shift
-  const handleUpdateShift = async (formData: any) => {
-    if (!selectedShiftId) return;
+  // Tạo mã QR cho check-in
+  const handleGetQrCode = async (id: number): Promise<{ url: string; expiration?: Date } | null> => {
+    try {
+      const qrResponse = await createQr(id).unwrap();
+  
+      if ('url' in qrResponse) {
+        const qrImageUrl = qrResponse.url;
+        const expiration = addMinutes(new Date(), 1);
+        return { url: qrImageUrl, expiration };
+      } else {
+        console.error("Phản hồi không phải Blob, có thể là lỗi:", qrResponse);
+        if (qrResponse.httpStatus === 500) {
+          throw new Error(`Lỗi máy chủ: ${qrResponse.message || "Không xác định"}`);
+        } else {
+          throw new Error(`Lỗi: ${qrResponse.message || "Không lấy được mã QR"}`);
+        }
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy mã QR:", error);
+      throw error;
+    }
+  };
 
-    console.log("✏️ Updating shift ID:", selectedShiftId);
-    await updateShift({ id: selectedShiftId, body: formData });
-    console.log("🔒 Closing dialog...");
-    setIsUpdateDialogOpen(false);
-    console.log("✅ Shift updated.");
+  // Tạo mã QR cho check-out (tương tự check-in)
+  const handleGetQrCodeCheckout = async (id: number): Promise<{ url: string; expiration?: Date } | null> => {
+    try {
+      const qrResponse = await createQrCheckout(id).unwrap();
+  
+      if ('url' in qrResponse) {
+        const qrImageUrl = qrResponse.url;
+        const expiration = addMinutes(new Date(), 1);
+        return { url: qrImageUrl, expiration };
+      } else {
+        console.error("Phản hồi không phải Blob, có thể là lỗi:", qrResponse);
+        if (qrResponse.httpStatus === 500) {
+          throw new Error(`Lỗi máy chủ: ${qrResponse.message || "Không xác định"}`);
+        } else {
+          throw new Error(`Lỗi: ${qrResponse.message || "Không lấy được mã QR check-out"}`);
+        }
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy mã QR check-out:", error);
+      throw error;
+    }
   };
 
   const handleSubmit = async (formData: AddShiftRequest | UpdateShiftRequest, shiftId?: number): Promise<void> => {
-    console.log("📤 Submitting formData:", formData);
-    console.log("✏️shift ID:", shiftId ?? selectedShiftId);
-  
     const id = shiftId ?? selectedShiftId; 
   
     if (id !== null && id !== undefined) { 
@@ -113,8 +160,6 @@ export function useSchedule(currentDate: Date) {
       await createShift(formData);
     }
   };
-
-  
 
   // Hàm xóa ca làm
   const handleDelete = async (id: number) => {
@@ -133,6 +178,9 @@ export function useSchedule(currentDate: Date) {
     setIsUpdateDialogOpen,
     selectedShiftResponse,
     selectedShift,
+    handleGetQrCode,
+    handleGetQrCodeCheckout, 
     isLoadingShift,
+    handleCheckInFromQR,
   };
 }

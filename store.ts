@@ -5,6 +5,7 @@ import { staffApiSlice } from './features/staff/staffApiSlice';
 import { roleApiSlice } from './features/role/roleApiSlice';
 import { categoryApiSlice } from './features/category/categoryApiSlice';
 import { salaryApiSlice } from './features/salary/salaryApiSlice';
+import { payrollApiSlice } from './features/payroll/payrollApiSlice';
 
 import { permissionApiSlice } from './features/permission/permissionApiSlice';
 
@@ -36,6 +37,7 @@ export const store = configureStore({
     [reservationApiSlice.reducerPath]: reservationApiSlice.reducer,
     [scheduleApiSlice.reducerPath]: scheduleApiSlice.reducer,
     [statisticsApiSlice.reducerPath]: statisticsApiSlice.reducer,
+    [payrollApiSlice.reducerPath]: payrollApiSlice.reducer,
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware()
@@ -53,7 +55,8 @@ export const store = configureStore({
   .concat(tableApiSlice.middleware)
   .concat(reservationApiSlice.middleware)
   .concat(scheduleApiSlice.middleware)
-  .concat(statisticsApiSlice.middleware),
+  .concat(statisticsApiSlice.middleware)
+  .concat(payrollApiSlice.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

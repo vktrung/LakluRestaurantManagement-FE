@@ -38,6 +38,7 @@ import {
   Soup,
   Briefcase,
   BookOpen,
+  Receipt,
 } from 'lucide-react';
 import { IoFastFood } from 'react-icons/io5';
 
@@ -119,7 +120,12 @@ const mainAccordionItems = [
       {
         label: 'Mức Lương',
         href: '/salary',
-        icon: <Users className="h-4 w-4" />,
+        icon: <DollarSign className="h-4 w-4" />,
+      },
+      {
+        label: 'Bảng Lương',
+        href: '/payroll',
+        icon: <Receipt className="h-4 w-4" />,
       },
       {
         label: 'Lịch làm việc',

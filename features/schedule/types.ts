@@ -6,6 +6,7 @@ export type Shift = {
   timeOut: string;     
   detail: {
     id: number;
+    attended: boolean;
     manager: string | null;  
     numberOfStaff: number;   
     usernames: string[];    
@@ -16,7 +17,11 @@ export type GetShiftsByDateRangeRequest = {
   startDate: string;  
   endDate: string;    
 };
-
+export type GetShiftsByStaffAndDateRangeRequest = {
+  staffId: number;   
+  startDate: string;  
+  endDate: string;    
+};
 export type GetShiftsByDateRangeResponse = {
   data: Shift[];  
   message: string;

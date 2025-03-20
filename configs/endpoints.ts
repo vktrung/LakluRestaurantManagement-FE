@@ -19,5 +19,7 @@ export const endpoints = {
   TableApi: '/api/v1/tables/',
   ReservationApi: '/api/v1/reservations/',
   
-  ScheduleApi:'/api/v1/schedule/'
+  ScheduleApi:'/api/v1/schedule/',
+  OrderCashierApi:'/api/v1/order/',
+  OrderItemApi: '/api/v1/order_items/',
 }

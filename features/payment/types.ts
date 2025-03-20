@@ -1,4 +1,4 @@
-
+//features/payment/types.ts
 export type PaymentMethod = "CASH" | "TRANSFER"
 export type PaymentStatus = "PENDING" | "PAID"
 export type DiscountType = "PERCENTAGE" | "FIXEDAMOUNT";
@@ -7,15 +7,15 @@ export type VoucherStatus = "ACTIVE" | "INACTIVE";
 export interface OrderItem{
     dishName: string
     quantity: number
-    price: number
+    price: string
 }
 
 export interface Payment {
-    id: number
+    paymentId: number
     orderId: number
-    amountPaid: number
-    receivedAmount: number
-    vat: number
+    amountPaid: string
+    receivedAmount: string
+    vat: string
     paymentMethod: PaymentMethod
     paymentStatus: PaymentStatus
     code: string
@@ -34,8 +34,8 @@ export interface PaymentRequest {
 export interface PaymentResponse {
     paymentId: number
     orderId: number
-    amountPaid: number
-    receivedAmount: number | null
+    amountPaid: string
+    receivedAmount: string | null
     paymentMethod: PaymentMethod
     paymentStatus: PaymentStatus
     paymentDate: string
@@ -49,11 +49,11 @@ export interface CashResponse{
     paymentMethod: PaymentMethod
     paymentStatus: PaymentStatus
     paymentDate: string
-    change: number
+    change: string
 }
 
 export interface ApiResponse<T>{
-    data: T
+    data: T | null
     message: string
     httpStatus: number;
     timestamp: string;

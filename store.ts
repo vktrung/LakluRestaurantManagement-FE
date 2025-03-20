@@ -40,7 +40,6 @@ export const store = configureStore({
       .concat(salaryApiSlice.middleware)
       .concat(roleApiSlice.middleware)
       .concat(permissionApiSlice.middleware)
-      .concat(roleApiSlice.middleware)
       .concat(dishApiSlice.middleware)
       .concat(menuApiSlice.middleware)
       .concat(menuItemApiSlice.middleware)

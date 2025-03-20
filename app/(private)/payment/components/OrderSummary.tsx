@@ -1,25 +1,50 @@
+import type { OrderItem } from "@/features/payment/types"
+import { Card, CardContent } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+
 interface OrderSummaryProps {
-    subtotal: string;
-    vatAmount: string;
-    total: string;
+  total: string
+  vat: string
+  orderItems: OrderItem[]
 }
 
-export function OrderSummary({ subtotal, vatAmount, total }: OrderSummaryProps) {
-    return (
-        <div className="bg-gray-100 p-4 rounded-md">
-            <h2 className="text-lg font-semibold mb-2">Tóm tắt đơn hàng</h2>
-            <div className="flex justify-between mb-2">
-                <p>Tổng trước VAT</p>
-                <p>{Number(subtotal).toLocaleString('vi-VN')} VND</p>
+export function OrderSummary({ total, vat, orderItems }: OrderSummaryProps) {
+  // Tính tổng trước VAT từ orderItems
+  const subTotal = orderItems.reduce((sum, item) => {
+    const price = Number(item.price) || 0
+    const quantity = item.quantity || 0
+    return sum + price * quantity
+  }, 0)
+
+  return (
+    <Card className="w-full shadow-sm">
+      <CardContent className="p-6">
+        <h3 className="text-lg font-medium mb-4">Chi tiết đơn hàng</h3>
+
+        <div className="space-y-4">
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-muted-foreground">Tổng trước VAT:</span>
+            <span className="font-medium">
+              {subTotal.toLocaleString("vi-VN", { style: "currency", currency: "VND" })}
+            </span>
+          </div>
+
+          {Number(vat) >= 0 && (
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-muted-foreground">VAT:</span>
+              <span className="font-medium">{Number(vat)}%</span>
             </div>
-            <div className="flex justify-between mb-2">
-                <p>VAT ({(Number(vatAmount) / Number(subtotal) * 100).toFixed(1)}%)</p>
-                <p>{Number(vatAmount).toLocaleString('vi-VN')} VND</p>
-            </div>
-            <div className="flex justify-between font-semibold">
-                <p>Tổng cộng</p>
-                <p>{Number(total).toLocaleString('vi-VN')} VND</p>
-            </div>
+          )}
+
+          <Separator className="my-2" />
+
+          <div className="flex justify-between items-center">
+            <span className="font-semibold">Tổng cộng:</span>
+            <span className="text-lg font-bold text-primary">{total}</span>
+          </div>
         </div>
-    );
+      </CardContent>
+    </Card>
+  )
 }
+

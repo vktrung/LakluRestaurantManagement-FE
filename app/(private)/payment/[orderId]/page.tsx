@@ -7,6 +7,7 @@ import {
   useProcessCashPaymentMutation,
   useGenerateQrCodeQuery,
   useGetPaymentByIdQuery,
+  useGetOrderItemsInOrderQuery, // Thêm hook mới
 } from "@/features/payment/paymentApiSlice"
 import { OrderItems } from "../components/OrderItems"
 import { PaymentMethod } from "../components/PaymentMethod"
@@ -16,15 +17,11 @@ import { OrderSummary } from "../components/OrderSummary"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Image from "next/image"
-import type { OrderItem } from "@/features/payment/types"
+import type { OrderItem, PaymentResponse } from "@/features/payment/types"
 
 // Định nghĩa kiểu cho dữ liệu trả về từ useGetPaymentByIdQuery
 interface PaymentData {
-  data: {
-    paymentId: number
-    amountPaid: string
-    paymentStatus: "PENDING" | "PAID" | "FAILED" // Thêm các trạng thái khác nếu cần
-  }
+  data: PaymentResponse
 }
 
 export default function PaymentPage() {
@@ -49,6 +46,9 @@ export default function PaymentPage() {
     )
   }
 
+  // Lấy danh sách món ăn ngay khi vào trang
+  const { data: orderItemsData, isLoading: isOrderItemsLoading, error: orderItemsError } = useGetOrderItemsInOrderQuery(orderIdNumber)
+
   // State cho form
   const [paymentMethod, setPaymentMethod] = useState<"CASH" | "TRANSFER">("CASH")
   const [vatRate, setVatRate] = useState<number>(0)
@@ -57,10 +57,11 @@ export default function PaymentPage() {
 
   // State cho payment
   const [paymentId, setPaymentId] = useState<number | null>(null)
+  const [vat, setVat] = useState<string>("0")
   const [totalAmount, setTotalAmount] = useState<string>("0")
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "PAID" | "FAILED" | null>(null) // State để lưu trữ paymentStatus
+  const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "PAID" | null>(null)
 
   const [createPayment, { isLoading: isCreating, error: createError }] = useCreatePaymentMutation()
   const [processCashPayment, { isLoading: isProcessing, error: processError }] = useProcessCashPaymentMutation()
@@ -70,9 +71,9 @@ export default function PaymentPage() {
 
   // Polling để kiểm tra trạng thái payment (cho thanh toán chuyển khoản)
   const { data: paymentData } = useGetPaymentByIdQuery(paymentId || 0, {
-    skip: !paymentId || paymentMethod !== "TRANSFER" || paymentStatus === "PAID", // Dùng paymentStatus từ state
+    skip: !paymentId || paymentMethod !== "TRANSFER" || paymentStatus === "PAID",
     pollingInterval: 5000,
-  }) as { data: PaymentData | undefined } // Gán kiểu cho paymentData
+  }) as { data: PaymentData | undefined }
 
   // Cập nhật paymentStatus từ paymentData
   useEffect(() => {
@@ -80,6 +81,16 @@ export default function PaymentPage() {
       setPaymentStatus(paymentData.data.paymentStatus)
     }
   }, [paymentData])
+
+  // Cập nhật orderItems từ API getOrderItemsInOrder
+  useEffect(() => {
+    if (orderItemsData?.data) {
+      const validOrderItems = orderItemsData.data.filter(
+        (item: OrderItem) => item.dishName && Number(item.price) >= 0 && item.quantity > 0,
+      )
+      setOrderItems(validOrderItems)
+    }
+  }, [orderItemsData])
 
   // Hàm tạo payment khi thu ngân nhấn nút xác nhận
   const handleCreatePayment = async () => {
@@ -91,7 +102,11 @@ export default function PaymentPage() {
         voucher: voucherCode || undefined,
       }).unwrap()
       setPaymentId(result.data?.paymentId ?? null)
+
+      // Lấy thông tin từ backend
       setTotalAmount(result.data?.amountPaid || "0")
+      setVat(result.data?.vat || "0")
+
       if (result.data?.orderItems) {
         const validOrderItems = result.data.orderItems.filter(
           (item: OrderItem) => item.dishName && Number(item.price) >= 0 && item.quantity > 0,
@@ -114,6 +129,7 @@ export default function PaymentPage() {
   useEffect(() => {
     if (paymentData?.data?.amountPaid) {
       setTotalAmount(paymentData.data.amountPaid)
+      setVat(paymentData.data.vat || "0")
     }
   }, [paymentData])
 
@@ -210,14 +226,65 @@ export default function PaymentPage() {
                 </p>
               </div>
 
+              {/* Hiển thị danh sách orderItems ngay tại đây */}
+              {isOrderItemsLoading ? (
+                <div className="flex justify-center items-center p-4">
+                  <svg
+                    className="animate-spin h-5 w-5 text-primary"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  <span className="ml-2">Đang tải danh sách món...</span>
+                </div>
+              ) : orderItemsError ? (
+                <div className="text-red-500 p-4">
+                  <p>Không thể tải danh sách món. Vui lòng thử lại.</p>
+                </div>
+              ) : orderItems.length === 0 ? (
+                <div className="text-gray-500 p-4">
+                  <p>Không có món ăn nào trong đơn hàng này.</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+                  <div className="bg-muted/30 px-4 py-3 border-b">
+                    <h3 className="font-medium">Chi tiết đơn hàng</h3>
+                  </div>
+                  <OrderItems items={orderItems} />
+                  {/* Hiển thị tổng tiền tạm tính */}
+                  <div className="px-4 py-3 border-t">
+                    <p className="text-sm font-medium text-gray-700">
+                      Tổng tạm tính: ₫
+                      {orderItems
+                        .reduce((sum, item) => sum + Number(item.price) * item.quantity, 0)
+                        .toLocaleString("vi-VN")}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <PaymentMethod selectedMethod={paymentMethod} onChange={setPaymentMethod} />
               <div className="grid md:grid-cols-2 gap-4">
-                <VatInput vatRate={vatRate} vatAmount="0" onChange={setVatRate} />
+                <VatInput vatRate={vatRate} vatAmount={vat} onChange={setVatRate} />
                 <VoucherInput voucherCode={voucherCode} onChange={setVoucherCode} />
               </div>
               <Button
                 onClick={handleCreatePayment}
-                disabled={isCreating}
+                disabled={isCreating || isOrderItemsLoading}
                 className="w-full py-6 text-lg mt-6 flex items-center justify-center gap-2"
               >
                 {isCreating ? (
@@ -290,7 +357,11 @@ export default function PaymentPage() {
               </div>
 
               <div className="bg-muted/10 rounded-lg p-4 border">
-                <OrderSummary subtotal={totalAmount} vatAmount="0" total={totalAmount} />
+                <OrderSummary
+                  total={Number(totalAmount).toLocaleString("vi-VN", { style: "currency", currency: "VND" })}
+                  vat={vat}
+                  orderItems={orderItems} // Truyền orderItems để tính tổng trước VAT
+                />
               </div>
 
               {paymentMethod === "CASH" ? (
@@ -494,23 +565,6 @@ export default function PaymentPage() {
                                 <span className="text-green-600">Thanh toán thành công!</span>
                               </>
                             )}
-                            {paymentStatus === "FAILED" && (
-                              <>
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="h-5 w-5 text-red-600"
-                                  viewBox="0 0 20 20"
-                                  fill="currentColor"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                                <span className="text-red-600">Thanh toán thất bại!</span>
-                              </>
-                            )}
                           </div>
                         ) : (
                           <div className="mt-4 flex items-center justify-center gap-2 text-gray-600">
@@ -534,7 +588,7 @@ export default function PaymentPage() {
                                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                               ></path>
                             </svg>
-                            <span>Đang Chờ Thanh Toán</span>
+                            <span>Đang kiểm tra trạng thái...</span>
                           </div>
                         )}
                       </div>

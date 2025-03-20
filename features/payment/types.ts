@@ -35,6 +35,7 @@ export interface PaymentResponse {
     paymentId: number
     orderId: number
     amountPaid: string
+    vat: string
     receivedAmount: string | null
     paymentMethod: PaymentMethod
     paymentStatus: PaymentStatus
@@ -44,8 +45,9 @@ export interface PaymentResponse {
 
 export interface CashResponse{
     orderId: number
-    amountPaid: number
-    receivedAmount: number
+    amountPaid: string
+    vat: string
+    receivedAmount: string
     paymentMethod: PaymentMethod
     paymentStatus: PaymentStatus
     paymentDate: string

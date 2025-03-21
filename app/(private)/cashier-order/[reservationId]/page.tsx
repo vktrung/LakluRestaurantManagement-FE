@@ -15,10 +15,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import Image from 'next/image';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, CreditCard } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const OrderDetailPage = ({ params }: { params: { reservationId: string } }) => {
   const { reservationId } = params;
+  const router = useRouter();
 
   // Lấy danh sách thực đơn
   const {
@@ -60,11 +62,27 @@ const OrderDetailPage = ({ params }: { params: { reservationId: string } }) => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
+  
+  // Hàm chuyển đến trang thanh toán
+  const handleGoToPayment = () => {
+    // Giả định rằng chúng ta có orderId tương ứng với reservationId
+    // Trong trường hợp thực tế, bạn có thể cần lấy orderId từ API
+    router.push(`/payment/${reservationId}`);
+  };
 
   return (
     <div className="space-y-4 p-4">
-      {/* Tiêu đề danh sách sản phẩm */}
-      <h2 className="text-xl font-bold">Sản phẩm</h2>
+      {/* Tiêu đề và nút thanh toán */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold">Sản phẩm</h2>
+        <Button 
+          onClick={handleGoToPayment}
+          className="bg-green-600 hover:bg-green-700 text-white"
+        >
+          <CreditCard className="mr-2 h-4 w-4" />
+          Thanh toán
+        </Button>
+      </div>
 
       {/* Ô tìm kiếm */}
       <div className="flex items-center justify-between">

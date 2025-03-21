@@ -39,6 +39,7 @@ import {
   Briefcase,
   BookOpen,
   Receipt,
+  Ticket,
 } from 'lucide-react';
 import { IoFastFood } from 'react-icons/io5';
 
@@ -77,6 +78,11 @@ const mainAccordionItems = [
         label: 'Đặt bàn',
         href: '/quan-ly/reservation',
         icon: <PieChart className="h-4 w-4" />,
+      },
+      {
+        label: 'Mã giảm giá',
+        href: '/voucher',
+        icon: <Ticket className="h-4 w-4" />,
       },
     ],
   },

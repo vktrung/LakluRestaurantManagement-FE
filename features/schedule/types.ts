@@ -6,17 +6,22 @@ export type Shift = {
   timeOut: string;
   detail: {
     id: number;
-    manager: string | null;
-    numberOfStaff: number;
-    usernames: string[];
-    note: string;
+    attended: boolean;
+    manager: string | null;  
+    numberOfStaff: number;   
+    usernames: string[];    
+    note: string;           
   };
 };
 export type GetShiftsByDateRangeRequest = {
   startDate: string;
   endDate: string;
 };
-
+export type GetShiftsByStaffAndDateRangeRequest = {
+  staffId: number;   
+  startDate: string;  
+  endDate: string;    
+};
 export type GetShiftsByDateRangeResponse = {
   data: Shift[];
   message: string;
@@ -52,8 +57,8 @@ export type UserShift = {
 export type AddShiftRequest = {
   user: UserShift[];
   shiftStart: string;
-  shiftEnd: string;
-  shiftType: 'MORNING' | 'EVENING' | 'NIGHT';
+  shiftEnd: string;  
+  shiftType: 'MORNING' | 'EVENING' | 'NIGHT' | 'MORNING_TO_EVENING' | 'EVENING_TO_NIGHT' | 'FULL_DAY';
   note: string;
 };
 
@@ -61,7 +66,7 @@ export type UpdateShiftRequest = {
   user: UserShift[];
   shiftStart: string;
   shiftEnd: string;
-  shiftType: 'MORNING' | 'EVENING' | 'NIGHT';
+  shiftType: 'MORNING' | 'EVENING' | 'NIGHT' | 'MORNING_TO_EVENING' | 'EVENING_TO_NIGHT' | 'FULL_DAY';
   note: string;
 };
 export type CheckInSuccessRequest = {

@@ -20,5 +20,7 @@ export const endpoints = {
   ReservationApi: '/api/v1/reservations/',
   PaymentApi: 'api/v1/payments/',
   
-  ScheduleApi:'/api/v1/schedule/'
+  ScheduleApi:'/api/v1/schedule/',
+  OrderCashierApi:'/api/v1/order/',
+  OrderItemApi: '/api/v1/order_items/',
 }

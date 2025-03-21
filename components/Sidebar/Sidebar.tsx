@@ -152,7 +152,7 @@ const singleSection = {
   links: [
     {
       label: 'Máy POS',
-      href: '/nha-hang/may-pos',
+      href: '/cashier-order',
       icon: <FileText className="h-4 w-4" />,
     },
     {

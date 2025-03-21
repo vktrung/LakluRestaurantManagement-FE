@@ -10,12 +10,9 @@ export default function Page() {
   const params = useParams();
   const menuId = Number(params.id);
   
-  // State to track when to force refetch
   const [refreshKey, setRefreshKey] = useState(0);
   
-  // Get menu data with menu items
   const { data, isLoading, error, refetch } = useGetMenuByIdQuery(menuId, {
-    // This will cause the query to refetch when refreshKey changes
     skip: isNaN(menuId),
     refetchOnMountOrArgChange: true
   });
@@ -26,7 +23,6 @@ export default function Page() {
     setIsClient(true);
   }, []);
 
-  // Force refetch when menuId changes
   useEffect(() => {
     if (menuId) {
       refetch();

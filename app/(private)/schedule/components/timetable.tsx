@@ -31,6 +31,7 @@ export default function Timetable() {
 
   const {
     formattedSchedule,
+    formattedStaffSchedule, // Dữ liệu cho ScheduleListView
     handleOpenAddDialog,
     handleOpenUpdateDialog,
     handleDelete,
@@ -41,7 +42,11 @@ export default function Timetable() {
     selectedShiftResponse,
     handleSubmit,
     handleGetQrCode,
-    handleGetQrCodeCheckout, // Thêm handleGetQrCodeCheckout từ useSchedule
+    handleGetQrCodeCheckout,
+    selectedStaffId, // Lấy staffId hiện tại
+    setSelectedStaffId, // Dùng để thay đổi staffId nếu cần
+    isLoadingUserMe, // Trạng thái tải thông tin người dùng
+    userMeError, // Lỗi nếu có
   } = useSchedule(currentDate);
 
   const handleOpenUpdateDialogWithId = (shift: Shift) => {
@@ -56,6 +61,17 @@ export default function Timetable() {
     await handleSubmit(formData, selectedShiftId);
   };
 
+  // Hiển thị trạng thái tải hoặc lỗi khi lấy thông tin người dùng
+  if (isLoadingUserMe) {
+    return <div className="text-center py-10">Đang tải thông tin người dùng...</div>;
+  }
+
+  if (userMeError) {
+    return <div className="text-center py-10 text-red-600">
+      Lỗi khi lấy thông tin người dùng: {(userMeError as any)?.data?.message || 'Không xác định'}
+    </div>;
+  }
+
   return (
     <div className="container mx-auto py-6 px-4">
       <ScheduleHeader
@@ -69,7 +85,10 @@ export default function Timetable() {
         goToNextWeek={goToNextWeek}
       />
 
-      <ScheduleActions handleOpenAddDialog={handleOpenAddDialog} />
+      <ScheduleActions
+        handleOpenAddDialog={handleOpenAddDialog}
+  
+      />
 
       <Tabs
         value={viewMode}
@@ -84,7 +103,7 @@ export default function Timetable() {
         <TabsContent value="week">
           <ScheduleWeekView
             handleGetQrCode={handleGetQrCode}
-            handleGetQrCodeCheckout={handleGetQrCodeCheckout} 
+            handleGetQrCodeCheckout={handleGetQrCodeCheckout}
             formattedSchedule={formattedSchedule}
             handleOpenDialog={handleOpenUpdateDialogWithId}
             handleDelete={handleDelete}
@@ -93,7 +112,7 @@ export default function Timetable() {
 
         <TabsContent value="list">
           <ScheduleListView
-            formattedSchedule={formattedSchedule}
+            formattedStaffSchedule={formattedStaffSchedule} 
             handleOpenDialog={handleOpenUpdateDialogWithId}
             handleDelete={handleDelete}
           />
@@ -109,7 +128,6 @@ export default function Timetable() {
         />
       )}
 
-      {/* Dialog for Update Shift */}
       {isUpdateDialogOpen && selectedShiftResponse && (
         <EventForm
           shiftbyidResp={selectedShiftResponse}

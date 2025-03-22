@@ -25,5 +25,6 @@ export const endpoints = {
   PayrollApi: '/api/v1/payslips/',
   ProfileApi: '/api/v1/profiles/',
   ProfileMe: '/api/v1/profiles/me',
+  UploadAvatar: '/api/v1/profiles/me/upload-avatar',
   ActivityLogs: '/api/v1/activity-logs/user',
 } as const;

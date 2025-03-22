@@ -58,6 +58,16 @@ export const profileApiSlice = createApi({
       invalidatesTags: ['profile'],
     }),
 
+    uploadAvatar: builder.mutation<ApiResponse, FormData>({
+      query: (formData) => ({
+        url: endpoints.UploadAvatar,
+        method: 'POST',
+        body: formData,
+        formData: true,
+      }),
+      invalidatesTags: ['profile'],
+    }),
+
     getActivityLogs: builder.query<ActivityLogsResponse['data'], GetActivityLogsParams>({
       query: ({ userId, page = 0, size = 10, sort = ['createdAt,desc'] }) => ({
         url: `${endpoints.ActivityLogs}/${userId}`,
@@ -73,5 +83,6 @@ export const profileApiSlice = createApi({
 export const {
   useGetMyProfileQuery,
   useUpdateProfileMutation,
+  useUploadAvatarMutation,
   useGetActivityLogsQuery,
 } = profileApiSlice;

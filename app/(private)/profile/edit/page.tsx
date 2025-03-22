@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import type React from "react"
-import { useUpdateProfileMutation, useGetMyProfileQuery } from "@/features/profile/profileApiSlice"
+import { useUpdateProfileMutation, useGetMyProfileQuery, useUploadAvatarMutation } from "@/features/profile/profileApiSlice"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,6 +14,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { useRouter } from "next/navigation"
 import { Profile } from "@/features/profile/types"
 import * as z from "zod"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Camera, Loader2 } from "lucide-react"
 
 interface Bank {
   id: number;
@@ -53,7 +55,9 @@ export default function EditProfilePage() {
   const { data: profile, isLoading: isLoadingProfile } = useGetMyProfileQuery()
   const [formData, setFormData] = useState<Profile | null>(null)
   const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation()
+  const [uploadAvatar, { isLoading: isUploading }] = useUploadAvatarMutation()
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (profile) {
@@ -191,6 +195,39 @@ export default function EditProfilePage() {
     router.push("/profile")
   }
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Kiểm tra định dạng file
+    if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
+      toast.error(`Định dạng file không hợp lệ: ${file.type}. Chỉ chấp nhận JPEG, PNG, GIF.`)
+      return
+    }
+
+    // Kiểm tra kích thước file (tối đa 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(`Kích thước file (${(file.size / (1024 * 1024)).toFixed(2)}MB) vượt quá giới hạn 5MB`)
+      return
+    }
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      await uploadAvatar(formData).unwrap()
+      toast.success('Cập nhật ảnh đại diện thành công')
+    } catch (error: any) {
+      console.error('Upload error:', error)
+      const errorMessage = error?.data?.message || 'Có lỗi xảy ra khi tải ảnh lên'
+      toast.error(errorMessage)
+    }
+  }
+
   return (
     <div className="container mx-auto py-6">
       <form onSubmit={handleSubmit}>
@@ -200,6 +237,35 @@ export default function EditProfilePage() {
             <CardDescription>Cập nhật thông tin cá nhân của bạn</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Ảnh đại diện */}
+            <div className="flex flex-col items-center space-y-4">
+              <div className="relative" onClick={handleAvatarClick}>
+                <Avatar className="h-24 w-24 cursor-pointer border-2 border-primary/10">
+                  <AvatarImage src={formData?.avatar || ""} alt={formData?.username} />
+                  <AvatarFallback className="text-2xl bg-primary/10">
+                    {formData?.username?.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute bottom-0 right-0 p-1 bg-primary rounded-full text-white cursor-pointer">
+                  {isUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}
+                </div>
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+              />
+              <p className="text-sm text-muted-foreground">Nhấp vào ảnh để thay đổi ảnh đại diện (tối đa 5MB)</p>
+            </div>
+
+            <Separator />
+
             {/* Thông tin cá nhân */}
             <div>
               <h3 className="text-lg font-medium mb-4">Thông tin cá nhân</h3>

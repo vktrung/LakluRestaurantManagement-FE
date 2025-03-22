@@ -22,5 +22,8 @@ export const endpoints = {
   ScheduleApi:'/api/v1/schedule/',
 
   StatisticsApi: '/api/v1/statistics/',
-  PayrollApi: '/api/v1/payslips/'
-}
+  PayrollApi: '/api/v1/payslips/',
+  ProfileApi: '/api/v1/profiles/',
+  ProfileMe: '/api/v1/profiles/me',
+  ActivityLogs: '/api/v1/activity-logs/user',
+} as const;

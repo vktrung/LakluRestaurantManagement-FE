@@ -1,4 +1,5 @@
 import { authApiSlice } from '@/features/auth/authApiSlice';
+import { profileApiSlice } from '@/features/profile/profileApiSlice';
 
 import { configureStore } from '@reduxjs/toolkit';
 import { staffApiSlice } from './features/staff/staffApiSlice';
@@ -20,6 +21,7 @@ import { voucherApiSlice } from './features/voucher/voucherApiSlice';
 export const store = configureStore({
   reducer: {
     [authApiSlice.reducerPath]: authApiSlice.reducer,
+    [profileApiSlice.reducerPath]: profileApiSlice.reducer,
     [staffApiSlice.reducerPath]: staffApiSlice.reducer,
     [categoryApiSlice.reducerPath]: categoryApiSlice.reducer,
     [salaryApiSlice.reducerPath]: salaryApiSlice.reducer,
@@ -39,6 +41,7 @@ export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware()
       .concat(authApiSlice.middleware)
+      .concat(profileApiSlice.middleware)
       .concat(staffApiSlice.middleware)
       .concat(categoryApiSlice.middleware)
       .concat(salaryApiSlice.middleware)

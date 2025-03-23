@@ -47,7 +47,7 @@ const OrderTable = ({ orders }: OrderTableProps) => {
               );
 
               const handleRowClick = () => {
-                router.push(`/cashier-order/${order.reservationId}`);
+                router.push(`/payment/${order.reservationId}`);
               };
 
               return (

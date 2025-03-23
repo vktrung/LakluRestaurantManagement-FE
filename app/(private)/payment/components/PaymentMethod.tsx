@@ -60,7 +60,6 @@ export function PaymentMethod({ selectedMethod, onChange }: PaymentMethodProps) 
             </div>
             <div>
               <p className="font-medium">Tiền mặt</p>
-              <p className="text-sm text-muted-foreground">Thanh toán trực tiếp bằng tiền mặt</p>
             </div>
           </div>
         </label>
@@ -103,7 +102,6 @@ export function PaymentMethod({ selectedMethod, onChange }: PaymentMethodProps) 
             </div>
             <div>
               <p className="font-medium">Chuyển khoản</p>
-              <p className="text-sm text-muted-foreground">Thanh toán qua ngân hàng hoặc ví điện tử</p>
             </div>
           </div>
         </label>

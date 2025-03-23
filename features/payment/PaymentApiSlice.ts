@@ -8,13 +8,16 @@ import {
     CashResponse,
     ApiResponse,
     QrCodeResponse,
-    OrderItem
+    OrderItem,
+    UpdateOrderItemQuantity,
+    UpdateOrderItemResponse,
+    CreateOrderItemRequest
 } from './types';
 
 export const paymentApiSlice = createApi({
     reducerPath: 'paymentApi', // Tên reducer trong store
     baseQuery,
-    tagTypes: ['payment-list', 'payment'], // Tag để quản lý cache và invalidate
+    tagTypes: ['payment-list', 'payment', 'order-items'], // Tag để quản lý cache và invalidate
     endpoints: (builder) => ({
         // Lấy danh sách tất cả payments
         getPayments: builder.query<ApiResponse<PaymentResponse[]>, void>({
@@ -57,7 +60,10 @@ export const paymentApiSlice = createApi({
         // Lấy danh sách món ăn trong order qua orderId
         getOrderItemsInOrder: builder.query<ApiResponse<OrderItem[]>, number>({
             query: (orderId) => endpoints.PaymentApi + `order-items/${orderId}`,
-            providesTags: ["payment"], // Sửa "Payment" thành "payment"
+            providesTags: (result, error, orderId) => [
+                { type: 'order-items', id: orderId },
+                'payment'
+            ],
         }),
 
         // Tạo mã QR cho thanh toán chuyển khoản
@@ -68,6 +74,35 @@ export const paymentApiSlice = createApi({
             }),
             providesTags: (result, error, paymentId) => [{ type: 'payment', id: paymentId }], // Cache cho payment cụ thể
         }),
+
+        // Cập nhật số lượng món ăn trong order
+        updateOrderItemQuantity: builder.mutation<ApiResponse<UpdateOrderItemResponse>, { id: number, data: UpdateOrderItemQuantity }>({
+            query: ({ id, data }) => {
+                console.log(`Preparing API call to update order item ${id} with data:`, data);
+                const url = `${endpoints.OrderItemApi}${id}`;
+                console.log("Full URL:", url);
+                return {
+                    url,
+                    method: 'PUT',
+                    body: data,
+                };
+            },
+            invalidatesTags: ['payment', 'order-items'],
+        }),
+
+        // Tạo order item mới
+        createOrderItem: builder.mutation<ApiResponse<OrderItem>, CreateOrderItemRequest>({
+            query: (data) => ({
+                url: endpoints.OrderItemApi,
+                method: 'POST',
+                body: data,
+            }),
+            invalidatesTags: (result, error, data) => [
+                'payment-list', 
+                'payment',
+                { type: 'order-items', id: data.orderId }
+            ],
+        }),
     }),
 });
 
@@ -77,5 +112,7 @@ export const {
     useCreatePaymentMutation,
     useProcessCashPaymentMutation,
     useGenerateQrCodeQuery,
-    useGetOrderItemsInOrderQuery, // Thêm hook mới vào export
+    useGetOrderItemsInOrderQuery,
+    useUpdateOrderItemQuantityMutation,
+    useCreateOrderItemMutation,
 } = paymentApiSlice;

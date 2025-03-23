@@ -35,6 +35,11 @@ export interface GetActivityLogsParams {
   sort?: string[];
 }
 
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export const profileApiSlice = createApi({
   reducerPath: 'profileApi',
   baseQuery,
@@ -68,6 +73,14 @@ export const profileApiSlice = createApi({
       invalidatesTags: ['profile'],
     }),
 
+    changePassword: builder.mutation<ApiResponse, ChangePasswordRequest>({
+      query: (credentials) => ({
+        url: endpoints.ChangePassword,
+        method: 'POST',
+        body: credentials,
+      }),
+    }),
+
     getActivityLogs: builder.query<ActivityLogsResponse['data'], GetActivityLogsParams>({
       query: ({ userId, page = 0, size = 10, sort = ['createdAt,desc'] }) => ({
         url: `${endpoints.ActivityLogs}/${userId}`,
@@ -84,5 +97,6 @@ export const {
   useGetMyProfileQuery,
   useUpdateProfileMutation,
   useUploadAvatarMutation,
+  useChangePasswordMutation,
   useGetActivityLogsQuery,
 } = profileApiSlice;

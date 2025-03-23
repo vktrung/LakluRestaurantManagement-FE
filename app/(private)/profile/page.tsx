@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useGetMyProfileQuery } from "@/features/profile/profileApiSlice"
+import ChangePasswordForm from "./components/change-password"
 
 export default function ProfilePage() {
   const { data: profile, isLoading } = useGetMyProfileQuery()
@@ -140,7 +141,7 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-2">
                   <BriefcaseIcon className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Phòng ban:</span>
+                  <span className="font-medium">Vị trí:</span>
                   <span>{profile.department || "Chưa phân công"}</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -174,10 +175,20 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
+
+            {/* Phần hiển thị lịch sử hoạt động và đổi mật khẩu */}
+            <div className="grid grid-cols-1 gap-4 mt-4">
+              {/* Phần lịch sử hoạt động */}
+              <UserActivityLog />
+              
+              {/* Phần đổi mật khẩu */}
+              <div className="mt-4">
+                <ChangePasswordForm />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
-      <UserActivityLog />
     </div>
   )
 }

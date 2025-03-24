@@ -38,13 +38,27 @@ export interface PaymentRequest {
 export interface PaymentResponse {
     paymentId: number
     orderId: number
-    amountPaid: string
-    vat: string
-    receivedAmount: string | null
+    amountPaid: string | number
+    receivedAmount: string | number | null
     paymentMethod: PaymentMethod
     paymentStatus: PaymentStatus
     paymentDate: string
+    vat: string | number
     orderItems: OrderItem[]
+}
+
+export interface PaginatedPaymentResponse {
+    payments: PaymentResponse[]
+    currentPage: number
+    totalItems: number
+    totalPages: number
+}
+
+export interface PaymentListParams {
+    page?: number
+    pageSize?: number
+    startDate?: string
+    endDate?: string
 }
 
 export interface CashResponse{

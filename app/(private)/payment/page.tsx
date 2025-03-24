@@ -5,17 +5,109 @@ import { PaymentList } from "./components/PaymentList"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, FileText, Loader2, Search } from "lucide-react"
+import { ArrowLeft, FileText, Loader2, Search, Calendar, RefreshCw } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { PaginatedPaymentResponse, PaymentListParams } from "@/features/payment/types"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar as CalendarComponent } from "@/components/ui/calendar"
+import { format, subDays, isAfter, endOfDay, startOfDay, parseISO, formatISO } from "date-fns"
+import { vi } from "date-fns/locale"
+import { cn } from "@/lib/utils"
 
 export default function PaymentManagementPage() {
-  const { data, error, isLoading } = useGetPaymentsQuery()
-  const router = useRouter()
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState("")
 
-  const payments = data?.data || []
+  // Ngày hiện tại và ngày cách đây 7 ngày để làm mặc định
+  const today = new Date()
+  const sevenDaysAgo = subDays(today, 7)
+
+  const [dateRange, setDateRange] = useState<{
+    startDate: Date;
+    endDate: Date;
+  }>({
+    startDate: sevenDaysAgo,
+    endDate: today
+  })
+
+  const [openStartDate, setOpenStartDate] = useState(false)
+  const [openEndDate, setOpenEndDate] = useState(false)
+
+  // Format các ngày thành chuỗi ISO cho API
+  const formattedStartDate = formatISO(startOfDay(dateRange.startDate))
+  const formattedEndDate = formatISO(endOfDay(dateRange.endDate))
+
+  const { data, error, isLoading, refetch } = useGetPaymentsQuery({
+    page,
+    pageSize,
+    startDate: formattedStartDate,
+    endDate: formattedEndDate,
+  })
+
+  const router = useRouter()
+
+  // Trích xuất dữ liệu phân trang từ response
+  const paginatedData: PaginatedPaymentResponse = data?.data || {
+    payments: [],
+    currentPage: 1,
+    totalItems: 0,
+    totalPages: 0,
+  }
+
+  const { payments, currentPage, totalItems, totalPages } = paginatedData;
+
+  // Hàm xử lý thay đổi trang
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setPage(newPage)
+    }
+  }
+
+  // Làm mới dữ liệu
+  const handleRefresh = () => {
+    refetch()
+  }
+
+  // Xử lý thay đổi startDate
+  const handleStartDateChange = (date: Date | undefined) => {
+    if (!date) return;
+
+    // Nếu ngày bắt đầu sau ngày kết thúc, cập nhật cả hai
+    if (isAfter(date, dateRange.endDate)) {
+      setDateRange({
+        startDate: date,
+        endDate: date
+      })
+    } else {
+      setDateRange({
+        ...dateRange,
+        startDate: date
+      })
+    }
+    setOpenStartDate(false)
+  }
+
+  // Xử lý thay đổi endDate
+  const handleEndDateChange = (date: Date | undefined) => {
+    if (!date) return;
+
+    // Nếu ngày kết thúc trước ngày bắt đầu, cập nhật cả hai
+    if (isAfter(dateRange.startDate, date)) {
+      setDateRange({
+        startDate: date,
+        endDate: date
+      })
+    } else {
+      setDateRange({
+        ...dateRange,
+        endDate: date
+      })
+    }
+    setOpenEndDate(false)
+  }
 
   return (
     <div className="container mx-auto p-4 space-y-6 max-w-7xl">
@@ -40,16 +132,65 @@ export default function PaymentManagementPage() {
               </div>
               <CardTitle className="text-lg font-semibold">Danh sách hóa đơn</CardTitle>
             </div>
-            <div className="w-full sm:w-auto">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Tìm kiếm hóa đơn..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full sm:w-[280px] pl-9 pr-4 h-10 bg-background/80 focus-visible:bg-background transition-colors"
-                />
+            <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-3">
+              <div className="flex items-center gap-2">
+                {/* Chọn ngày bắt đầu */}
+                <Popover open={openStartDate} onOpenChange={setOpenStartDate}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "justify-start text-left font-normal",
+                        !dateRange.startDate && "text-muted-foreground"
+                      )}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {dateRange.startDate ? (
+                        format(dateRange.startDate, "dd/MM/yyyy", { locale: vi })
+                      ) : (
+                        <span>Từ ngày</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={dateRange.startDate}
+                      onSelect={handleStartDateChange}
+                      disabled={(date) => isAfter(date, today)}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                {/* Chọn ngày kết thúc */}
+                <Popover open={openEndDate} onOpenChange={setOpenEndDate}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "justify-start text-left font-normal",
+                        !dateRange.endDate && "text-muted-foreground"
+                      )}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {dateRange.endDate ? (
+                        format(dateRange.endDate, "dd/MM/yyyy", { locale: vi })
+                      ) : (
+                        <span>Đến ngày</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={dateRange.endDate}
+                      onSelect={handleEndDateChange}
+                      disabled={(date) => isAfter(date, today)}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </div>
@@ -88,12 +229,18 @@ export default function PaymentManagementPage() {
               </div>
               <h3 className="text-lg font-medium mb-1">Không có hóa đơn</h3>
               <p className="text-muted-foreground text-center max-w-md">
-                Chưa có hóa đơn nào được tạo hoặc không tìm thấy hóa đơn phù hợp với tìm kiếm của bạn.
+                Không tìm thấy hóa đơn nào từ {format(dateRange.startDate, "dd/MM/yyyy")} đến {format(dateRange.endDate, "dd/MM/yyyy")}.
               </p>
             </div>
           ) : (
             <div className="animate-in fade-in duration-300">
-              <PaymentList payments={payments} />
+              <PaymentList
+                payments={payments}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                onPageChange={handlePageChange}
+              />
             </div>
           )}
         </CardContent>
@@ -101,4 +248,3 @@ export default function PaymentManagementPage() {
     </div>
   )
 }
-

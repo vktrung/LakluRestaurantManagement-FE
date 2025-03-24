@@ -11,7 +11,9 @@ import {
     OrderItem,
     UpdateOrderItemQuantity,
     UpdateOrderItemResponse,
-    CreateOrderItemRequest
+    CreateOrderItemRequest,
+    PaginatedPaymentResponse,
+    PaymentListParams
 } from './types';
 
 export const paymentApiSlice = createApi({
@@ -19,12 +21,29 @@ export const paymentApiSlice = createApi({
     baseQuery,
     tagTypes: ['payment-list', 'payment', 'order-items'], // Tag để quản lý cache và invalidate
     endpoints: (builder) => ({
-        // Lấy danh sách tất cả payments
-        getPayments: builder.query<ApiResponse<PaymentResponse[]>, void>({
-            query: () => ({
-                url: endpoints.PaymentApi + 'getAll', // /api/v1/payments/getAll
-                method: 'GET',
-            }),
+        // Lấy danh sách tất cả payments với phân trang
+        getPayments: builder.query<ApiResponse<PaginatedPaymentResponse>, PaymentListParams>({
+            query: (params = {}) => {
+                const { page = 1, pageSize = 10, startDate, endDate } = params;
+                
+                // Xây dựng query string
+                const queryParams = new URLSearchParams();
+                queryParams.append('page', page.toString());
+                queryParams.append('pageSize', pageSize.toString());
+                
+                if (startDate) {
+                    queryParams.append('startDate', startDate);
+                }
+                
+                if (endDate) {
+                    queryParams.append('endDate', endDate);
+                }
+                
+                return {
+                    url: `${endpoints.PaymentApi}getAll?${queryParams.toString()}`,
+                    method: 'GET',
+                };
+            },
             providesTags: ['payment-list'], // Cache cho danh sách
         }),
 

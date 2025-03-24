@@ -641,6 +641,11 @@ export default function IntegratedPaymentPage() {
                               height={200}
                               className="mx-auto"
                             />
+                            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                              <p className="text-red-600 font-medium text-sm">
+                                ⚠️ QUÝ KHÁCH VUI LÒNG KHÔNG THAY ĐỔI SỐ TIỀN HOẶC NỘI DUNG THANH TOÁN
+                              </p>
+                            </div>
                             <p className="text-sm text-gray-500 mt-4">
                               Hệ thống sẽ tự động cập nhật khi nhận được thanh toán
                             </p>

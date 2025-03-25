@@ -11,14 +11,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { MenuForm } from './MenuForm';
 import MenuDeleteConfirm from './MenuDeleteConfirm';
-import { IoAddCircleSharp } from "react-icons/io5";
-import { GrUpdate } from "react-icons/gr";
-import { GrFormView } from "react-icons/gr";
+import { IoAddCircleSharp } from 'react-icons/io5';
+import { GrUpdate } from 'react-icons/gr';
+import { GrFormView } from 'react-icons/gr';
 import { useRouter } from 'next/navigation';
 
 const MenuList = () => {
@@ -26,24 +26,25 @@ const MenuList = () => {
   const [editMenu, setEditMenu] = useState<Menu | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const router = useRouter();
 
   if (isLoading) return <div className="w-full p-6">Đang tải...</div>;
-  if (error) return <div className="w-full p-6">Không thể tải danh sách thực đơn</div>;
+  if (error)
+    return <div className="w-full p-6">Không thể tải danh sách thực đơn</div>;
 
   const menus = data?.data || [];
 
-  const handleSearchChange = (e) => {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 
-  const filteredMenus = menus.filter((menu) =>
-    menu.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredMenus = menus.filter(menu =>
+    menu.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   // Handle view menu items
-  const handleViewMenuItems = (menuId) => {
+  const handleViewMenuItems = (menuId: number) => {
     router.push(`./menu-item/${menuId}`);
   };
 
@@ -66,8 +67,8 @@ const MenuList = () => {
               />
             </div>
             {/* Add button with green color */}
-            <Button 
-              onClick={() => setAddDialogOpen(true)} 
+            <Button
+              onClick={() => setAddDialogOpen(true)}
               className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white"
             >
               <IoAddCircleSharp className="text-xl" />

@@ -103,7 +103,10 @@ export default function EventForm({ shiftbyidResp, onClose, currentDate, handleS
 
           <Select
             value={formData.shiftType}
-            onValueChange={value => setFormData({ ...formData, shiftType: value as 'MORNING' | 'EVENING' | 'NIGHT' })}
+            onValueChange={value => setFormData({ 
+              ...formData, 
+              shiftType: value as 'MORNING' | 'EVENING' | 'NIGHT' | 'MORNING_TO_EVENING' | 'EVENING_TO_NIGHT' | 'FULL_DAY'
+            })}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Chọn ca làm" />
@@ -112,6 +115,9 @@ export default function EventForm({ shiftbyidResp, onClose, currentDate, handleS
               <SelectItem value="MORNING">Ca sáng</SelectItem>
               <SelectItem value="EVENING">Ca chiều</SelectItem>
               <SelectItem value="NIGHT">Ca đêm</SelectItem>
+              <SelectItem value="MORNING_TO_EVENING">Ca sáng đến chiều</SelectItem>
+              <SelectItem value="EVENING_TO_NIGHT">Ca chiều đến tối</SelectItem>
+              <SelectItem value="FULL_DAY">Ca cả ngày</SelectItem>
             </SelectContent>
           </Select>
 
@@ -141,7 +147,7 @@ export default function EventForm({ shiftbyidResp, onClose, currentDate, handleS
                             value={s.id.toString()}
                             disabled={
                               selectedStaffIds.includes(s.id) && s.id !== staff.staffId
-                            } // Vô hiệu hóa nếu nhân viên đã được chọn và không phải là nhân viên hiện tại
+                            }
                           >
                             {s.username}
                           </SelectItem>

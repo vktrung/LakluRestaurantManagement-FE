@@ -1,9 +1,9 @@
 export type Shift = {
   id: number;
-  date: string;        
-  dayOfWeek: string;   
-  timeIn: string;      
-  timeOut: string;     
+  date: string;
+  dayOfWeek: string;
+  timeIn: string;
+  timeOut: string;
   detail: {
     id: number;
     attended: boolean;
@@ -14,8 +14,8 @@ export type Shift = {
   };
 };
 export type GetShiftsByDateRangeRequest = {
-  startDate: string;  
-  endDate: string;    
+  startDate: string;
+  endDate: string;
 };
 export type GetShiftsByStaffAndDateRangeRequest = {
   staffId: number;   
@@ -23,7 +23,7 @@ export type GetShiftsByStaffAndDateRangeRequest = {
   endDate: string;    
 };
 export type GetShiftsByDateRangeResponse = {
-  data: Shift[];  
+  data: Shift[];
   message: string;
   httpStatus: number;
   timestamp: string;
@@ -58,7 +58,7 @@ export type AddShiftRequest = {
   user: UserShift[];
   shiftStart: string;
   shiftEnd: string;  
-  shiftType: 'MORNING' | 'EVENING' | 'NIGHT';
+  shiftType: 'MORNING' | 'EVENING' | 'NIGHT' | 'MORNING_TO_EVENING' | 'EVENING_TO_NIGHT' | 'FULL_DAY';
   note: string;
 };
 
@@ -66,17 +66,17 @@ export type UpdateShiftRequest = {
   user: UserShift[];
   shiftStart: string;
   shiftEnd: string;
-  shiftType: 'MORNING' | 'EVENING' | 'NIGHT';
+  shiftType: 'MORNING' | 'EVENING' | 'NIGHT' | 'MORNING_TO_EVENING' | 'EVENING_TO_NIGHT' | 'FULL_DAY';
   note: string;
 };
-export type  CheckInSuccessRequest ={ 
+export type CheckInSuccessRequest = {
   scheduleId: Number;
   expiry: number;
   signature: string;
   username: string;
   password: string;
 };
-export type  CheckinSuccessResponse ={ 
+export type CheckinSuccessResponse = {
   data: string;
   message: string;
   httpStatus: number;
@@ -84,5 +84,5 @@ export type  CheckinSuccessResponse ={
   error: any;
 };
 export type CheckinResponse =
-  | { url: string } 
+  | { url: string }
   | { message: string; httpStatus: number; timestamp?: string; error?: any };

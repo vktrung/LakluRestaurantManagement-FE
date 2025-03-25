@@ -7,22 +7,59 @@ import {
   useDeleteShiftMutation,
   useCreateQrMutation,
   useCreateShiftAttendMutation,
-  useCreateQrCheckoutMutation, 
+  useCreateQrCheckoutMutation,
+  useGetShiftsByStaffAndDateRangeQuery,
 } from "@/features/schedule/scheduleApiSlice";
+import {
+  useGetUserMeQuery, 
+} from "@/features/auth/authApiSlice";
 import { startOfWeek, endOfWeek, format, addMinutes } from "date-fns";
-import { Shift, AddShiftRequest, UpdateShiftRequest, CheckinSuccessResponse, CheckInSuccessRequest } from "@/features/schedule/types";
+import { Shift, AddShiftRequest, UpdateShiftRequest, CheckinSuccessResponse, CheckInSuccessRequest, GetShiftsByStaffAndDateRangeRequest } from "@/features/schedule/types";
+import { vi } from 'date-fns/locale';
 
 export function useSchedule(currentDate: Date) {
   const weekStart = format(startOfWeek(currentDate, { weekStartsOn: 1 }), "dd/MM/yyyy");
   const weekEnd = format(endOfWeek(currentDate, { weekStartsOn: 1 }), "dd/MM/yyyy");
 
-  const { data } = useGetShiftsByDateRangeQuery(
+  // Lấy thông tin người dùng hiện tại để lấy staffId
+  const { data: userMeData, isLoading: isLoadingUserMe, error: userMeError } = useGetUserMeQuery();
+
+  // Lấy staffId từ userMeData (giả định staffId nằm trong userMeData.data.id)
+  const defaultStaffId = userMeData?.data?.id || null;
+
+  const [selectedStaffId, setSelectedStaffId] = useState<number | null>(defaultStaffId);
+
+  // Cập nhật selectedStaffId khi userMeData thay đổi (lần đầu tải)
+  useEffect(() => {
+    if (defaultStaffId !== null && selectedStaffId === null) {
+      setSelectedStaffId(defaultStaffId);
+    }
+  }, [defaultStaffId]);
+
+  // Lấy dữ liệu ca làm theo khoảng thời gian chung
+  const { data: generalData } = useGetShiftsByDateRangeQuery(
     { startDate: weekStart, endDate: weekEnd }
   );
 
-  // Hàm định dạng lịch
+  // Lấy dữ liệu ca làm theo selectedStaffId và khoảng thời gian
+  const { data: staffData } = useGetShiftsByStaffAndDateRangeQuery(
+    selectedStaffId
+      ? { staffId: selectedStaffId, startDate: weekStart, endDate: weekEnd }
+      : (undefined as any), // Bỏ qua nếu chưa có selectedStaffId
+    { skip: !selectedStaffId } // Chỉ gọi API khi có selectedStaffId
+  );
+
+  // Hàm định dạng lịch cho ScheduleWeekView
   function formatSchedule(shifts: Shift[]) {
-    const scheduleMap: { [day: string]: { time: string; shifts: Shift[] }[] } = {};
+    const scheduleMap: { [day: string]: { time: string; shifts: Shift[] }[] } = {
+      "Thứ 2": [],
+      "Thứ 3": [],
+      "Thứ 4": [],
+      "Thứ 5": [],
+      "Thứ 6": [],
+      "Thứ 7": [],
+      "Chủ Nhật": [],
+    };
 
     shifts.forEach((shift) => {
       const inDate = new Date(shift.timeIn);
@@ -31,7 +68,6 @@ export function useSchedule(currentDate: Date) {
       const day = dayIndex === 7 ? "Chủ Nhật" : `Thứ ${dayIndex + 1}`;
       const time = `${shift.timeIn} - ${shift.timeOut}`;
 
-      if (!scheduleMap[day]) scheduleMap[day] = [];
       const existingSlot = scheduleMap[day].find((slot) => slot.time === time);
       if (existingSlot) {
         existingSlot.shifts.push(shift);
@@ -41,6 +77,15 @@ export function useSchedule(currentDate: Date) {
     });
 
     return scheduleMap;
+  }
+
+  // Hàm định dạng dữ liệu cho ScheduleListView (ca làm của nhân viên)
+  function formatStaffSchedule(shifts: Shift[]) {
+    return shifts.map(shift => ({
+      ...shift,
+      date: format(new Date(shift.timeIn), "dd/MM/yyyy"),
+      dayOfWeek: format(new Date(shift.timeIn), "EEEE", { locale: vi }),
+    }));
   }
 
   // Các hook mutation
@@ -54,10 +99,12 @@ export function useSchedule(currentDate: Date) {
   const [selectedShiftId, setSelectedShiftId] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
-  const shifts = data?.data || [];
+  const shifts = generalData?.data || [];
+  const staffShifts = staffData?.data || [];
 
   useEffect(() => {
     if (selectedShiftId !== null) {
+      // Logic nếu cần khi selectedShiftId thay đổi
     }
   }, [selectedShiftId]);
 
@@ -67,13 +114,11 @@ export function useSchedule(currentDate: Date) {
 
   const selectedShift = selectedShiftResponse?.data || null;
 
-  // Hàm mở dialog Thêm mới
   const handleOpenAddDialog = (day?: string) => {
     setSelectedShiftId(null);
     setIsDialogOpen(true);
   };
 
-  // Hàm mở dialog Cập nhật
   const handleOpenUpdateDialog = (shift: Shift) => {
     if (shift && shift.id) {
       setSelectedShiftId(shift.id);
@@ -128,7 +173,7 @@ export function useSchedule(currentDate: Date) {
     }
   };
 
-  // Tạo mã QR cho check-out (tương tự check-in)
+  // Tạo mã QR cho check-out
   const handleGetQrCodeCheckout = async (id: number): Promise<{ url: string; expiration?: Date } | null> => {
     try {
       const qrResponse = await createQrCheckout(id).unwrap();
@@ -167,7 +212,8 @@ export function useSchedule(currentDate: Date) {
   };
 
   return {
-    formattedSchedule: formatSchedule(shifts),
+    formattedSchedule: formatSchedule(shifts), 
+    formattedStaffSchedule: formatStaffSchedule(staffShifts), 
     handleOpenAddDialog,
     handleOpenUpdateDialog,
     handleDelete,
@@ -179,8 +225,12 @@ export function useSchedule(currentDate: Date) {
     selectedShiftResponse,
     selectedShift,
     handleGetQrCode,
-    handleGetQrCodeCheckout, 
+    handleGetQrCodeCheckout,
     isLoadingShift,
     handleCheckInFromQR,
+    selectedStaffId,
+    setSelectedStaffId, 
+    isLoadingUserMe, 
+    userMeError, 
   };
 }

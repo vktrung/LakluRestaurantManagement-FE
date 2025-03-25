@@ -26,7 +26,7 @@ interface ScheduleWeekViewProps {
   handleGetQrCode: (
     id: number,
   ) => Promise<{ url: string; expiration?: Date } | null>;
-  handleGetQrCodeCheckout: ( // Thêm prop cho check-out
+  handleGetQrCodeCheckout: (
     id: number,
   ) => Promise<{ url: string; expiration?: Date } | null>;
 }
@@ -45,7 +45,7 @@ export default function ScheduleWeekView({
   handleOpenDialog,
   handleDelete,
   handleGetQrCode,
-  handleGetQrCodeCheckout, 
+  handleGetQrCodeCheckout,
 }: ScheduleWeekViewProps) {
   const fullWeekDays: DayName[] = [
     'Thứ 2',
@@ -82,9 +82,15 @@ export default function ScheduleWeekView({
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [shiftToDelete, setShiftToDelete] = useState<number | null>(null);
 
-  const [isQrDialogOpen, setIsQrDialogOpen] = useState(false);
-  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
-  const [qrExpirationTime, setQrExpirationTime] = useState<Date | null>(null);
+  // State cho Check-in
+  const [isQrDialogOpenCheckIn, setIsQrDialogOpenCheckIn] = useState(false);
+  const [qrImageUrlCheckIn, setQrImageUrlCheckIn] = useState<string | null>(null);
+  const [qrExpirationTimeCheckIn, setQrExpirationTimeCheckIn] = useState<Date | null>(null);
+
+  // State cho Check-out
+  const [isQrDialogOpenCheckOut, setIsQrDialogOpenCheckOut] = useState(false);
+  const [qrImageUrlCheckOut, setQrImageUrlCheckOut] = useState<string | null>(null);
+  const [qrExpirationTimeCheckOut, setQrExpirationTimeCheckOut] = useState<Date | null>(null);
 
   // Lấy ngày hiện tại
   const currentDate = new Date();
@@ -131,11 +137,10 @@ export default function ScheduleWeekView({
   // Giải phóng URL khi component unmount hoặc đóng pop-up
   useEffect(() => {
     return () => {
-      if (qrImageUrl) {
-        URL.revokeObjectURL(qrImageUrl);
-      }
+      if (qrImageUrlCheckIn) URL.revokeObjectURL(qrImageUrlCheckIn);
+      if (qrImageUrlCheckOut) URL.revokeObjectURL(qrImageUrlCheckOut);
     };
-  }, [qrImageUrl]);
+  }, [qrImageUrlCheckIn, qrImageUrlCheckOut]);
 
   const getSpanDays = (timeIn: string, timeOut: string) => {
     try {
@@ -254,9 +259,9 @@ export default function ScheduleWeekView({
     try {
       const qrData = await handleGetQrCode(id);
       if (qrData) {
-        setQrImageUrl(qrData.url);
-        setQrExpirationTime(qrData.expiration || null);
-        setIsQrDialogOpen(true);
+        setQrImageUrlCheckIn(qrData.url);
+        setQrExpirationTimeCheckIn(qrData.expiration || null);
+        setIsQrDialogOpenCheckIn(true);
       } else {
         alert('Không thể lấy mã QR check-in, vui lòng thử lại!');
       }
@@ -265,14 +270,13 @@ export default function ScheduleWeekView({
     }
   };
 
-  // Thêm hàm onCheckOut
   const onCheckOut = async (id: number) => {
     try {
       const qrData = await handleGetQrCodeCheckout(id);
       if (qrData) {
-        setQrImageUrl(qrData.url);
-        setQrExpirationTime(qrData.expiration || null);
-        setIsQrDialogOpen(true);
+        setQrImageUrlCheckOut(qrData.url);
+        setQrExpirationTimeCheckOut(qrData.expiration || null);
+        setIsQrDialogOpenCheckOut(true);
       } else {
         alert('Không thể lấy mã QR check-out, vui lòng thử lại!');
       }
@@ -459,30 +463,30 @@ export default function ScheduleWeekView({
         </table>
       </div>
 
-      {/* Pop-up hiển thị mã QR */}
-      <Dialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
+      {/* Pop-up hiển thị mã QR Check-in */}
+      <Dialog open={isQrDialogOpenCheckIn} onOpenChange={setIsQrDialogOpenCheckIn}>
         <DialogContent className="sm:max-w-md rounded-xl shadow-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl text-slate-800">
               <Clock className="h-5 w-5 text-sky-600" />
-              Mã QR Check-in/Check-out
+              Mã QR Check-in
             </DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center space-y-4">
-            {qrImageUrl ? (
+            {qrImageUrlCheckIn ? (
               <img
-                src={qrImageUrl || '/placeholder.svg'}
-                alt="QR Code"
+                src={qrImageUrlCheckIn || '/placeholder.svg'}
+                alt="QR Code Check-in"
                 className="w-48 h-48 object-contain"
               />
             ) : (
-              <p className="text-slate-600">Không thể tải mã QR.</p>
+              <p className="text-slate-600">Không thể tải mã QR check-in.</p>
             )}
-            {qrExpirationTime && (
+            {qrExpirationTimeCheckIn && (
               <p className="text-sm text-slate-700">
                 Hết hiệu lực lúc:{' '}
                 <span className="font-semibold">
-                  {formatDateTime(qrExpirationTime)}
+                  {formatDateTime(qrExpirationTimeCheckIn)}
                 </span>
               </p>
             )}
@@ -492,12 +496,59 @@ export default function ScheduleWeekView({
               variant="outline"
               className="bg-white hover:bg-gray-100 text-slate-700"
               onClick={() => {
-                setIsQrDialogOpen(false);
-                if (qrImageUrl) {
-                  URL.revokeObjectURL(qrImageUrl);
-                  setQrImageUrl(null);
+                setIsQrDialogOpenCheckIn(false);
+                if (qrImageUrlCheckIn) {
+                  URL.revokeObjectURL(qrImageUrlCheckIn);
+                  setQrImageUrlCheckIn(null);
                 }
-                setQrExpirationTime(null);
+                setQrExpirationTimeCheckIn(null);
+              }}
+            >
+              Đóng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pop-up hiển thị mã QR Check-out */}
+      <Dialog open={isQrDialogOpenCheckOut} onOpenChange={setIsQrDialogOpenCheckOut}>
+        <DialogContent className="sm:max-w-md rounded-xl shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl text-slate-800">
+              <Clock className="h-5 w-5 text-sky-600" />
+              Mã QR Check-out
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center space-y-4">
+            {qrImageUrlCheckOut ? (
+              <img
+                src={qrImageUrlCheckOut || '/placeholder.svg'}
+                alt="QR Code Check-out"
+                className="w-48 h-48 object-contain"
+              />
+            ) : (
+              <p className="text-slate-600">Không thể tải mã QR check-out.</p>
+            )}
+            {qrExpirationTimeCheckOut && (
+              <p className="text-sm text-slate-700">
+                Hết hiệu lực lúc:{' '}
+                <span className="font-semibold">
+                  {formatDateTime(qrExpirationTimeCheckOut)}
+                </span>
+              </p>
+            )}
+          </div>
+          <DialogFooter className="mt-4">
+            <Button
+              variant="outline"
+              className="bg-white hover:bg-gray-100 text-slate-700"
+              onClick={() => {
+                setIsQrDialogOpenCheckOut(false);
+                if (qrImageUrlCheckOut) {
+                  URL.revokeObjectURL(qrImageUrlCheckOut);
+                  setQrImageUrlCheckOut(null);
+                }
+                setQrExpirationTimeCheckOut(null);
               }}
             >
               Đóng

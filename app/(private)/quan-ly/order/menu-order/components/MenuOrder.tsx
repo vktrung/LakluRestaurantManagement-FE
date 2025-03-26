@@ -33,7 +33,7 @@ const MenuItemsList = ({
   return (
     <div className="py-4 space-y-4">
       <div className="text-sm text-muted-foreground mb-2">
-        Available from {menuDetailData.data.startAt} to {menuDetailData.data.endAt}
+        Thời gian phục vụ: {menuDetailData.data.startAt} đến {menuDetailData.data.endAt}
       </div>
       {menuDetailData.data.menuItems.map((menuItem: MenuItem) => (
         <Card key={menuItem.id} className="overflow-hidden">
@@ -55,11 +55,11 @@ const MenuItemsList = ({
             <div className="flex-1">
               <h3 className="font-medium">{menuItem.dish.name}</h3>
               <p className="text-sm text-muted-foreground line-clamp-2">{menuItem.dish.description}</p>
-              <p className="font-bold text-green-600 mt-1">${menuItem.price.toFixed(2)}</p>
+              <p className="font-bold text-green-600 mt-1">{menuItem.price.toLocaleString('vi-VN')} VND</p>
             </div>
 
             <Button size="sm" className="ml-4" onClick={() => onAddItem(menuItem)}>
-              <PlusCircle className="h-4 w-4 mr-1" /> Add
+              <PlusCircle className="h-4 w-4 mr-1" /> Thêm
             </Button>
           </div>
         </Card>
@@ -80,17 +80,20 @@ const MenuPage = () => {
 
   // Handle adding items to the order (set default quantity as 1)
    const handleAddItem = (menuItem: MenuItem) => {
+    console.log('Adding item:', menuItem); // Debug log
     setOrderItems((prevItems) => {
       const existingItemIndex = prevItems.findIndex((item) => item.dishId === menuItem.dish.id);
+      console.log('Existing items:', prevItems); // Debug log
 
       if (existingItemIndex >= 0) {
         // Item exists, increase quantity by 1
         const updatedItems = [...prevItems];
         updatedItems[existingItemIndex].quantity += 1;
+        console.log('Updated items (existing):', updatedItems); // Debug log
         return updatedItems;
       } else {
         // Item doesn't exist, add new item with quantity 1 and additional dish details
-        return [
+        const newItems = [
           ...prevItems,
           {
             dishId: menuItem.dish.id,
@@ -100,6 +103,8 @@ const MenuPage = () => {
             price: menuItem.price,
           },
         ];
+        console.log('Updated items (new):', newItems); // Debug log
+        return newItems;
       }
     });
 
@@ -175,7 +180,7 @@ const MenuPage = () => {
           <CardFooter>
             <Button variant="outline" className="w-full" onClick={() => setShowOrderPanel(true)}>
               <ShoppingCart className="mr-2 h-4 w-4" />
-              View Order
+              Xem đơn hàng
             </Button>
           </CardFooter>
         </Card>
@@ -185,11 +190,12 @@ const MenuPage = () => {
       {showOrderPanel && (
         <div className="w-1/3 p-4">
           <OrderPanel
-                      orderItems={orderItems}
-                      onRemoveItem={handleRemoveItem}
-                      onUpdateQuantity={handleUpdateQuantity}
-                      onClose={() => setShowOrderPanel(false)}
-                     menusData={[]}          />
+            orderItems={orderItems}
+            onRemoveItem={handleRemoveItem}
+            onUpdateQuantity={handleUpdateQuantity}
+            onClose={() => setShowOrderPanel(false)}
+            menusData={menusData?.data || []}
+          />
         </div>
       )}
     </div>

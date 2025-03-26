@@ -30,6 +30,7 @@ const PROTECTED_ROUTES = [
   '/categories',
   '/attachments',
   '/table',
+  '/order'
 ];
 
 // Map các route với permission cần thiết
@@ -47,6 +48,7 @@ const PERMISSION_MAP: Record<string, string[]> = {
   '/categories': ['categories:list'],
   '/attachments': ['attachments:list'],
   '/table': ['table:list'],
+  '/order': ['order:list']
 };
 
 export async function middleware(request: NextRequest) {

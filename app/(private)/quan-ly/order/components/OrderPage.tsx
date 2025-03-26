@@ -49,7 +49,9 @@ export default function OrderPage({ reservations = [] }: ReservationListProps) {
   // Xử lý việc tạo đơn hàng
   const handleCreateOrder = (reservation: ReservationResponse) => {
     toast.success(`Đơn hàng cho bàn ${reservation.id} đã được tạo.`);
-     router.push("order/menu-order");
+    // router.push("order/menu-order");
+    router.push(`order/menu-order/${reservation.id}`)
+    
     
     // Logic xử lý tạo đơn hàng ở đây, ví dụ gửi API tạo đơn hoặc cập nhật trạng thái.
   };

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { PlusCircle, Edit, Trash2, Eye } from "lucide-react";
+import { PlusCircle, Edit, Eye } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,10 @@ import { toast } from "sonner";
 import ReservationDialog from "./ReservationDialog";
 import ViewReservationDialog from "./ViewReservationDialog";
 import { ReservationResponse, ReservationStatus } from "@/features/reservation/type";
-import { useUpdateReservationMutation } from "@/features/reservation/reservationApiSlice";
+import { 
+  useCreateReservationMutation, 
+  useUpdateReservationMutation 
+} from "@/features/reservation/reservationApiSlice";
 
 interface ReservationListProps {
   reservations: ReservationResponse[];
@@ -25,19 +28,35 @@ export default function ReservationList({ reservations }: ReservationListProps) 
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<ReservationResponse | null>(null);
 
+  const [createReservation] = useCreateReservationMutation();
   const [updateReservation] = useUpdateReservationMutation();
 
-  // const handleEdit = async (updatedReservationData: ReservationResponse) => {
-  //   try {
-  //     await updateReservation({ id: updatedReservationData.id, data: updatedReservationData }).unwrap();
-  //     setIsEditOpen(false);
-  //     toast.success("Cập nhật thành công");
-  //   } catch (error) {
-  //     console.error("Lỗi khi cập nhật:", error);
-  //     toast.error("Có lỗi xảy ra khi cập nhật đặt bàn");
-  //   }
-  // };
- 
+  const handleAdd = async (newReservationData: any) => {
+    try {
+      await createReservation(newReservationData).unwrap();
+      setIsAddOpen(false);
+      toast.success("Thêm đặt bàn thành công");
+    } catch (error) {
+      console.error("Lỗi khi thêm đặt bàn:", error);
+      toast.error("Có lỗi xảy ra khi thêm đặt bàn");
+    }
+  };
+
+  const handleEdit = async (updatedReservationData: any) => {
+    if (!selectedReservation) return;
+
+    try {
+      await updateReservation({ 
+        id: selectedReservation.id, 
+        data: updatedReservationData 
+      }).unwrap();
+      setIsEditOpen(false);
+      toast.success("Cập nhật thành công");
+    } catch (error) {
+      console.error("Lỗi khi cập nhật:", error);
+      toast.error("Có lỗi xảy ra khi cập nhật đặt bàn");
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -76,90 +95,111 @@ export default function ReservationList({ reservations }: ReservationListProps) 
   }
 
   return (
-       <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="text-2xl">Quản lý đặt bàn</CardTitle>
-          <CardDescription>Quản lý thông tin đặt bàn của khách hàng</CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Tên khách hàng</TableHead>
-              <TableHead>Số điện thoại</TableHead>
-              <TableHead>Số người</TableHead>
-              <TableHead>Bàn</TableHead>
-              <TableHead>Thời gian vào</TableHead>
-              <TableHead>Trạng thái</TableHead>
-              <TableHead>Thao tác</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {reservations.length === 0 ? (
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-2xl">Quản lý đặt bàn</CardTitle>
+            <CardDescription>Quản lý thông tin đặt bàn của khách hàng</CardDescription>
+          </div>
+          <Button 
+            onClick={() => setIsAddOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <PlusCircle className="h-4 w-4" />
+            Thêm đặt bàn
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
-                  Không có dữ liệu đặt bàn
-                </TableCell>
+                <TableHead>ID</TableHead>
+                <TableHead>Tên khách hàng</TableHead>
+                <TableHead>Số điện thoại</TableHead>
+                <TableHead>Số người</TableHead>
+                <TableHead>Bàn</TableHead>
+                <TableHead>Thời gian vào</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead>Thao tác</TableHead>
               </TableRow>
-            ) : (
-              reservations.map((reservation) => (
-                <TableRow key={reservation.id}>
-                  <TableCell>{reservation.id}</TableCell>
-                  <TableCell>{reservation.detail.customerName}</TableCell>
-                  <TableCell>{reservation.detail.customerPhone}</TableCell>
-                  <TableCell>{reservation.detail.numberOfPeople}</TableCell>
-                  <TableCell>{reservation.detail.tableIds?.join(", ") || "N/A"}</TableCell>
-                  <TableCell>{formatDateTime(reservation.timeIn)}</TableCell>
-                  <TableCell>{getStatusBadge(reservation.detail.status)}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => {
-                          setSelectedReservation(reservation);
-                          setIsViewOpen(true);
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => {
-                          setSelectedReservation(reservation);
-                          setIsEditOpen(true);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {reservations.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                    Không có dữ liệu đặt bàn
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
+              ) : (
+                reservations.map((reservation) => (
+                  <TableRow key={reservation.id}>
+                    <TableCell>{reservation.id}</TableCell>
+                    <TableCell>{reservation.detail.customerName}</TableCell>
+                    <TableCell>{reservation.detail.customerPhone}</TableCell>
+                    <TableCell>{reservation.detail.numberOfPeople}</TableCell>
+                    <TableCell>{reservation.detail.tableIds?.join(", ") || "N/A"}</TableCell>
+                    <TableCell>{formatDateTime(reservation.timeIn)}</TableCell>
+                    <TableCell>{getStatusBadge(reservation.detail.status)}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedReservation(reservation);
+                            setIsViewOpen(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedReservation(reservation);
+                            setIsEditOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Dialog thêm đặt bàn */}
+      <ReservationDialog
+        open={isAddOpen}
+        onOpenChange={setIsAddOpen}
+        mode="add"
+        onSubmit={handleAdd}
+      />
 
       {/* Dialog sửa đặt bàn */}
-      {/* {selectedReservation && (
+      {selectedReservation && (
         <ReservationDialog
           open={isEditOpen}
           onOpenChange={setIsEditOpen}
           mode="edit"
-          reservation={selectedReservation}
+          reservation={selectedReservation.detail}
           onSubmit={handleEdit}
         />
-      )} */}
+      )}
 
       {/* Dialog xem chi tiết */}
       {selectedReservation && (
-        <ViewReservationDialog open={isViewOpen} onOpenChange={setIsViewOpen} reservation={selectedReservation} />
+        <ViewReservationDialog 
+          open={isViewOpen} 
+          onOpenChange={setIsViewOpen} 
+          reservation={selectedReservation} 
+        />
       )}
-    </Card>
+    </>
   )
 }

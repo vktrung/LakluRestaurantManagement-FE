@@ -21,6 +21,10 @@ const OrderPanel = ({
   
   console.log('Order items in panel:', orderItems); // Debug log
   
+    function handleClick() {
+        console.log('Order items',orderItems); // Debug log
+    }
+
   return (
     <div className="h-full border rounded-lg shadow-md p-4 space-y-4">
       {/* Header */}
@@ -91,8 +95,8 @@ const OrderPanel = ({
             {total.toLocaleString('vi-VN')} VND
           </span>
         </div>
-        <Button variant="default" className="w-full bg-green-600 hover:bg-green-700">
-          Thanh toán
+        <Button variant="default" className="w-full bg-green-600 hover:bg-green-700"  onClick={() => handleClick()} >
+          Tạo Đơn
         </Button>
       </div>
     </div>

@@ -68,7 +68,10 @@ const MenuItemsList = ({
   );
 };
 
-const MenuPage = () => {
+const MenuPage = ({ reservationId }: {
+  reservationId: number;
+}) => {
+  console.log('reservationId', reservationId);
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
   const [showOrderPanel, setShowOrderPanel] = useState(false);
 
@@ -79,37 +82,41 @@ const MenuPage = () => {
   const { data: menusData, isLoading: isMenusLoading, isError: isMenusError } = useGetMenusQuery();
 
   // Handle adding items to the order (set default quantity as 1)
-   const handleAddItem = (menuItem: MenuItem) => {
-    console.log('Adding item:', menuItem); // Debug log
-    setOrderItems((prevItems) => {
-      const existingItemIndex = prevItems.findIndex((item) => item.dishId === menuItem.dish.id);
-      console.log('Existing items:', prevItems); // Debug log
+const handleAddItem = (menuItem: MenuItem) => {
+  console.log('Adding item:', menuItem);
+  setOrderItems((prevItems) => {
+    // Create a copy of previous items to avoid mutation
+    const updatedItems = [...prevItems];
+    
+    // Find the index of the existing item
+    const existingItemIndex = updatedItems.findIndex((item) => item.dishId === menuItem.dish.id);
 
-      if (existingItemIndex >= 0) {
-        // Item exists, increase quantity by 1
-        const updatedItems = [...prevItems];
-        updatedItems[existingItemIndex].quantity += 1;
-        console.log('Updated items (existing):', updatedItems); // Debug log
-        return updatedItems;
-      } else {
-        // Item doesn't exist, add new item with quantity 1 and additional dish details
-        const newItems = [
-          ...prevItems,
-          {
-            dishId: menuItem.dish.id,
-            quantity: 1,
-            name: menuItem.dish.name,
-            image: menuItem.dish.images?.[0]?.link || '/placeholder.svg',
-            price: menuItem.price,
-          },
-        ];
-        console.log('Updated items (new):', newItems); // Debug log
-        return newItems;
-      }
-    });
+    console.log('Existing item index:', existingItemIndex);
+    console.log('Current items:', updatedItems);
 
-    setShowOrderPanel(true); // Show order panel after adding item
-  };
+    if (existingItemIndex !== -1) {
+      // If item exists, update its quantity
+      updatedItems[existingItemIndex] = {
+        ...updatedItems[existingItemIndex],
+        quantity: updatedItems[existingItemIndex].quantity + 1
+      };
+    } else {
+      // If item doesn't exist, add new item
+      updatedItems.push({
+        dishId: menuItem.dish.id,
+        quantity: 1,
+        name: menuItem.dish.name,
+        image: menuItem.dish.images?.[0]?.link || '/placeholder.svg',
+        price: menuItem.price,
+      });
+    }
+
+    console.log('Updated items:', updatedItems);
+    return updatedItems;
+  });
+
+  setShowOrderPanel(true);
+};
 
   // Handle removing items from the order
   const handleRemoveItem = (dishId: number) => {

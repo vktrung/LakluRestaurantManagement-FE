@@ -34,7 +34,8 @@ export interface MenuItem {
      status: string;
      createdAt: string;
      updatedAt: string;
-     dish : Dish;
+  dish: Dish;
+  
 }
 
 export interface Menu {

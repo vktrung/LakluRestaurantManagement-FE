@@ -76,7 +76,7 @@ const MenuPage = ({ reservationId }: {
   const [showOrderPanel, setShowOrderPanel] = useState(false);
 
   // Track the order items (dishId and quantity)
-    const [orderItems, setOrderItems] = useState<{ dishId: number; quantity: number; name: string; image: string; price : number }[]>([]);
+  const [orderItems, setOrderItems] = useState<{ menuItemsId: number; dishId: number; quantity: number; name: string; image: string; price : number }[]>([]);
 
   // Fetch menus data
   const { data: menusData, isLoading: isMenusLoading, isError: isMenusError } = useGetMenusQuery();
@@ -84,6 +84,7 @@ const MenuPage = ({ reservationId }: {
   // Handle adding items to the order (set default quantity as 1)
 const handleAddItem = (menuItem: MenuItem) => {
   console.log('Adding item:', menuItem);
+  console.log('Check:', menuItem.id);
   setOrderItems((prevItems) => {
     // Create a copy of previous items to avoid mutation
     const updatedItems = [...prevItems];
@@ -103,6 +104,7 @@ const handleAddItem = (menuItem: MenuItem) => {
     } else {
       // If item doesn't exist, add new item
       updatedItems.push({
+        menuItemsId : menuItem.id,
         dishId: menuItem.dish.id,
         quantity: 1,
         name: menuItem.dish.name,

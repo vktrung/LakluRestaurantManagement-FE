@@ -5,9 +5,13 @@ export type DiscountType = "PERCENTAGE" | "FIXEDAMOUNT";
 export type VoucherStatus = "ACTIVE" | "INACTIVE";
 
 export interface OrderItem{
+    id?: number // OrderItem ID from backend
+    orderItemId?: number // Alternative ID field
     dishName: string
     quantity: number
     price: string
+    orderId?: number
+    menuItemId?: number
 }
 
 export interface Payment {
@@ -34,18 +38,34 @@ export interface PaymentRequest {
 export interface PaymentResponse {
     paymentId: number
     orderId: number
-    amountPaid: string
-    receivedAmount: string | null
+    amountPaid: string | number
+    receivedAmount: string | number | null
     paymentMethod: PaymentMethod
     paymentStatus: PaymentStatus
     paymentDate: string
+    vat: string | number
     orderItems: OrderItem[]
+}
+
+export interface PaginatedPaymentResponse {
+    payments: PaymentResponse[]
+    currentPage: number
+    totalItems: number
+    totalPages: number
+}
+
+export interface PaymentListParams {
+    page?: number
+    pageSize?: number
+    startDate?: string
+    endDate?: string
 }
 
 export interface CashResponse{
     orderId: number
-    amountPaid: number
-    receivedAmount: number
+    amountPaid: string
+    vat: string
+    receivedAmount: string
     paymentMethod: PaymentMethod
     paymentStatus: PaymentStatus
     paymentDate: string
@@ -67,4 +87,24 @@ export interface QrCodeResponse {
 export interface SepayWebhookRequest{
     code: string
     transferAmount: number
+}
+
+export interface UpdateOrderItemQuantity {
+    quantity: number
+}
+
+export interface UpdateOrderItemResponse {
+    id: number
+    orderId: number
+    menuItemId: number
+    quantity: number
+    statusLabel: string
+    createdAt: string
+    updatedAt: string
+}
+
+export interface CreateOrderItemRequest {
+    orderId: number
+    menuItemId: number
+    quantity: number
 }

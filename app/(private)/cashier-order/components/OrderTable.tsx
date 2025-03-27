@@ -99,9 +99,55 @@ const OrderTable = ({ orders }: OrderTableProps) => {
               </TableCell>
             </TableRow>
           ) : (
-            orders.map((order: Order) => (
-              <OrderRow key={order.id} order={order} />
-            ))
+            orders.map((order: Order) => {
+              const { data: staff, isLoading: isStaffLoading } = useGetStaffByIdQuery(
+                order.staffId.toString()
+              );
+
+              const handleRowClick = () => {
+                router.push(`/payment/${order.reservationId}`);
+              };
+
+              return (
+                <TableRow
+                  key={order.reservationId}
+                  onClick={handleRowClick}
+                  className="cursor-pointer hover:bg-gray-100"
+                >
+                  <TableCell>Khách hàng {order.reservationId}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm ${
+                        order.statusLabel === 'Đang chờ'
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : order.statusLabel === 'Hoàn thành'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}
+                    >
+                      {order.statusLabel}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    {new Date(order.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {order.updatedAt
+                      ? new Date(order.updatedAt).toLocaleDateString()
+                      : 'Chưa cập nhật'}
+                  </TableCell>
+                  <TableCell>
+                    {isStaffLoading ? (
+                      'Đang tải...'
+                    ) : staff ? (
+                      staff.username
+                    ) : (
+                      `Nhân viên ${order.staffId}`
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })
           )}
         </TableBody>
       </Table>

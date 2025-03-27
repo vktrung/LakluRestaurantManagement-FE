@@ -6,7 +6,7 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 import { OrderResponse,OrderResponseId,CreateOrderItemResponse,CreateOrderItemRequest ,GetOrdersParams} from './types';
 
 export const orderCashierApiSlice = createApi({
-  reducerPath: 'orderApi',
+  reducerPath: 'orderCashier',
   baseQuery,
   tagTypes: ['order-list', 'order'],
   endpoints: builder => ({

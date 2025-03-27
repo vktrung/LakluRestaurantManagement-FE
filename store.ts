@@ -1,6 +1,5 @@
-import { authApiSlice } from '@/features/auth/authApiSlice';
-
 import { configureStore } from '@reduxjs/toolkit';
+import { authApiSlice } from '@/features/auth/authApiSlice';
 import { staffApiSlice } from './features/staff/staffApiSlice';
 import { roleApiSlice } from './features/role/roleApiSlice';
 import { categoryApiSlice } from './features/category/categoryApiSlice';
@@ -12,9 +11,11 @@ import { menuItemApiSlice } from './features/menu-item/menuItemApiSlice';
 import { fileAttachmentApiSlice } from './features/file-attachment/fileAttachmentApiSlice';
 import { tableApiSlice } from './features/table/tableApiSlice';
 import { reservationApiSlice } from './features/reservation/reservationApiSlice';
-import {scheduleApiSlice} from './features/schedule/scheduleApiSlice';
-import {orderCashierApiSlice} from './features/order-cashier/orderCashierApiSlice';
+import { scheduleApiSlice } from './features/schedule/scheduleApiSlice';
+import { orderCashierApiSlice } from './features/order-cashier/orderCashierApiSlice';
+import { orderApiSlice } from './features/order/orderApiSlice';
 import { paymentApiSlice } from './features/payment/PaymentApiSlice';
+
 export const store = configureStore({
   reducer: {
     [authApiSlice.reducerPath]: authApiSlice.reducer,
@@ -31,26 +32,27 @@ export const store = configureStore({
     [reservationApiSlice.reducerPath]: reservationApiSlice.reducer,
     [scheduleApiSlice.reducerPath]: scheduleApiSlice.reducer,
     [paymentApiSlice.reducerPath]: paymentApiSlice.reducer,
-    [orderCashierApiSlice.reducerPath]: orderCashierApiSlice.reducer
+    [orderCashierApiSlice.reducerPath]: orderCashierApiSlice.reducer,
+    [orderApiSlice.reducerPath]: orderApiSlice.reducer,
   },
-  middleware: getDefaultMiddleware =>
+  middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
-  .concat(authApiSlice.middleware)
-  .concat(staffApiSlice.middleware)
-  .concat(categoryApiSlice.middleware)
-  .concat(salaryApiSlice.middleware)
-  .concat(roleApiSlice.middleware)
-  .concat(permissionApiSlice.middleware)
-  .concat(roleApiSlice.middleware)
-  .concat(dishApiSlice.middleware)
-  .concat(menuApiSlice.middleware)
-  .concat(menuItemApiSlice.middleware)
-  .concat(fileAttachmentApiSlice.middleware)
-  .concat(tableApiSlice.middleware)
-  .concat(reservationApiSlice.middleware)
-  .concat(scheduleApiSlice.middleware)
-  .concat(orderCashierApiSlice.middleware)
-  .concat(paymentApiSlice.middleware),
+      .concat(authApiSlice.middleware)
+      .concat(staffApiSlice.middleware)
+      .concat(categoryApiSlice.middleware)
+      .concat(salaryApiSlice.middleware)
+      .concat(roleApiSlice.middleware)
+      .concat(permissionApiSlice.middleware)
+      .concat(dishApiSlice.middleware)
+      .concat(menuApiSlice.middleware)
+      .concat(menuItemApiSlice.middleware)
+      .concat(fileAttachmentApiSlice.middleware)
+      .concat(tableApiSlice.middleware)
+      .concat(reservationApiSlice.middleware)
+      .concat(scheduleApiSlice.middleware)
+      .concat(orderCashierApiSlice.middleware)
+      .concat(paymentApiSlice.middleware)
+      .concat(orderApiSlice.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

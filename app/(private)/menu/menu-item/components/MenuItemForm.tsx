@@ -117,14 +117,14 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
     <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white p-8 rounded-lg shadow-lg w-96 relative">
         <h2 className="text-2xl font-semibold mb-4 text-center">
-          {selectedItem ? 'Edit Menu Item' : 'Add Menu Item'}
+          {selectedItem ? 'Cập nhật món ăn thực đơn' : 'Thêm món ăn thực đơn'}
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Dish Dropdown with Plus Button */}
           <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Dish
+              Món ăn
             </label>
             <div className="flex items-center gap-2">
               <select
@@ -134,7 +134,7 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
                 }
                 className="block w-full p-2 border border-gray-300 rounded-md"
               >
-                <option value={0}>Select a Dish</option>
+                <option value={0}>Chọn món ăn</option>
                 {dishes?.data.map(dish => (
                   <option key={dish.id} value={dish.id}>
                     {dish.name}
@@ -159,7 +159,7 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
           {/* Category Dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Category
+              Danh mục
             </label>
             <select
               value={formData.categoryId}
@@ -168,7 +168,7 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
               }
               className="block w-full p-2 border border-gray-300 rounded-md"
             >
-              <option value={0}>Select a Category</option>
+              <option value={0}>Chọn danh mục</option>
               {categories?.data.map(category => (
                 <option key={category.id} value={category.id}>
                   {category.name}

@@ -14,7 +14,7 @@ import { tableApiSlice } from './features/table/tableApiSlice';
 import { reservationApiSlice } from './features/reservation/reservationApiSlice';
 import {scheduleApiSlice} from './features/schedule/scheduleApiSlice';
 import {orderCashierApiSlice} from './features/order-cashier/orderCashierApiSlice';
-import { paymentApiSlice } from './features/payment/paymentApiSlice';
+import { paymentApiSlice } from './features/payment/PaymentApiSlice';
 export const store = configureStore({
   reducer: {
     [authApiSlice.reducerPath]: authApiSlice.reducer,

@@ -7,7 +7,7 @@ import {
   useProcessCashPaymentMutation,
   useGenerateQrCodeQuery,
   useGetPaymentByIdQuery,
-} from "@/features/payment/paymentApiSlice"
+} from "@/features/payment/PaymentApiSlice"
 import { OrderItems } from "../components/OrderItems"
 import { PaymentMethod } from "../components/PaymentMethod"
 import { VatInput } from "../components/VatInput"

@@ -20,7 +20,6 @@ import { CalendarIcon } from 'lucide-react';
 const OrderDetailPage = ({ params }: { params: { reservationId: string } }) => {
   const { reservationId } = params;
 
-  // Lấy danh sách thực đơn
   const {
     data: menusData,
     isLoading: isMenusLoading,
@@ -29,7 +28,6 @@ const OrderDetailPage = ({ params }: { params: { reservationId: string } }) => {
   const [selectedMenuId, setSelectedMenuId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Lấy thông tin chi tiết của thực đơn được chọn, bao gồm menuItems
   const { data: menuData, isLoading: isMenuLoading } = useGetMenuItemByIdQuery(
     selectedMenuId || 0,
     {

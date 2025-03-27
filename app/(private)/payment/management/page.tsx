@@ -1,7 +1,7 @@
 //app/(private)/payment/management/page.tsx
 'use client';
 
-import { useGetPaymentsQuery } from '@/features/payment/paymentApiSlice';
+import { useGetPaymentsQuery } from '@/features/payment/PaymentApiSlice';
 import { PaymentList } from '../components/PaymentList';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

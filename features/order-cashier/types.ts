@@ -10,6 +10,7 @@ export interface OrderItem {
   }
   
   export interface Order {
+    id: number;
     reservationId: number;
     staffId: number;
     statusLabel: string; 
@@ -48,11 +49,15 @@ export interface CreateOrderItemRequest {
   menuItemId: number;
   quantity: number;
 }
-
+export interface GetOrdersParams {
+  date?: string;
+  status?: string; 
+  sort?: string; 
+}
 export interface CreateOrderItemResponse {
   data: OrderItem;
-  message: string; // "success"
-  httpStatus: number; // 200
-  timestamp: string; // "Wed Mar 19 14:25:07 ICT 2025"
+  message: string;
+  httpStatus: number;
+  timestamp: string;
   error: string | null;
 }

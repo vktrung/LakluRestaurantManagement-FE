@@ -13,7 +13,8 @@ import {
     UpdateOrderItemResponse,
     CreateOrderItemRequest,
     PaginatedPaymentResponse,
-    PaymentListParams
+    PaymentListParams,
+    BillResponse
 } from './types';
 
 export const paymentApiSlice = createApi({
@@ -21,6 +22,15 @@ export const paymentApiSlice = createApi({
     baseQuery,
     tagTypes: ['payment-list', 'payment', 'order-items'], // Tag để quản lý cache và invalidate
     endpoints: (builder) => ({
+        // Lấy thông tin bill
+        getBill: builder.query<ApiResponse<BillResponse>, number>({
+            query: (paymentId) => ({
+                url: endpoints.PaymentApi + `bill/${paymentId}`,
+                method: 'GET',
+            }),
+            providesTags: (result, error, paymentId) => [{ type: 'payment', id: paymentId }],
+        }),
+
         // Lấy danh sách tất cả payments với phân trang
         getPayments: builder.query<ApiResponse<PaginatedPaymentResponse>, PaymentListParams>({
             query: (params = {}) => {
@@ -134,4 +144,5 @@ export const {
     useGetOrderItemsInOrderQuery,
     useUpdateOrderItemQuantityMutation,
     useCreateOrderItemMutation,
+    useGetBillQuery,
 } = paymentApiSlice;

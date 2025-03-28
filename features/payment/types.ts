@@ -14,6 +14,27 @@ export interface OrderItem{
     menuItemId?: number
 }
 
+// Response cho từng món trong bill
+export interface OrderItemsResponse {
+    id: number
+    dishName: string
+    quantity: number
+    price: number
+}
+
+// Response cho bill
+export interface BillResponse {
+    orderId: number
+    tableNumber: string
+    date: string
+    timeIn: string
+    timeOut: string
+    orderItems: OrderItemsResponse[]
+    totalAmount: number
+    receivedAmount: number
+    change: number
+}
+
 export interface Payment {
     paymentId: number
     orderId: number

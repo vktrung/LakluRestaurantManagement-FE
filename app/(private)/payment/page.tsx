@@ -121,7 +121,7 @@ export default function PaymentManagementPage() {
           <ArrowLeft className="h-4 w-4" />
           <span>Quay lại Dashboard</span>
         </Button>
-      </div>
+            </div>
 
       <Card className="shadow-lg border-muted/60 overflow-hidden">
         <CardHeader className="border-b bg-muted/30 px-6 py-4">
@@ -150,7 +150,7 @@ export default function PaymentManagementPage() {
                       ) : (
                         <span>Từ ngày</span>
                       )}
-                    </Button>
+            </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <CalendarComponent
@@ -166,7 +166,7 @@ export default function PaymentManagementPage() {
                 {/* Chọn ngày kết thúc */}
                 <Popover open={openEndDate} onOpenChange={setOpenEndDate}>
                   <PopoverTrigger asChild>
-                    <Button
+            <Button
                       variant="outline"
                       className={cn(
                         "justify-start text-left font-normal",
@@ -178,8 +178,8 @@ export default function PaymentManagementPage() {
                         format(dateRange.endDate, "dd/MM/yyyy", { locale: vi })
                       ) : (
                         <span>Đến ngày</span>
-                      )}
-                    </Button>
+              )}
+            </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <CalendarComponent
@@ -191,10 +191,10 @@ export default function PaymentManagementPage() {
                     />
                   </PopoverContent>
                 </Popover>
-              </div>
-            </div>
           </div>
-        </CardHeader>
+          </div>
+        </div>
+      </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center p-12 min-h-[400px] bg-background/50">
@@ -242,9 +242,9 @@ export default function PaymentManagementPage() {
                 onPageChange={handlePageChange}
               />
             </div>
-          )}
-        </CardContent>
+        )}
+      </CardContent>
       </Card>
-    </div>
+                </div>
   )
 }

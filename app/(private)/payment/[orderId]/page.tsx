@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import {
   useCreatePaymentMutation,
@@ -10,15 +10,16 @@ import {
   useGetOrderItemsInOrderQuery,
   useUpdateOrderItemQuantityMutation,
   useCreateOrderItemMutation,
+  useGetBillQuery,
+  paymentApiSlice
 } from "@/features/payment/paymentApiSlice"
 import {
   useGetMenusQuery,
   useGetMenuItemByIdQuery,
 } from '@/features/menu/menuApiSlice'
-import { useGetDishByIdQuery } from '@/features/dish/dishApiSlice'
-import { useGetCategoryByIdQuery } from '@/features/category/categoryApiSlice'
+import { formatPrice } from "@/lib/utils"
+import { getTokenFromCookie } from "@/utils/token"
 
-import { OrderItems } from "../components/OrderItems"
 import { PaymentMethod } from "../components/PaymentMethod"
 import { VatInput } from "../components/VatInput"
 import { VoucherInput } from "../components/VoucherInput"
@@ -30,6 +31,8 @@ import Image from "next/image"
 import { CalendarIcon, Plus, Minus } from "lucide-react"
 import type { OrderItem, PaymentResponse } from "@/features/payment/types"
 import type { Menu, MenuItem } from '@/features/menu/types'
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 
 // Extended MenuItem interface with additional properties needed for our component
 interface ExtendedMenuItem extends MenuItem {
@@ -42,6 +45,21 @@ interface ExtendedMenuItem extends MenuItem {
 // Định nghĩa kiểu cho dữ liệu trả về từ useGetPaymentByIdQuery
 interface PaymentData {
   data: PaymentResponse
+}
+
+// Định nghĩa kiểu dữ liệu cho tempBill
+interface TempOrderItem {
+  id: number;
+  dishName: string;
+  quantity: number;
+  price: string | number;
+}
+
+interface TempBillData {
+  orderItems: TempOrderItem[];
+  subtotal: number;
+  tableNumber: number;
+  date: string;
 }
 
 export default function IntegratedPaymentPage() {
@@ -145,7 +163,7 @@ export default function IntegratedPaymentPage() {
         return {
           id: itemId, // Đảm bảo id luôn là số, không bao giờ undefined
           dishId: item.menuItemId || 0,
-          dish: { name: item.dishName || "Unknown" },
+          dish: item.dish,
           price: Number(item.price || 0),
           quantity: item.quantity || 0,
           menuItemId: item.menuItemId || 0,
@@ -313,7 +331,7 @@ export default function IntegratedPaymentPage() {
     )
   }
 
-  // Hàm tạo payment khi thu ngân nhấn nút xác nhận
+  // Sửa hàm xử lý tạo payment để đảm bảo kiểu dữ liệu đúng
   const handleCreatePayment = async () => {
     try {
       const result = await createPayment({
@@ -326,11 +344,61 @@ export default function IntegratedPaymentPage() {
       if (result.data?.paymentId) {
         setPaymentId(result.data.paymentId)
       }
-      
-      // Lấy thông tin từ backend
-      setTotalAmount(result.data?.amountPaid || "0")
-      setVat(result.data?.vat || "0")
+
+      // Lấy thông tin từ backend và chuyển đổi sang string nếu cần
+      setTotalAmount(String(result.data?.amountPaid || "0"))
+      setVat(String(result.data?.vat || "0"))
       setIsPaymentCreated(true)
+      
+      // Nếu chọn in hóa đơn tự động và thanh toán ngay
+      if (printBill && result.data?.paymentId && paymentStatus === "PAID") {
+        router.push(`/bill/${result.data.paymentId}`)
+      }
+    } catch (error: any) {
+      const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định."
+      setErrorMessage(`Lỗi tạo thanh toán: ${message}`)
+    }
+  }
+
+  // Thêm hàm xử lý thanh toán nhanh
+  const handleQuickPayment = async () => {
+    // Trước tiên tạo payment
+    try {
+      const result = await createPayment({
+        orderId: orderIdNumber,
+        paymentMethod,
+        vat: vatRate,
+        voucher: voucherCode || undefined,
+      }).unwrap()
+      
+      if (result.data?.paymentId) {
+        setPaymentId(result.data.paymentId)
+        setTotalAmount(String(result.data?.amountPaid || "0"))
+        setVat(String(result.data?.vat || "0"))
+        setIsPaymentCreated(true)
+        
+        // Sau đó xử lý thanh toán ngay
+        if (paymentMethod === "CASH") {
+          try {
+            // Giả định khách trả đúng số tiền
+            const payResult = await processCashPayment({
+              paymentId: result.data.paymentId,
+              receivedAmount: Number(result.data.amountPaid),
+            }).unwrap()
+            
+            setErrorMessage(`Thanh toán thành công: Tiền thối: ${payResult.data?.change || "0"}`)
+            
+            // In hóa đơn trực tiếp thay vì mở trang mới
+            handlePrintBill(result.data.paymentId);
+          } catch (error: any) {
+            const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định."
+            setErrorMessage(`Thanh toán thất bại: ${message}`)
+          }
+        } else {
+          // Đối với chuyển khoản, chúng ta vẫn hiển thị QR code
+          setErrorMessage("Đã tạo yêu cầu thanh toán. Vui lòng quét mã QR để thanh toán.")
+        }
+      }
     } catch (error: any) {
       const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định."
       setErrorMessage(`Lỗi tạo thanh toán: ${message}`)
@@ -353,6 +421,526 @@ export default function IntegratedPaymentPage() {
       setErrorMessage(`Thanh toán thất bại: ${message}`)
     }
   }
+
+  // Thêm state để quản lý việc in hóa đơn
+  const [printBill, setPrintBill] = useState<boolean>(false)
+
+  // Hàm in phiếu tạm tính trực tiếp
+  const handlePrintTempBill = (tempBill: TempBillData): void => {
+    // Create a new window with only the bill content
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    if (!printWindow) {
+      alert('Vui lòng cho phép cửa sổ pop-up để in phiếu tạm tính');
+      return;
+    }
+
+    // Format date for print window
+    const date = new Date(tempBill.date);
+    const printFormattedDate = new Intl.DateTimeFormat("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(date);
+
+    // Format time for print window
+    const printFormattedTime = new Intl.DateTimeFormat("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(date);
+
+    // Generate the HTML content for the print window
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Phiếu tạm tính - Bàn ${tempBill.tableNumber}</title>
+        <style>
+          @page {
+            size: 72mm auto;
+            margin: 0;
+          }
+          
+          body {
+            font-family: monospace;
+            width: 72mm;
+            max-width: 72mm;
+            margin: 0 auto;
+            padding: 0;
+            background-color: white;
+            color: black;
+            font-size: 12px;
+          }
+          
+          .print-bill {
+            width: 72mm;
+            max-width: 72mm;
+            padding: 2mm;
+            font-size: 12px;
+            box-sizing: border-box;
+            margin: 0 auto;
+          }
+          
+          h1 { 
+            font-size: 14px; 
+            margin: 5px 0; 
+            text-align: center;
+            font-weight: bold;
+          }
+          
+          h2 { 
+            font-size: 13px; 
+            margin: 4px 0; 
+            text-align: center;
+            font-weight: semibold;
+          }
+          
+          p { 
+            font-size: 11px; 
+            margin: 2px 0; 
+          }
+          
+          .text-center { text-align: center; }
+          .text-right { text-align: right; }
+          
+          .grid {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+          }
+          
+          .grid > div {
+            display: table-row;
+          }
+          
+          .grid > div > div {
+            display: table-cell;
+            padding: 1mm 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          
+          .font-mono {
+            font-family: monospace;
+            font-size: 11px;
+            letter-spacing: -0.5px;
+          }
+          
+          .truncate {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          
+          .border-t {
+            border-top: 1px solid black;
+            margin: 2mm 0;
+            display: block;
+            width: 100%;
+          }
+          
+          .border-dashed {
+            border-top: 1px dashed black;
+            margin: 2mm 0;
+            display: block;
+            width: 100%;
+          }
+          
+          .col-span-1 { width: 8%; }
+          .col-span-3 { width: 24%; }
+          .col-span-4 { width: 32%; }
+          .col-span-5 { width: 40%; }
+          
+          .space-y-1 > * + * {
+            margin-top: 0.25rem;
+          }
+          
+          .mb-1 { margin-bottom: 0.25rem; }
+          .mb-2 { margin-bottom: 0.5rem; }
+          .mb-3 { margin-bottom: 0.75rem; }
+          .mt-2 { margin-top: 0.5rem; }
+          .mt-3 { margin-top: 0.75rem; }
+          .mt-4 { margin-top: 1rem; }
+          .ml-2 { margin-left: 0.5rem; }
+          
+          .gap-1 { gap: 0.25rem; }
+          
+          .font-bold { font-weight: bold; }
+          .font-semibold { font-weight: 600; }
+          
+          .text-sm { font-size: 0.875rem; }
+          .text-xs { font-size: 0.75rem; }
+          .text-md { font-size: 1rem; }
+        </style>
+      </head>
+      <body>
+        <div class="print-bill">
+          <!-- Header -->
+          <div class="text-center mb-3">
+            <h1 class="text-md font-bold">LAKLU - BIA KHÔ MỰC</h1>
+            <h2 class="text-sm font-semibold mt-2 mb-3">PHIẾU TẠM TÍNH</h2>
+          </div>
+
+          <!-- Order Info -->
+          <div class="grid gap-1 mb-3">
+            <div>
+              <div style="width: 50%;">
+                <p class="text-xs">BÀN: ${tempBill.tableNumber || "—"}</p>
+              </div>
+              <div style="width: 50%; text-align: right;">
+                <p class="text-xs">NGÀY: ${printFormattedDate}</p>
+                <p class="text-xs">GIỜ: ${printFormattedTime}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table Header -->
+          <div class="grid mb-1">
+            <div>
+              <div class="col-span-1 text-xs font-semibold">TT</div>
+              <div class="col-span-4 text-xs font-semibold">Tên món</div>
+              <div class="col-span-1 text-xs font-semibold text-center">SL</div>
+              <div class="col-span-3 text-xs font-semibold text-right">Đơn giá</div>
+              <div class="col-span-3 text-xs font-semibold text-right">T.Tiền</div>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="border-t mb-1"></div>
+
+          <!-- Items -->
+          ${tempBill.orderItems.map((item, index) => `
+          <div class="grid mb-1">
+            <div>
+              <div class="col-span-1 text-xs">${index + 1}</div>
+              <div class="col-span-4 text-xs truncate">${item.dishName}</div>
+              <div class="col-span-1 text-xs text-center">${item.quantity}</div>
+              <div class="col-span-3 text-xs text-right font-mono">${formatPrice(Number(item.price), { currency: false, minLength: 8 })}</div>
+              <div class="col-span-3 text-xs text-right font-mono">${formatPrice(Number(item.price) * item.quantity, { currency: false, minLength: 8 })}</div>
+            </div>
+          </div>
+          `).join('')}
+
+          <!-- Divider -->
+          <div class="border-t border-dashed mt-2 mb-2"></div>
+
+          <!-- Payment Summary -->
+          <div class="text-right space-y-1 mb-3">
+            <p class="text-xs font-bold">Tổng tạm tính: <span class="font-mono ml-2">${formatPrice(tempBill.subtotal)}</span></p>
+          </div>
+
+          <!-- Footer -->
+          <div class="text-center mt-4">
+            <p class="text-xs">Phiếu tạm tính - Chưa thanh toán</p>
+            <p class="text-xs mt-2">Cảm ơn quý khách!</p>
+          </div>
+        </div>
+        <script>
+          // Auto print when loaded
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+              // Optional: Close the window after printing
+              // setTimeout(function() { window.close(); }, 500);
+            }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    // Write to the new window and print
+    printWindow.document.open();
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+  };
+
+  // Hàm in hóa đơn trực tiếp tại trang hiện tại
+  const handlePrintBill = (paymentId: number): void => {
+    // Check paymentId is available
+    if (!paymentId) {
+      setErrorMessage('Không tìm thấy thông tin hóa đơn');
+      return;
+    }
+
+    // Tạo một hàm riêng để fetch dữ liệu bill và in
+    const fetchAndPrintBill = async () => {
+      try {
+        // Fetch dữ liệu bill từ API
+        const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/v1/payments/bill/${paymentId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getTokenFromCookie()}`,
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Không thể lấy thông tin hóa đơn');
+        }
+        
+        const billResponse = await response.json();
+        const bill = billResponse.data;
+
+        if (!bill) {
+          throw new Error('Không thể lấy thông tin hóa đơn');
+        }
+
+        // Create a new window with only the bill content
+        const printWindow = window.open('', '_blank', 'width=400,height=600');
+        if (!printWindow) {
+          alert('Vui lòng cho phép cửa sổ pop-up để in hóa đơn');
+          return;
+        }
+
+        // Format date
+        const date = new Date(bill.date);
+        const printFormattedDate = new Intl.DateTimeFormat("vi-VN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }).format(date);
+
+        // Format time function
+        const formatTimeForPrint = (dateString: string) => {
+          if (!dateString) return "--:--";
+          const time = new Date(dateString);
+          return new Intl.DateTimeFormat("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          }).format(time);
+        };
+
+        // Generate the HTML content for the print window
+        const printContent = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Hóa đơn - ${bill.orderId}</title>
+            <style>
+              @page {
+                size: 72mm auto;
+                margin: 0;
+              }
+              
+              body {
+                font-family: monospace;
+                width: 72mm;
+                max-width: 72mm;
+                margin: 0 auto;
+                padding: 0;
+                background-color: white;
+                color: black;
+                font-size: 12px;
+              }
+              
+              .print-bill {
+                width: 72mm;
+                max-width: 72mm;
+                padding: 2mm;
+                font-size: 12px;
+                box-sizing: border-box;
+                margin: 0 auto;
+              }
+              
+              h1 { 
+                font-size: 14px; 
+                margin: 5px 0; 
+                text-align: center;
+                font-weight: bold;
+              }
+              
+              h2 { 
+                font-size: 13px; 
+                margin: 4px 0; 
+                text-align: center;
+                font-weight: semibold;
+              }
+              
+              p { 
+                font-size: 11px; 
+                margin: 2px 0; 
+              }
+              
+              .text-center { text-align: center; }
+              .text-right { text-align: right; }
+              
+              .grid {
+                display: table;
+                width: 100%;
+                table-layout: fixed;
+                border-collapse: collapse;
+              }
+              
+              .grid > div {
+                display: table-row;
+              }
+              
+              .grid > div > div {
+                display: table-cell;
+                padding: 1mm 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              }
+              
+              .font-mono {
+                font-family: monospace;
+                font-size: 11px;
+                letter-spacing: -0.5px;
+              }
+              
+              .truncate {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              }
+              
+              .border-t {
+                border-top: 1px solid black;
+                margin: 2mm 0;
+                display: block;
+                width: 100%;
+              }
+              
+              .border-dashed {
+                border-top: 1px dashed black;
+                margin: 2mm 0;
+                display: block;
+                width: 100%;
+              }
+              
+              .col-span-1 { width: 8%; }
+              .col-span-3 { width: 24%; }
+              .col-span-4 { width: 32%; }
+              .col-span-5 { width: 40%; }
+              
+              .space-y-1 > * + * {
+                margin-top: 0.25rem;
+              }
+              
+              .mb-1 { margin-bottom: 0.25rem; }
+              .mb-2 { margin-bottom: 0.5rem; }
+              .mb-3 { margin-bottom: 0.75rem; }
+              .mt-2 { margin-top: 0.5rem; }
+              .mt-3 { margin-top: 0.75rem; }
+              .ml-2 { margin-left: 0.5rem; }
+              
+              .gap-1 { gap: 0.25rem; }
+              
+              .font-bold { font-weight: bold; }
+              .font-semibold { font-weight: 600; }
+              
+              .text-sm { font-size: 0.875rem; }
+              .text-xs { font-size: 0.75rem; }
+              .text-md { font-size: 1rem; }
+            </style>
+          </head>
+          <body>
+            <div class="print-bill">
+              <!-- Header -->
+              <div class="text-center mb-3">
+                <h1 class="text-md font-bold">LAKLU - BIA KHÔ MỰC</h1>
+                <h2 class="text-sm font-semibold mt-2 mb-3">HÓA ĐƠN THANH TOÁN</h2>
+              </div>
+
+              <!-- Order Info -->
+              <div class="grid gap-1 mb-3">
+                <div>
+                  <div style="width: 50%;">
+                    <p class="text-xs">SỐ HĐ: ${bill.orderId}</p>
+                    <p class="text-xs">BÀN: ${bill.tableNumber || "—"}</p>
+                    <p class="text-xs">GIỜ VÀO: ${formatTimeForPrint(bill.timeIn)}</p>
+                  </div>
+                  <div style="width: 50%; text-align: right;">
+                    <p class="text-xs">NGÀY: ${printFormattedDate}</p>
+                    <p class="text-xs">GIỜ RA: ${formatTimeForPrint(bill.timeOut)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Table Header -->
+              <div class="grid mb-1">
+                <div>
+                  <div class="col-span-1 text-xs font-semibold">TT</div>
+                  <div class="col-span-4 text-xs font-semibold">Tên món</div>
+                  <div class="col-span-1 text-xs font-semibold text-center">SL</div>
+                  <div class="col-span-3 text-xs font-semibold text-right">Đơn giá</div>
+                  <div class="col-span-3 text-xs font-semibold text-right">T.Tiền</div>
+                </div>
+              </div>
+
+              <!-- Divider -->
+              <div class="border-t mb-1"></div>
+
+              <!-- Items -->
+              ${bill.orderItems.map((item: any, index: number) => `
+              <div class="grid mb-1">
+                <div>
+                  <div class="col-span-1 text-xs">${index + 1}</div>
+                  <div class="col-span-4 text-xs truncate">${item.dishName}</div>
+                  <div class="col-span-1 text-xs text-center">${item.quantity}</div>
+                  <div class="col-span-3 text-xs text-right font-mono">${formatPrice(item.price, { currency: false, minLength: 8 })}</div>
+                  <div class="col-span-3 text-xs text-right font-mono">${formatPrice(item.price * item.quantity, { currency: false, minLength: 8 })}</div>
+                </div>
+              </div>
+              `).join('')}
+
+              <!-- Divider -->
+              <div class="border-t border-dashed mt-2 mb-2"></div>
+
+              <!-- Payment Summary -->
+              <div class="text-right space-y-1 mb-2">
+                <p class="text-xs">Thành tiền: <span class="font-mono ml-2">${formatPrice(bill.totalAmount)}</span></p>
+                <p class="text-xs font-bold">Tổng tiền TT: <span class="font-mono ml-2">${formatPrice(bill.totalAmount)}</span></p>
+                <p class="text-xs">Tiền khách đưa: <span class="font-mono ml-2">${formatPrice(bill.receivedAmount)}</span></p>
+                <p class="text-xs">Tiền trả lại: <span class="font-mono ml-2">${formatPrice(bill.change)}</span></p>
+              </div>
+
+              <!-- Footer -->
+              <div class="text-center mt-3">
+                <p class="text-xs">Cảm ơn quý khách và hẹn gặp lại!</p>
+              </div>
+            </div>
+            <script>
+              // Auto print when loaded
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                  // Optional: Close the window after printing
+                  // setTimeout(function() { window.close(); }, 500);
+                }, 500);
+              };
+            </script>
+          </body>
+          </html>
+        `;
+
+        // Write to the new window and print
+        printWindow.document.open();
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        
+        // Redirect to order list after printing (with delay)
+        setTimeout(() => {
+          router.push('/cashier-order');
+        }, 2000);
+      } catch (error: any) {
+        console.error('Error printing bill:', error);
+        setErrorMessage(`Lỗi in hóa đơn: ${error.message}`);
+      }
+    };
+
+    // Gọi hàm fetch và in
+    fetchAndPrintBill();
+  };
 
   // Tránh render trước khi hydration hoàn tất
   if (!isMounted) {
@@ -392,8 +980,8 @@ export default function IntegratedPaymentPage() {
         {/* Menu Selection Column */}
         <div className="lg:w-2/3">
           <Card className="shadow-lg">
-            <CardHeader className="bg-muted/30">
-              <div className="flex justify-between items-center">
+        <CardHeader className="bg-muted/30">
+          <div className="flex justify-between items-center">
                 <CardTitle className="text-xl font-bold">
                   Chọn món
                 </CardTitle>
@@ -403,8 +991,8 @@ export default function IntegratedPaymentPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="max-w-xs"
                 />
-              </div>
-            </CardHeader>
+          </div>
+        </CardHeader>
             <CardContent className="p-4">
               {/* Menu Tabs */}
               <div className="flex flex-wrap gap-2 mb-6">
@@ -468,7 +1056,7 @@ export default function IntegratedPaymentPage() {
               )}
             </CardContent>
           </Card>
-        </div>
+                </div>
 
         {/* Payment Column */}
         <div className="lg:w-1/3">
@@ -477,12 +1065,12 @@ export default function IntegratedPaymentPage() {
               <CardTitle className="text-xl font-bold">Thanh toán</CardTitle>
               <div className="px-3 py-1 bg-primary/10 text-primary rounded-full font-medium text-sm">
                 Hóa Đơn: {orderIdValue || "Mới"}
-              </div>
+                </div>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
               {/* Selected Items List */}
-              <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-                <div className="bg-muted/30 px-4 py-3 border-b">
+                <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+                  <div className="bg-muted/30 px-4 py-3 border-b">
                   <h3 className="font-medium">Món đã chọn</h3>
                   {isPaymentCreated && (
                     <p className="text-sm text-orange-600 mt-1">
@@ -557,98 +1145,158 @@ export default function IntegratedPaymentPage() {
 
               {!isPaymentCreated ? (
                 <div className="space-y-4">
-                  <PaymentMethod selectedMethod={paymentMethod} onChange={setPaymentMethod} />
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <VatInput vatRate={vatRate} vatAmount={vat} onChange={setVatRate} />
-                    <VoucherInput voucherCode={voucherCode} onChange={setVoucherCode} />
+              <PaymentMethod selectedMethod={paymentMethod} onChange={setPaymentMethod} />
+              <div className="grid md:grid-cols-2 gap-4">
+                <VatInput vatRate={vatRate} vatAmount={vat} onChange={setVatRate} />
+                <VoucherInput voucherCode={voucherCode} onChange={setVoucherCode} />
+              </div>
+                  
+                  <div className="flex gap-2">
+              <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (selectedItems.length > 0) {
+                          // Tạo phiếu tạm tính từ dữ liệu hiện có
+                          const tempBill: TempBillData = {
+                            orderItems: selectedItems.map(item => ({
+                              id: item.id,
+                              dishName: item.dish?.name || "Unknown",
+                              quantity: item.quantity,
+                              price: item.price,
+                            })),
+                            subtotal: subtotal,
+                            tableNumber: orderIdNumber,
+                            date: new Date().toISOString(),
+                          };
+                          
+                          // Lưu vào localStorage để trang phiếu tạm tính có thể lấy ra
+                          localStorage.setItem('tempBill', JSON.stringify(tempBill));
+                          
+                          // In phiếu tạm tính trực tiếp thay vì mở trang mới
+                          handlePrintTempBill(tempBill);
+                        } else {
+                          setErrorMessage('Vui lòng chọn ít nhất một món để xem phiếu tạm tính');
+                        }
+                      }}
+                      className="flex-1"
+                    >
+                      Xem phiếu tạm tính
+                    </Button>
+                    
+                    <Button
+                      onClick={handleQuickPayment}
+                      disabled={isCreating || selectedItems.length === 0}
+                      className="flex-1 bg-primary"
+                    >
+                      {isCreating ? "Đang xử lý..." : "Thanh toán và in"}
+                    </Button>
                   </div>
+                  
                   <Button
                     onClick={handleCreatePayment}
                     disabled={isCreating || selectedItems.length === 0}
-                    className="w-full py-6 text-lg mt-6"
+                    className="w-full py-6 text-lg"
                   >
                     {isCreating ? "Đang tạo thanh toán..." : "Tạo thanh toán"}
-                  </Button>
-                </div>
-              ) : (
+              </Button>
+            </div>
+          ) : (
                 <div className="space-y-4">
                   <div className="bg-green-50 p-4 rounded-lg border border-green-100">
                     <h3 className="text-green-800 font-medium mb-2">
-                      Đã tạo thanh toán thành công
-                    </h3>
+                  Đã tạo thanh toán thành công
+                </h3>
                     <p className="text-green-600 text-sm">Vui lòng hoàn tất thanh toán</p>
-                  </div>
+              </div>
 
-                  <div className="bg-muted/10 rounded-lg p-4 border">
-                    <OrderSummary
-                      total={Number(totalAmount).toLocaleString("vi-VN", { style: "currency", currency: "VND" })}
-                      vat={vat}
+              <div className="bg-muted/10 rounded-lg p-4 border">
+                <OrderSummary
+                  total={Number(totalAmount).toLocaleString("vi-VN", { style: "currency", currency: "VND" })}
+                  vat={vat}
                       orderItems={orderItems}
-                    />
-                  </div>
+                />
+              </div>
 
-                  {paymentMethod === "CASH" ? (
+              {paymentMethod === "CASH" ? (
                     <div className="bg-white rounded-lg border shadow-sm p-4">
                       <h3 className="font-medium text-lg mb-4">
-                        Thanh toán tiền mặt
-                      </h3>
-                      <div className="space-y-4">
-                        <div>
-                          <label htmlFor="receivedAmount" className="block text-sm font-medium mb-1">
-                            Số tiền nhận được
-                          </label>
-                          <input
-                            id="receivedAmount"
-                            type="number"
-                            value={receivedAmount}
-                            onChange={(e) => setReceivedAmount(e.target.value)}
-                            placeholder="Nhập số tiền nhận được"
+                    Thanh toán tiền mặt
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="receivedAmount" className="block text-sm font-medium mb-1">
+                        Số tiền nhận được
+                      </label>
+                        <input
+                          id="receivedAmount"
+                          type="number"
+                          value={receivedAmount}
+                          onChange={(e) => setReceivedAmount(e.target.value)}
+                          placeholder="Nhập số tiền nhận được"
                             className="w-full p-2 border rounded"
-                            required
-                          />
-                          {receivedAmount && Number(receivedAmount) >= Number(totalAmount) && (
-                            <div className="mt-2 text-sm text-green-600">
+                          required
+                        />
+                      {receivedAmount && Number(receivedAmount) >= Number(totalAmount) && (
+                        <div className="mt-2 text-sm text-green-600">
                               Tiền thối: {(Number(receivedAmount) - Number(totalAmount)).toLocaleString()} VND
-                            </div>
-                          )}
                         </div>
-                        <Button
-                          onClick={handleCashPayment}
-                          disabled={
-                            isProcessing || !paymentId || !receivedAmount || Number(receivedAmount) < Number(totalAmount)
-                          }
-                          className="w-full"
-                        >
-                          {isProcessing ? "Đang xử lý..." : "Xác nhận thanh toán"}
-                        </Button>
-                      </div>
+                      )}
                     </div>
-                  ) : (
+                        
+                        {/* Hiển thị tùy chọn in hóa đơn sau khi đã xử lý tiền mặt thành công */}
+                        {errorMessage && errorMessage.includes("thành công") ? (
+                          <div className="space-y-3">
+                            <Button
+                              onClick={() => {
+                                // In hóa đơn trực tiếp thay vì mở trang mới
+                                if (paymentId) {
+                                  handlePrintBill(paymentId);
+                                }
+                              }}
+                              className="w-full bg-green-600 hover:bg-green-700"
+                            >
+                              Hoàn tất thanh toán và in hóa đơn
+                            </Button>
+                          </div>
+                        ) : (
+                    <Button
+                      onClick={handleCashPayment}
+                      disabled={
+                        isProcessing || !paymentId || !receivedAmount || Number(receivedAmount) < Number(totalAmount)
+                      }
+                            className="w-full"
+                          >
+                            {isProcessing ? "Đang xử lý..." : "Xác nhận thanh toán"}
+                          </Button>
+                        )}
+                  </div>
+                </div>
+              ) : (
                     <div className="bg-white rounded-lg border shadow-sm p-4">
                       <h3 className="font-medium text-lg mb-4">
-                        Thanh toán chuyển khoản
-                      </h3>
-                      <div className="text-center space-y-4">
-                        {isQrLoading ? (
+                    Thanh toán chuyển khoản
+                  </h3>
+                  <div className="text-center space-y-4">
+                    {isQrLoading ? (
                           <div>Đang tải mã QR...</div>
-                        ) : qrCodeData?.data?.qrCodeUrl ? (
-                          <div className="flex flex-col items-center">
+                    ) : qrCodeData?.data?.qrCodeUrl ? (
+                      <div className="flex flex-col items-center">
                             <p className="mb-4">Quét mã QR để thanh toán:</p>
-                            <Image
+                          <Image
                               src={qrCodeData.data.qrCodeUrl}
-                              alt="QR Code"
-                              width={200}
-                              height={200}
-                              className="mx-auto"
-                            />
+                            alt="QR Code"
+                            width={200}
+                            height={200}
+                            className="mx-auto"
+                          />
                             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                               <p className="text-red-600 font-medium text-sm">
                                 ⚠️ QUÝ KHÁCH VUI LÒNG KHÔNG THAY ĐỔI SỐ TIỀN HOẶC NỘI DUNG THANH TOÁN
                               </p>
-                            </div>
+                        </div>
                             <p className="text-sm text-gray-500 mt-4">
-                              Hệ thống sẽ tự động cập nhật khi nhận được thanh toán
-                            </p>
+                          Hệ thống sẽ tự động cập nhật khi nhận được thanh toán
+                        </p>
                             
                             {/* Hiển thị trạng thái thanh toán */}
                             <div className="mt-4 py-2 px-4 rounded-full flex items-center justify-center gap-2">
@@ -694,12 +1342,19 @@ export default function IntegratedPaymentPage() {
                             
                             {/* Hành động sau khi thanh toán thành công */}
                             {paymentStatus === "PAID" && (
-                              <Button
-                                onClick={() => router.push(`/cashier-order`)}
-                                className="mt-4 bg-green-600 hover:bg-green-700"
-                              >
-                                Hoàn tất và quay lại danh sách đơn hàng
-                              </Button>
+                              <div className="mt-4 flex flex-col space-y-3">
+                                <Button
+                                  onClick={() => {
+                                    // In hóa đơn trực tiếp thay vì mở trang mới
+                                    if (paymentId) {
+                                      handlePrintBill(paymentId);
+                                    }
+                                  }}
+                                  className="bg-green-600 hover:bg-green-700"
+                                >
+                                  Hoàn tất thanh toán và in hóa đơn
+                                </Button>
+                              </div>
                             )}
                           </div>
                         ) : (
@@ -708,20 +1363,20 @@ export default function IntegratedPaymentPage() {
                           </div>
                         )}
                       </div>
-                    </div>
-                  )}
+                      </div>
+                    )}
                 </div>
               )}
               
-              <Button
-                variant="outline"
+            <Button
+              variant="outline"
                 onClick={() => router.push(`/cashier-order`)}
                 className="w-full"
               >
                 Quay lại danh sách đơn hàng
-              </Button>
-            </CardContent>
-          </Card>
+            </Button>
+        </CardContent>
+      </Card>
         </div>
       </div>
     </div>

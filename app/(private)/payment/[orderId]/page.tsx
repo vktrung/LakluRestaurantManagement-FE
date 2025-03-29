@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import {
   useCreatePaymentMutation,
@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import Image from "next/image"
-import { CalendarIcon, Plus, Minus } from "lucide-react"
+import { CalendarIcon, Plus, Minus, X } from "lucide-react"
 import type { OrderItem, PaymentResponse } from "@/features/payment/types"
 import type { Menu, MenuItem } from '@/features/menu/types'
 import { Checkbox } from "@/components/ui/checkbox"
@@ -69,6 +69,11 @@ export default function IntegratedPaymentPage() {
   // State để kiểm soát hydration
   const [isMounted, setIsMounted] = useState(false)
 
+  // State cho modal xác nhận rời trang
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
+  const pageRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     setIsMounted(true)
   }, [])
@@ -108,6 +113,26 @@ export default function IntegratedPaymentPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "PAID" | null>(null)
+  const [paymentCompleted, setPaymentCompleted] = useState(false)
+
+  // Tạo một phiên bản tùy chỉnh của router để chặn navigation
+  const originalPush = useRef(router.push).current;
+  
+  // Hàm push tùy chỉnh
+  const customRouterPush = useCallback((href: string) => {
+    // Các URLs cho phép chuyển hướng ngay mà không cần xác nhận
+    const allowedUrls = [pendingNavigation];
+    
+    // Kiểm tra nếu cần hiển thị dialog xác nhận
+    if (!paymentCompleted && selectedItems.length > 0 && !allowedUrls.includes(href)) {
+      setPendingNavigation(href);
+      setIsModalOpen(true);
+      return Promise.resolve(false);
+    }
+    
+    // Nếu không cần xác nhận, thực hiện navigation bình thường
+    return originalPush(href);
+  }, [originalPush, paymentCompleted, selectedItems.length, pendingNavigation]);
 
   // API hooks
   const [createPayment, { isLoading: isCreating }] = useCreatePaymentMutation()
@@ -139,10 +164,60 @@ export default function IntegratedPaymentPage() {
     item.dish?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  // Ghi đè phương thức push của router
+  useEffect(() => {
+    // @ts-ignore - Override router method temporarily
+    router.push = customRouterPush;
+    
+    return () => {
+      // @ts-ignore - Restore original method when unmounting
+      router.push = originalPush;
+    };
+  }, [router, customRouterPush, originalPush]);
+
+  // Hàm xác nhận chuyển trang
+  const confirmNavigation = () => {
+    if (pendingNavigation) {
+      setIsModalOpen(false);
+      // Sử dụng originalPush để tránh gọi lại customRouterPush
+      originalPush(pendingNavigation);
+      setPendingNavigation(null);
+    }
+  };
+
+  // Hàm từ chối chuyển trang
+  const cancelNavigation = () => {
+    setIsModalOpen(false);
+    setPendingNavigation(null);
+  };
+
+  // Xử lý chuyển trang trong ứng dụng Next.js
+  const handleNavigation = useCallback((path: string) => {
+    // Nếu thanh toán đã hoàn tất, không cần xác nhận
+    if (paymentCompleted) {
+      // Sử dụng originalPush thay vì router.push
+      originalPush(path);
+      return;
+    }
+    
+    if (selectedItems.length > 0) {
+      // Hiển thị modal xác nhận
+      setPendingNavigation(path);
+      setIsModalOpen(true);
+    } else {
+      // Nếu không có món nào được chọn, chuyển trang luôn
+      originalPush(path);
+    }
+  }, [originalPush, paymentCompleted, selectedItems.length]);
+
   // Cập nhật paymentStatus từ paymentData
   useEffect(() => {
     if (paymentData?.data?.paymentStatus) {
       setPaymentStatus(paymentData.data.paymentStatus)
+      // Đánh dấu thanh toán đã hoàn tất nếu trạng thái là PAID
+      if (paymentData.data.paymentStatus === "PAID") {
+        setPaymentCompleted(true)
+      }
     }
   }, [paymentData])
 
@@ -150,6 +225,7 @@ export default function IntegratedPaymentPage() {
   useEffect(() => {
     if (existingOrderItemsData?.data && existingOrderItemsData.data.length > 0 && selectedItems.length === 0) {
       console.log("Existing order items:", existingOrderItemsData.data);
+      
       // Chuyển đổi dữ liệu từ API thành định dạng selectedItems
       const existingItems = existingOrderItemsData.data.map((item: any) => {
         // Đảm bảo id không bao giờ undefined - sử dụng orderItemId nếu tồn tại
@@ -160,29 +236,52 @@ export default function IntegratedPaymentPage() {
         // Ưu tiên sử dụng id, nếu không có thì dùng orderItemId
         const itemId = item.id || item.orderItemId || 0;
         
-        return {
-          id: itemId, // Đảm bảo id luôn là số, không bao giờ undefined
+        // Tạo đối tượng dish đúng kiểu dữ liệu
+        const dish = {
+          id: item.menuItemId || 0,
+          name: item.dishName || "Unknown", // Lưu dishName vào dish.name
+          description: "",
+          price: Number(item.price || 0),
+          status: "enable",
+          categoryId: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          images: [] as { id: number; link: string; name: string }[] // Mảng rỗng cho images với kiểu dữ liệu chính xác
+        };
+        
+        // Tạo ExtendedMenuItem
+        const extendedMenuItem: ExtendedMenuItem = {
+          id: itemId,
           dishId: item.menuItemId || 0,
-          dish: item.dish,
+          dish: dish,
           price: Number(item.price || 0),
           quantity: item.quantity || 0,
           menuItemId: item.menuItemId || 0,
           orderId: item.orderId || 0,
-          // Các trường bắt buộc của MenuItem
           status: "enable",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          // Thêm các trường cần thiết khác
           menuId: 0, 
           categoryId: 0
-        } as ExtendedMenuItem;
+        };
+        
+        return extendedMenuItem;
       });
       
       console.log("Converted to selectedItems:", existingItems);
       setSelectedItems(existingItems);
       
       // Đồng thời cập nhật orderItems để đảm bảo tính nhất quán
-      setOrderItems(existingOrderItemsData.data);
+      const orderItemsFromAPI = existingOrderItemsData.data.map((item: any) => ({
+        id: item.id || item.orderItemId,
+        dishName: item.dishName || "Unknown", // Sử dụng trực tiếp dishName từ API
+        quantity: item.quantity || 0,
+        price: (item.price || 0).toString(),
+        orderId: item.orderId,
+        menuItemId: item.menuItemId,
+        statusLabel: item.statusLabel
+      }));
+      setOrderItems(orderItemsFromAPI);
     }
   }, [existingOrderItemsData, selectedItems.length]);
 
@@ -352,7 +451,7 @@ export default function IntegratedPaymentPage() {
       
       // Nếu chọn in hóa đơn tự động và thanh toán ngay
       if (printBill && result.data?.paymentId && paymentStatus === "PAID") {
-        router.push(`/bill/${result.data.paymentId}`)
+        handleNavigation(`/bill/${result.data.paymentId}`);
       }
     } catch (error: any) {
       const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định."
@@ -387,6 +486,8 @@ export default function IntegratedPaymentPage() {
             }).unwrap()
             
             setErrorMessage(`Thanh toán thành công: Tiền thối: ${payResult.data?.change || "0"}`)
+            // Đánh dấu thanh toán đã hoàn tất
+            setPaymentCompleted(true)
             
             // In hóa đơn trực tiếp thay vì mở trang mới
             handlePrintBill(result.data.paymentId);
@@ -416,6 +517,8 @@ export default function IntegratedPaymentPage() {
         receivedAmount: Number(receivedAmount),
       }).unwrap()
       setErrorMessage(`Thanh toán thành công: Tiền thối: ${result.data?.change || "0"}`)
+      // Đánh dấu thanh toán đã hoàn tất
+      setPaymentCompleted(true)
     } catch (error: any) {
       const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định."
       setErrorMessage(`Thanh toán thất bại: ${message}`)
@@ -930,7 +1033,7 @@ export default function IntegratedPaymentPage() {
         
         // Redirect to order list after printing (with delay)
         setTimeout(() => {
-          router.push('/cashier-order');
+          handleNavigation('/cashier-order');
         }, 2000);
       } catch (error: any) {
         console.error('Error printing bill:', error);
@@ -942,6 +1045,95 @@ export default function IntegratedPaymentPage() {
     fetchAndPrintBill();
   };
 
+  // Thêm useEffect để hiển thị dialog khi refresh hoặc đóng tab browser
+  useEffect(() => {
+    // Hàm xử lý trước khi rời trang
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Chỉ hiển thị xác nhận nếu chưa thanh toán và có thông tin cần lưu
+      if (!paymentCompleted && selectedItems.length > 0) {
+        // Chuẩn message cho các trình duyệt modern
+        const message = "Bạn có chắc chắn muốn rời khỏi trang? Thông tin thanh toán có thể bị mất.";
+        e.preventDefault();
+        e.returnValue = message;
+        return message;
+      }
+    };
+
+    // Thêm event listener khi component mount
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Cleanup khi component unmount
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [paymentCompleted, selectedItems.length]);
+
+  // Xử lý khi người dùng nhấn nút Back của trình duyệt
+  useEffect(() => {
+    // Hàm xử lý khi người dùng nhấn nút Back
+    const handlePopState = (e: PopStateEvent) => {
+      // Ngăn chặn hành động mặc định nếu chưa thanh toán và có thông tin cần lưu
+      if (!paymentCompleted && selectedItems.length > 0) {
+        // Ngăn router của Next.js điều hướng
+        e.preventDefault();
+        
+        // Hiển thị modal xác nhận
+        setIsModalOpen(true);
+        
+        // Đẩy một state mới vào history để ngăn việc điều hướng về trang trước
+        window.history.pushState(null, '', window.location.href);
+        
+        return;
+      }
+    };
+
+    // Thêm state vào history stack để có thể bắt sự kiện popstate
+    window.history.pushState(null, '', window.location.href);
+    
+    // Lắng nghe sự kiện popstate (khi người dùng nhấn nút Back)
+    window.addEventListener('popstate', handlePopState);
+    
+    // Cleanup khi component unmount
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [paymentCompleted, selectedItems.length]);
+
+  // Lắng nghe tất cả các events click trên các thẻ <a> trong trang
+  useEffect(() => {
+    // Bỏ qua nếu thanh toán đã hoàn tất hoặc không có items
+    if (paymentCompleted || selectedItems.length === 0) {
+      return;
+    }
+
+    // Hàm xử lý khi click vào link
+    const handleLinkClick = (e: MouseEvent) => {
+      // Bắt sự kiện click trên thẻ <a>
+      const target = e.target as HTMLElement;
+      const linkElement = target.closest('a');
+      
+      if (linkElement && pageRef.current?.contains(linkElement)) {
+        // Lấy href từ link
+        const href = linkElement.getAttribute('href');
+        
+        // Bỏ qua nếu là các links đặc biệt
+        if (href && href !== '#' && !href.startsWith('tel:') && !href.startsWith('mailto:')) {
+          e.preventDefault();
+          setPendingNavigation(href);
+          setIsModalOpen(true);
+        }
+      }
+    };
+
+    // Gắn event listener vào document
+    document.addEventListener('click', handleLinkClick);
+
+    // Clean up
+    return () => {
+      document.removeEventListener('click', handleLinkClick);
+    };
+  }, [paymentCompleted, selectedItems.length]);
+
   // Tránh render trước khi hydration hoàn tất
   if (!isMounted) {
     return null
@@ -950,7 +1142,41 @@ export default function IntegratedPaymentPage() {
   const subtotal = calculateSubtotal()
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4" ref={pageRef}>
+      {/* Modal xác nhận rời trang */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Xác nhận rời khỏi trang</h3>
+              <button 
+                onClick={cancelNavigation}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700">Bạn có chắc chắn muốn rời khỏi trang thanh toán? Thông tin thanh toán có thể bị mất.</p>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button 
+                variant="outline" 
+                onClick={cancelNavigation}
+              >
+                Ở lại
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={confirmNavigation}
+              >
+                Rời khỏi
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {errorMessage && (
         <div
           className={`mb-4 p-4 rounded-lg shadow-sm flex items-center gap-2 ${errorMessage.includes("thành công") ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}
@@ -1370,10 +1596,10 @@ export default function IntegratedPaymentPage() {
               
             <Button
               variant="outline"
-                onClick={() => router.push(`/cashier-order`)}
-                className="w-full"
-              >
-                Quay lại danh sách đơn hàng
+              onClick={() => handleNavigation('/cashier-order')}
+              className="w-full"
+            >
+              Quay lại danh sách đơn hàng
             </Button>
         </CardContent>
       </Card>

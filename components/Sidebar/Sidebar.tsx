@@ -160,10 +160,11 @@ const singleSection = {
       icon: <FileText className="h-4 w-4" />,
     },
     {
-      label: 'Chọn món',
-      href: '/nha-hang/chon-mon',
+      label: 'Bếp',
+      href: '/kitchen',
       icon: <IoFastFood className="h-4 w-4" />,
     },
+
   ],
 };
 

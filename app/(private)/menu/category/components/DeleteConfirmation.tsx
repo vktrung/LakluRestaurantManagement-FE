@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useDeleteCategoryMutation } from '@/features/category/categoryApiSlice';
 import { Category } from '@/features/category/types';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface DeleteConfirmationProps {
   category: Category;
@@ -18,15 +19,39 @@ export default function DeleteConfirmation({
   onCancel,
 }: DeleteConfirmationProps) {
   const [deleteCategory, { isLoading }] = useDeleteCategoryMutation();
-  const [error, setError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const handleDelete = async () => {
+    setApiError(null);
+
     try {
       await deleteCategory(category.id).unwrap();
       onSuccess();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to delete category:', err);
-      setError('Đã xảy ra lỗi khi xóa danh mục. Vui lòng thử lại sau.');
+
+      // Handle API error response
+      if (err?.data) {
+        const { data, message, httpStatus, error: errorCode } = err.data;
+
+        if (httpStatus === 400) {
+          if (message) {
+            setApiError(message);
+          } else {
+            setApiError('Không thể xóa danh mục này. Vui lòng kiểm tra lại.');
+          }
+        } else if (httpStatus === 409) {
+          setApiError('Danh mục này đang được sử dụng. Không thể xóa.');
+        } else if (message) {
+          setApiError(message);
+        } else {
+          setApiError('Đã xảy ra lỗi khi xóa danh mục. Vui lòng thử lại sau.');
+        }
+      } else {
+        setApiError(
+          'Đã xảy ra lỗi khi kết nối đến máy chủ. Vui lòng thử lại sau.',
+        );
+      }
     }
   };
 
@@ -43,10 +68,11 @@ export default function DeleteConfirmation({
         không thể hoàn tác.
       </p>
 
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
-          {error}
-        </div>
+      {apiError && (
+        <Alert variant="destructive" className="mb-2">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{apiError}</AlertDescription>
+        </Alert>
       )}
 
       <div className="flex justify-end gap-3 pt-4">

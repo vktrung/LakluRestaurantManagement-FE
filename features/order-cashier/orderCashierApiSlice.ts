@@ -3,7 +3,7 @@
 import { endpoints } from '@/configs/endpoints';
 import baseQuery from '@/features/baseQuery';
 import { createApi } from '@reduxjs/toolkit/query/react';
-import { OrderResponse,OrderResponseId,CreateOrderItemResponse,CreateOrderItemRequest ,GetOrdersParams} from './types';
+import { OrderResponse,OrderResponseId,CreateOrderItemResponse,CreateOrderItemRequest ,GetOrdersParams, UpdateOrderStatusRequest, UpdateOrderItemStatusRequest, OrderItemResponse} from './types';
 
 export const orderCashierApiSlice = createApi({
   reducerPath: 'orderCashier',
@@ -42,6 +42,34 @@ export const orderCashierApiSlice = createApi({
     }),
    
 
+    // Cập nhật trạng thái đơn hàng
+    updateOrderStatus: builder.mutation<any, { id: number, data: UpdateOrderStatusRequest }>({
+      query: ({ id, data }) => ({
+        url: `${endpoints.OrderCashierApi}${id}/status`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['order-list'],
+    }),
+
+    // Cập nhật trạng thái món ăn trong đơn hàng
+    updateOrderItemStatus: builder.mutation<any, { id: number, data: UpdateOrderItemStatusRequest }>({
+      query: ({ id, data }) => ({
+        url: `${endpoints.OrderItemApi}status/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['order-list'],
+    }),
+
+    // Lấy thông tin chi tiết của order item
+    getOrderItemById: builder.query<OrderItemResponse, number>({
+      query: id => ({
+        url: `${endpoints.OrderItemApi}${id}`,
+        method: 'GET',
+      }),
+      providesTags: ['order-list'],
+    }),
   }),
 });
 
@@ -49,6 +77,9 @@ export const orderCashierApiSlice = createApi({
 export const {
   useGetOrdersQuery,
   useGetOrderByIdQuery,
+  useUpdateOrderStatusMutation,
+  useUpdateOrderItemStatusMutation,
+  useGetOrderItemByIdQuery,
 } = orderCashierApiSlice;
 
 export default orderCashierApiSlice;

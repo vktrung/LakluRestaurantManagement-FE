@@ -61,19 +61,40 @@ export function useSchedule(currentDate: Date) {
       "Chủ Nhật": [],
     };
 
-    shifts.forEach((shift) => {
+    // Sắp xếp ca làm theo thời gian bắt đầu
+    const sortedShifts = [...shifts].sort((a, b) => 
+      new Date(a.timeIn).getTime() - new Date(b.timeIn).getTime()
+    );
+
+    sortedShifts.forEach((shift) => {
       const inDate = new Date(shift.timeIn);
       const dayOfWeek = inDate.getDay();
       const dayIndex = dayOfWeek === 0 ? 7 : dayOfWeek;
       const day = dayIndex === 7 ? "Chủ Nhật" : `Thứ ${dayIndex + 1}`;
       const time = `${shift.timeIn} - ${shift.timeOut}`;
 
-      const existingSlot = scheduleMap[day].find((slot) => slot.time === time);
-      if (existingSlot) {
-        existingSlot.shifts.push(shift);
+      // Kiểm tra xem đã có time slot nào cho khung giờ này chưa
+      let existingTimeSlot = scheduleMap[day].find(slot => slot.time === time);
+      
+      if (existingTimeSlot) {
+        // Kiểm tra xem shift đã tồn tại trong slot này chưa (dựa vào ID)
+        const shiftExists = existingTimeSlot.shifts.some(s => s.id === shift.id);
+        if (!shiftExists) {
+          existingTimeSlot.shifts.push(shift);
+        }
       } else {
+        // Tạo time slot mới nếu chưa có
         scheduleMap[day].push({ time, shifts: [shift] });
       }
+    });
+
+    // Sắp xếp các time slot theo thời gian bắt đầu
+    Object.keys(scheduleMap).forEach(day => {
+      scheduleMap[day].sort((a, b) => {
+        const timeA = a.shifts[0]?.timeIn || "";
+        const timeB = b.shifts[0]?.timeIn || "";
+        return new Date(timeA).getTime() - new Date(timeB).getTime();
+      });
     });
 
     return scheduleMap;

@@ -10,6 +10,8 @@ import {
   useUpdateCategoryMutation,
 } from '@/features/category/categoryApiSlice';
 import { Category, CategoryRequest } from '@/features/category/types';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface CategoryFormProps {
   category?: Category;
@@ -27,6 +29,7 @@ export default function CategoryForm({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [errors, setErrors] = useState({ name: '' });
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const [createCategory, { isLoading: isCreating }] =
     useCreateCategoryMutation();
@@ -57,6 +60,7 @@ export default function CategoryForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setApiError(null);
 
     if (!validateForm()) return;
 
@@ -72,13 +76,45 @@ export default function CategoryForm({
         await createCategory(categoryData).unwrap();
       }
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save category:', error);
+
+      // Handle API error response
+      if (error?.data) {
+        const { data, message, httpStatus, error: errorCode } = error.data;
+
+        if (httpStatus === 400) {
+          if (message) {
+            setApiError(message);
+          } else {
+            setApiError(
+              'Dữ liệu không hợp lệ. Vui lòng kiểm tra thông tin nhập vào.',
+            );
+          }
+        } else if (httpStatus === 409) {
+          setApiError('Tên danh mục đã tồn tại. Vui lòng sử dụng tên khác.');
+        } else if (message) {
+          setApiError(message);
+        } else {
+          setApiError('Đã xảy ra lỗi khi lưu danh mục. Vui lòng thử lại sau.');
+        }
+      } else {
+        setApiError(
+          'Đã xảy ra lỗi khi kết nối đến máy chủ. Vui lòng thử lại sau.',
+        );
+      }
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {apiError && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{apiError}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="space-y-2">
         <Label htmlFor="name" className="text-sm font-semibold text-gray-700">
           Tên Danh Mục <span className="text-red-500">*</span>

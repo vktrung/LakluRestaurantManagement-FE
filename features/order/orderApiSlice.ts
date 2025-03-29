@@ -1,8 +1,6 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
-
-import { OrderResponse, Order, UpdateOrderStatusRequest } from './types'; // Assuming types are in a separate file
 import baseQuery from '../baseQuery';
-import { endpoints } from '@/configs/endpoints';
+import { Order, OrderResponse, UpdateOrderStatusRequest } from '@/features/order-cashier/types';
 
 export const orderApiSlice = createApi({
   reducerPath: 'orderApi',
@@ -11,43 +9,24 @@ export const orderApiSlice = createApi({
   endpoints: (builder) => ({
     // Get all orders
     getOrders: builder.query<OrderResponse, void>({
-      query: () => endpoints.Order,
+      query: () => '/api/v1/orders',
       providesTags: ['Order']
     }),
 
     // Get order by ID
     getOrderById: builder.query<Order, number>({
-      query: (id) => `${endpoints.Order}/${id}`,
+      query: (id) => `/api/v1/orders/${id}`,
       providesTags: (result, error, id) => [{ type: 'Order', id }]
-    }),
-
-    // Create a new order
-    createOrder: builder.mutation<OrderResponse, Partial<Order>>({
-      query: (newOrder) => ({
-        url: endpoints.Order,
-        method: 'POST',
-        body: newOrder
-      }),
-      invalidatesTags: ['Order']
     }),
 
     // Update order status
     updateOrderStatus: builder.mutation<OrderResponse, { id: number, statusUpdate: UpdateOrderStatusRequest }>({
       query: ({ id, statusUpdate }) => ({
-        url: `${endpoints.Order}/${id}/status`,
+        url: `/api/v1/orders/${id}/status`,
         method: 'PUT',
         body: statusUpdate
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Order', id }]
-    }),
-
-    // Delete an order
-    deleteOrder: builder.mutation<void, number>({
-      query: (id) => ({
-        url: `${endpoints.Order}/${id}`,
-        method: 'DELETE'
-      }),
-      invalidatesTags: ['Order']
+      invalidatesTags: (result, error, { id }) => [{ type: 'Order', id }, 'Order']
     })
   })
 });
@@ -56,7 +35,5 @@ export const orderApiSlice = createApi({
 export const {
   useGetOrdersQuery,
   useGetOrderByIdQuery,
-  useCreateOrderMutation,
-  useUpdateOrderStatusMutation,
-  useDeleteOrderMutation
+  useUpdateOrderStatusMutation
 } = orderApiSlice;

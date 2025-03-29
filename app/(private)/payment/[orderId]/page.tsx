@@ -10,7 +10,7 @@ import {
   useGetOrderItemsInOrderQuery,
   useUpdateOrderItemQuantityMutation,
   useCreateOrderItemMutation,
-} from "@/features/payment/paymentApiSlice"
+} from "@/features/payment/PaymentApiSlice"
 import {
   useGetMenusQuery,
   useGetMenuItemByIdQuery,

@@ -3,6 +3,7 @@ import { MenuItem, Menu } from '@/features/menu/types';
 import { MinusCircle, PlusCircle, Trash2 } from 'lucide-react'; // Import icons for buttons
 
 const OrderPanel = ({
+  
   orderItems,
   onRemoveItem,
   onUpdateQuantity,
@@ -10,7 +11,7 @@ const OrderPanel = ({
   menusData, // Pass menusData to look up full MenuItem
 
 }: {
-  orderItems: { dishId: number; quantity: number; name: string; image: string; price: number }[];
+    orderItems: { menuItemsId: number;  dishId: number; quantity: number; name: string; image: string; price: number }[];
   onRemoveItem: (dishId: number) => void;
   onUpdateQuantity: (dishId: number, quantity: number) => void;
   onClose: () => void;
@@ -22,7 +23,8 @@ const OrderPanel = ({
   console.log('Order items in panel:', orderItems); // Debug log
   
     function handleClick() {
-        console.log('Order items',orderItems); // Debug log
+      console.log('Order items', orderItems);
+      console.log(orderItems)// Debug log
     }
 
   return (

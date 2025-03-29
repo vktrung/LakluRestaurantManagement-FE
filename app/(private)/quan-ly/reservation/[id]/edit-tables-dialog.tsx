@@ -68,21 +68,27 @@ export function EditTablesDialog({ reservation, isOpen, onClose }: EditTablesDia
     }
   }, [reservation?.detail?.checkIn]);
   
+  // Format date for API
+  const formatDateForApi = (dateString: string) => {
+    const date = new Date(dateString);
+    return format(date, 'yyyy-MM-dd');
+  };
+
   // Fetch available tables for the selected date
-  const { data: tablesByDateResponse, isLoading: isLoadingTables } = useGetTablesByDateQuery(
-    formattedDate,
-    { skip: !formattedDate }
-  )
-  
+  const { data: tablesByDateResponse, isLoading: isLoadingTables, refetch: refetchTables } = useGetTablesByDateQuery(
+    formatDateForApi(reservation.detail.checkIn),
+    { skip: !reservation.detail.checkIn }
+  );
+
+  // Get available tables from the API response
+  const availableTables = tablesByDateResponse?.data || [];
+
   // Debug tablesByDateResponse
   useEffect(() => {
     if (tablesByDateResponse) {
       console.log('debug API response tablesByDate:', tablesByDateResponse);
     }
   }, [tablesByDateResponse]);
-  
-  // Get available tables from the API response, sử dụng useMemo để tránh tính toán lại
-  const availableTables = useMemo(() => tablesByDateResponse?.data || [], [tablesByDateResponse])
   
   // Mutations
   const [mergeOrSplitTables, { isLoading: isMerging }] = useMergeOrSplitTablesMutation()
@@ -95,13 +101,23 @@ export function EditTablesDialog({ reservation, isOpen, onClose }: EditTablesDia
       console.log('debug currentTableIds:', reservation?.detail?.tableIds);
       console.log('debug availableTables:', availableTables);
       console.log('debug tableCount:', reservation?.detail?.tableIds?.length || 0);
-      console.log('debug formattedDate:', formattedDate);
+      console.log('debug checkIn:', reservation.detail.checkIn);
     }
-  }, [isOpen, availableTables, reservation?.detail?.tableIds, formattedDate]);
+  }, [isOpen, availableTables, reservation?.detail?.tableIds, reservation.detail.checkIn]);
+  
+  // Gọi lại API khi mở dialog
+  useEffect(() => {
+    if (isOpen) {
+      refetchTables();
+    }
+  }, [isOpen, refetchTables]);
   
   // Đặt lại bàn đã chọn và số người khi dialog mở
   useEffect(() => {
     if (isOpen && reservation) {
+      // Gọi lại API để lấy danh sách bàn mới nhất
+      refetchTables();
+      
       // Nếu đã có bàn được đặt, hiển thị chúng
       const currentTableIds = reservation.detail.tableIds || []
       setSelectedTables(currentTableIds)
@@ -122,7 +138,7 @@ export function EditTablesDialog({ reservation, isOpen, onClose }: EditTablesDia
         setErrorMessage(null)
       }
     }
-  }, [isOpen, reservation])
+  }, [isOpen, reservation, refetchTables])
 
   // Lấy danh sách bàn hiện đang được sử dụng cho đặt bàn này
   const currentTableIds = useMemo(() => 
@@ -266,6 +282,8 @@ export function EditTablesDialog({ reservation, isOpen, onClose }: EditTablesDia
       }).unwrap()
 
       toast.success("Đã thêm bàn thành công")
+      // Gọi lại API để cập nhật danh sách bàn
+      await refetchTables()
       onClose()
     } catch (error: any) {
       handleApiError(error)
@@ -292,6 +310,8 @@ export function EditTablesDialog({ reservation, isOpen, onClose }: EditTablesDia
       }).unwrap()
 
       toast.success("Đã xóa bàn thành công")
+      // Gọi lại API để cập nhật danh sách bàn
+      await refetchTables()
       onClose()
     } catch (error: any) {
       handleApiError(error)
@@ -360,8 +380,9 @@ export function EditTablesDialog({ reservation, isOpen, onClose }: EditTablesDia
                 ) : (
                   <div className="grid grid-cols-4 gap-2 max-h-[400px] overflow-y-auto p-2">
                     {/* Sử dụng thông tin bàn từ API mới */}
-                    {reservation.detail.tables && 
-                      reservation.detail.tables.map((table) => {
+                    {availableTables
+                      .filter(table => currentTableIds.includes(table.id))
+                      .map((table) => {
                         const isSelected = tablesToRemove.includes(table.id);
                         
                         return (
@@ -376,6 +397,7 @@ export function EditTablesDialog({ reservation, isOpen, onClose }: EditTablesDia
                             )}
                           >
                             <div className="font-medium">{table.tableNumber}</div>
+                            <div className="text-xs text-muted-foreground">Sức chứa: {table.capacity} người</div>
                             <div className="text-xs mt-1">
                               <span className="text-orange-600">Bàn hiện tại</span>
                             </div>

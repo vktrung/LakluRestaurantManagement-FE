@@ -64,7 +64,7 @@ const OrderRow = ({ order }: { order: Order }) => {
         {isStaffLoading
           ? 'Đang tải...'
           : staff
-          ? staff.username
+          ? staff.data.username
           : `Nhân viên ${order.staffId}`}
       </TableCell>
     </TableRow>
@@ -140,7 +140,8 @@ const OrderTable = ({ orders }: OrderTableProps) => {
                     {isStaffLoading ? (
                       'Đang tải...'
                     ) : staff ? (
-                      staff.username
+                      staff.data.username
+                      
                     ) : (
                       `Nhân viên ${order.staffId}`
                     )}

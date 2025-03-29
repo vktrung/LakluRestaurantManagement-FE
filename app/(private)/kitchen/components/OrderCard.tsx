@@ -185,9 +185,12 @@ export default function OrderCard({
           <div className="text-gray-600 text-xs mt-1">
             Thời gian: {formatTime(order.createdAt)}
           </div>
+          <div className="text-gray-600 text-xs mt-1">
+            Bàn: {order.tables.map(table => table.tableNumber).join(', ')}
+          </div>
         </div>
         <div className="text-right text-xs text-gray-600">
-          NV: {staffData?.data?.username || 'admin'}
+          Nhân viên quản lý đơn: {staffData?.data?.username || 'admin'}
         </div>
       </div>
 

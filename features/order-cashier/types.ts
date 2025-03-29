@@ -2,6 +2,11 @@
 
 export type OrderItemStatus = 'PENDING' | 'DOING' | 'COMPLETED' | 'CANCELLED';
 
+export interface Table {
+  id: number;
+  tableNumber: string;
+}
+
 export interface OrderItem {
   orderItemId: number;
   orderId: number;
@@ -30,6 +35,7 @@ export interface Order {
   createdAt: string; 
   updatedAt: string | null;
   orderItems: OrderItem[];
+  tables: Table[];
   staff?: any; // Sẽ được điền sau khi lấy dữ liệu từ user me
 }
   

@@ -18,7 +18,7 @@ export default function KitchenView() {
     isError: isOrdersError,
   } = useGetOrdersQuery(undefined, {
     refetchOnMountOrArgChange: true,
-    pollingInterval: 15000, // Poll every 15 seconds
+    pollingInterval: 10000, // Poll every 15 seconds
   });
 
   // Lấy thông tin người dùng hiện tại

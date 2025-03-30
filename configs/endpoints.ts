@@ -27,5 +27,5 @@ export const endpoints = {
   ProfileApi: '/api/v1/profiles/',
   ProfileMe: '/api/v1/profiles/me',
   UploadAvatar: '/api/v1/profiles/me/upload-avatar',
-  ActivityLogs: '/api/v1/activity-logs/user',
+  ActivityLogs: '/api/v1/activity-logs',
 } as const;

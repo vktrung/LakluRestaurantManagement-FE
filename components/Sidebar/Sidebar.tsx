@@ -155,6 +155,11 @@ const mainAccordionItems = [
         href: '/permission',
         icon: <SettingsIcon className="h-4 w-4" />,
       },
+      {
+        label: 'Lịch sử hoạt động',
+        href: '/activitylog',
+        icon: <FileText className="h-4 w-4" />,
+      },
     ],
   },
 ];

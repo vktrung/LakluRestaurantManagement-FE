@@ -83,7 +83,7 @@ export const profileApiSlice = createApi({
 
     getActivityLogs: builder.query<ActivityLogsResponse['data'], GetActivityLogsParams>({
       query: ({ userId, page = 0, size = 10, sort = ['createdAt,desc'] }) => ({
-        url: `${endpoints.ActivityLogs}/${userId}`,
+        url: `${endpoints.ActivityLogs}/user/${userId}`,
         method: 'GET',
         params: { page, size, sort },
       }),

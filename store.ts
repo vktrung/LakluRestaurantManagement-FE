@@ -17,6 +17,7 @@ import { reservationApiSlice } from './features/reservation/reservationApiSlice'
 import {scheduleApiSlice} from './features/schedule/scheduleApiSlice';
 import { statisticsApiSlice } from '@/features/statistics/statisticsApiSlice';
 import { voucherApiSlice } from './features/voucher/voucherApiSlice';
+import { activityLogApiSlice } from './features/activitylog/activityLogApiSlice';
 
 export const store = configureStore({
   reducer: {
@@ -37,6 +38,7 @@ export const store = configureStore({
     [statisticsApiSlice.reducerPath]: statisticsApiSlice.reducer,
     [payrollApiSlice.reducerPath]: payrollApiSlice.reducer,
     [voucherApiSlice.reducerPath]: voucherApiSlice.reducer,
+    [activityLogApiSlice.reducerPath]: activityLogApiSlice.reducer,
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware()
@@ -57,6 +59,7 @@ export const store = configureStore({
       .concat(scheduleApiSlice.middleware)
       .concat(statisticsApiSlice.middleware)
       .concat(payrollApiSlice.middleware)
+      .concat(activityLogApiSlice.middleware)
       .concat(voucherApiSlice.middleware),
 });
 

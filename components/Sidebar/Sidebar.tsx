@@ -38,6 +38,8 @@ import {
   Soup,
   Briefcase,
   BookOpen,
+  Receipt,
+  Ticket,
 } from 'lucide-react';
 import { IoFastFood } from 'react-icons/io5';
 
@@ -81,6 +83,11 @@ const mainAccordionItems = [
         href: '/quan-ly/order',
         icon: <PieChart className="h-4 w-4" />,
       },
+      {
+        label: 'Mã giảm giá',
+        href: '/voucher',
+        icon: <Ticket className="h-4 w-4" />,
+      },
     ],
   },
   {
@@ -123,7 +130,12 @@ const mainAccordionItems = [
       {
         label: 'Mức Lương',
         href: '/salary',
-        icon: <Users className="h-4 w-4" />,
+        icon: <DollarSign className="h-4 w-4" />,
+      },
+      {
+        label: 'Bảng Lương',
+        href: '/payroll',
+        icon: <Receipt className="h-4 w-4" />,
       },
       {
         label: 'Lịch làm việc',
@@ -146,6 +158,11 @@ const mainAccordionItems = [
         label: 'Quyền',
         href: '/permission',
         icon: <SettingsIcon className="h-4 w-4" />,
+      },
+      {
+        label: 'Lịch sử hoạt động',
+        href: '/activitylog',
+        icon: <FileText className="h-4 w-4" />,
       },
     ],
   },

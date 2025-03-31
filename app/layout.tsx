@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" data-theme="dark">
+    <html lang="en" className="white" data-theme="white">
       <body>
         <div id="header-portal" className={clsx(styles.headerPortal)}></div>
         <div

@@ -131,7 +131,7 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
           className="bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors"
         >
           <PlusIcon className="h-4 w-4 mr-1.5" />
-          Thêm Mục Menu
+          Thêm món ăn trong thực đơn
         </Button>
       </div>
 

@@ -181,7 +181,11 @@ const singleSection = {
       href: '/kitchen',
       icon: <IoFastFood className="h-4 w-4" />,
     },
-
+    {
+      label: 'Máy POS 2',
+      href: '/cashier-order-2/order',
+      icon: <FileText className="h-4 w-4" />,
+    },
   ],
 };
 

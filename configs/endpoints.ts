@@ -23,4 +23,5 @@ export const endpoints = {
   ScheduleApi:'/api/v1/schedule/',
   OrderCashierApi:'/api/v1/order/',
   OrderItemApi: '/api/v1/order_items/',
+  Order: '/api/v1/order'
 }

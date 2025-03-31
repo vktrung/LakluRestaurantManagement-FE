@@ -76,6 +76,10 @@ const mainAccordionItems = [
         label: 'Đặt bàn',
         href: '/quan-ly/reservation',
         icon: <PieChart className="h-4 w-4" />,
+      },{
+        label: 'Gọi món',
+        href: '/quan-ly/order',
+        icon: <PieChart className="h-4 w-4" />,
       },
     ],
   },

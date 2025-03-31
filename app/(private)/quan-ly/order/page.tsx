@@ -19,7 +19,7 @@ const Order = () => {
       const reservations = data?.data || [];
     console.log(reservations);
     return (<div>
-        <OrderPage reservations={reservations}/>
+        <OrderPage />
     </div> );
 }
  

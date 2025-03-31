@@ -1,31 +1,72 @@
-import { Button } from '@/components/ui/button';
-import { MenuItem, Menu } from '@/features/menu/types';
-import { MinusCircle, PlusCircle, Trash2 } from 'lucide-react'; // Import icons for buttons
+// OrderPanel.tsx
+import { useRouter } from "next/navigation"; // For navigation after order creation
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { MinusCircle, PlusCircle, Trash2 } from "lucide-react";
+import { useCreateOrderMutation } from "@/features/order/orderApiSlice"; // Import the mutation hook
+import { CreateOrderRequest } from "@/features/order/types"; // Import the request type
 
 const OrderPanel = ({
-  
   orderItems,
   onRemoveItem,
   onUpdateQuantity,
   onClose,
-  menusData, // Pass menusData to look up full MenuItem
-
+  reservationId,
+  menusData// Add reservationId prop
+  // Add staffId prop (default to 1 for demo; replace with actual value)
 }: {
-    orderItems: { menuItemsId: number;  dishId: number; quantity: number; name: string; image: string; price: number }[];
+  orderItems: { menuItemsId: number; dishId: number; quantity: number; name: string; image: string; price: number }[];
   onRemoveItem: (dishId: number) => void;
   onUpdateQuantity: (dishId: number, quantity: number) => void;
   onClose: () => void;
-  menusData: Menu[];
+  reservationId: number;
+   menusData?: any[];   // Reservation ID for the order
+   // Staff ID for the order (optional, with default)
 }) => {
-  // Tính tổng giá
+  const [createOrder, { isLoading: isCreatingOrder }] = useCreateOrderMutation(); // Hook for creating an order
+  const router = useRouter(); // For navigation after order creation
+
+  // Calculate total price
   const total = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  
-  console.log('Order items in panel:', orderItems); // Debug log
-  
-    function handleClick() {
-      console.log('Order items', orderItems);
-      console.log(orderItems)// Debug log
+
+  // Handle order creation
+  const handleCreateOrder = async () => {
+    if (orderItems.length === 0) {
+      toast.error("Đơn hàng trống. Vui lòng thêm món trước khi tạo đơn.", {
+        position: "top-right",
+      });
+      return;
     }
+
+    // Transform orderItems to match CreateOrderRequest format
+    const orderData: CreateOrderRequest = {
+      reservationId,
+     
+      orderItems: orderItems.map((item) => ({
+        menuItemId: item.menuItemsId,
+        quantity: item.quantity,
+      })),
+    };
+
+    try {
+      const response = await createOrder(orderData).unwrap();
+      toast.success("Đơn hàng đã được tạo thành công!", {
+        position: "top-right",
+      });
+      console.log("Order created successfully:", response);
+
+      // Reset order or close panel
+      onClose();
+
+      // Optionally navigate back to the order list page
+      router.push(`/order/${reservationId}`);
+    } catch (error) {
+      console.error("Failed to create order:", error);
+      toast.error("Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.", {
+        position: "top-right",
+      });
+    }
+  };
 
   return (
     <div className="h-full border rounded-lg shadow-md p-4 space-y-4">
@@ -45,23 +86,24 @@ const OrderPanel = ({
               <div key={item.dishId} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center space-x-4">
                   <img
-                    src={item.image || '/placeholder.svg'}
+                    src={item.image || "/placeholder.svg"}
                     alt={item.name}
                     className="w-12 h-12 object-cover rounded"
                   />
                   <div>
                     <h4 className="font-medium">{item.name}</h4>
                     <p className="text-sm text-muted-foreground">
-                      {item.price.toLocaleString('vi-VN')} VND
+                      {item.price.toLocaleString("vi-VN")} VND
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center">
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => onUpdateQuantity(item.dishId, item.quantity - 1)}
+                    disabled={item.quantity <= 1} // Prevent quantity from going below 1
                   >
                     <MinusCircle className="h-4 w-4" />
                   </Button>
@@ -94,11 +136,16 @@ const OrderPanel = ({
         <div className="flex justify-between items-center mb-4">
           <span className="font-semibold">Tổng cộng:</span>
           <span className="font-bold text-lg">
-            {total.toLocaleString('vi-VN')} VND
+            {total.toLocaleString("vi-VN")} VND
           </span>
         </div>
-        <Button variant="default" className="w-full bg-green-600 hover:bg-green-700"  onClick={() => handleClick()} >
-          Tạo Đơn
+        <Button
+          variant="default"
+          className="w-full bg-green-600 hover:bg-green-700"
+          onClick={handleCreateOrder}
+          disabled={isCreatingOrder || orderItems.length === 0} // Disable while creating or if no items
+        >
+          {isCreatingOrder ? "Đang tạo..." : "Tạo Đơn"}
         </Button>
       </div>
     </div>

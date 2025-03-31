@@ -79,18 +79,11 @@ export default function OrderPage() {
     return tables.map((table) => table.tableNumber).join(", ");
   };
 
-  const handleCreateOrder = (reservation: ReservationResponse, hasOrders: boolean) => {
-    if (hasOrders) {
-      toast.success(`Đang xem đơn hàng cho đặt bàn ${reservation.id}.`, {
-        position: "top-right",
-      });
-      router.push(`./order/${reservation.id}`); // Navigate to view orders
-    } else {
-      toast.success(`Đang tạo đơn hàng cho đặt bàn ${reservation.id}.`, {
-        position: "top-right",
-      });
-      router.push(`./order/menu-order/${reservation.id}`); // Navigate to create order
-    }
+  const handleCreateOrder = (reservation: ReservationResponse) => {
+    toast.success(`Đang mở đơn hàng cho đặt bàn ${reservation.id}.`, {
+      position: "top-right",
+    });
+    router.push(`/order/${reservation.id}`);
   };
 
   const activeReservations = reservations.filter(
@@ -188,7 +181,7 @@ export default function OrderPage() {
                     variant="default"
                     size="sm"
                     className="w-full bg-indigo-600 hover:bg-indigo-700 text-white mt-2"
-                    onClick={() => handleCreateOrder(reservation, hasOrders)}
+                    onClick={() => handleCreateOrder(reservation)}
                   >
                     {hasOrders && !ordersFetching ? "Xem đơn" : "Tạo đơn hàng"}
                   </Button>

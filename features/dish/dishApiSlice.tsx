@@ -1,7 +1,14 @@
 import { endpoints } from '@/configs/endpoints';
 import baseQuery from '@/features/baseQuery';
 import { createApi } from '@reduxjs/toolkit/query/react';
-import { Dish, DishByIdResponse, DishRequest, DishResponse } from './types';
+import {
+  Dish,
+  DishByIdResponse,
+  DishRequest,
+  DishResponse,
+  DishesParams,
+  PagedDishResponse,
+} from './types';
 
 export const dishApiSlice = createApi({
   reducerPath: 'dishApi',
@@ -12,6 +19,32 @@ export const dishApiSlice = createApi({
       query: () => ({
         url: endpoints.DishApi,
         method: 'GET',
+      }),
+      providesTags: ['dish-list'],
+    }),
+
+    getPagedDishes: builder.query<PagedDishResponse, DishesParams>({
+      query: params => {
+        const {
+          page = 0,
+          size = 10,
+          sortBy = 'id',
+          sortDirection = 'asc',
+        } = params || {};
+        return {
+          url: `${endpoints.DishApi}paged`,
+          method: 'GET',
+          params: { page, size, sortBy, sortDirection },
+        };
+      },
+      providesTags: ['dish-list'],
+    }),
+
+    searchDishes: builder.query<DishResponse, string>({
+      query: name => ({
+        url: `${endpoints.DishApi}search`,
+        method: 'GET',
+        params: { name },
       }),
       providesTags: ['dish-list'],
     }),
@@ -40,7 +73,7 @@ export const dishApiSlice = createApi({
       query: ({ id, body }) => ({
         url: `${endpoints.DishApi}${id.toString()}`,
         method: 'PUT',
-        body, 
+        body,
       }),
       invalidatesTags: ['dish-list', 'dish'],
     }),
@@ -57,6 +90,8 @@ export const dishApiSlice = createApi({
 
 export const {
   useGetAllDishesQuery,
+  useGetPagedDishesQuery,
+  useSearchDishesQuery,
   useGetDishByIdQuery,
   useCreateDishMutation,
   useUpdateDishMutation,

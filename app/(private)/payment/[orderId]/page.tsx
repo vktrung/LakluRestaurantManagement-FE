@@ -12,7 +12,7 @@ import {
   useCreateOrderItemMutation,
   useGetBillQuery,
   paymentApiSlice
-} from "@/features/payment/paymentApiSlice"
+} from "@/features/payment/PaymentApiSlice"
 import {
   useGetMenusQuery,
   useGetMenuItemByIdQuery,

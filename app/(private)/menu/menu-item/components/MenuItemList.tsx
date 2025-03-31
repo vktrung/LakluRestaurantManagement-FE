@@ -18,7 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { MenuItemForm } from './MenuItemForm';
 import { useDeleteMenuItemMutation } from '@/features/menu-item/menuItemApiSlice';
 import DeleteConfirmation from './DeleteConfirmation';
-
+import { Badge } from '@/components/ui/badge';
 interface MenuItemListProps {
   items: MenuItem[];
   onDelete: () => void;
@@ -125,24 +125,21 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4">
-      
       <div className="flex justify-end mt-6 mb-4">
         <Button
           onClick={handleAdd}
           className="bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors"
         >
           <PlusIcon className="h-4 w-4 mr-1.5" />
-          Thêm Mục Menu
+          Thêm món ăn trong thực đơn
         </Button>
       </div>
-  
+
       <div className="mb-8">
         <Separator className="mt-4 bg-gray-200" />
       </div>
-  
-      <div className="ml-auto">
-        {renderContent()}
-      </div>
+
+      <div className="ml-auto">{renderContent()}</div>
 
       {/* MenuItemForm Modal */}
       {isFormOpen && (
@@ -217,6 +214,22 @@ const MenuItemCard: React.FC<{
             <span className="font-bold text-lg text-black">
               Giá: {item.price.toLocaleString('vi-VN')} VND
             </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {typeof dish?.requiresPreparation === 'boolean' && (
+              <Badge
+                variant={dish.requiresPreparation ? 'secondary' : 'outline'}
+                className={`mt-1 text-xs ${
+                  dish.requiresPreparation
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : 'bg-green-100 text-green-800'
+                }`}
+              >
+                {dish.requiresPreparation
+                  ? 'Cần chuẩn bị trước'
+                  : 'Chuẩn bị nhanh'}
+              </Badge>
+            )}
           </div>
         </div>
       </CardContent>

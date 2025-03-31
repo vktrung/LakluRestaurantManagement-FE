@@ -2,7 +2,7 @@ import { endpoints } from '@/configs/endpoints';
 
 import baseQuery from '@/features/baseQuery';
 import { createApi } from '@reduxjs/toolkit/query/react';
-import { Staff, StaffResponse, CreateStaffPayload } from './types';
+import { Staff, StaffResponse, CreateStaffPayload,StaffByIdResponse } from './types';
 
 export const staffApiSlice = createApi({
   reducerPath: 'staffApi',
@@ -16,9 +16,9 @@ export const staffApiSlice = createApi({
       }),
       providesTags: ['staff-list'],
     }),
-    getStaffById: builder.query<Staff, string>({
+    getStaffById: builder.query<StaffByIdResponse, string>({
       query: id => ({
-        url: `${endpoints.getListStaff}/${id}`,
+        url: `${endpoints.getListStaff}${id}`,
         method: 'GET',
       }),
       providesTags: ['staff'],

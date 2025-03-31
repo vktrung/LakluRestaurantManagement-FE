@@ -11,10 +11,11 @@ import { useGetMenusQuery } from '@/features/menu/menuApiSlice';
 import { useGetMenuItemByIdQuery } from '@/features/menu-item/menuItemApiSlice';
 import { MenuItemRequest } from '@/features/menu-item/types';
 import { Button } from '@/components/ui/button';
-import { PlusIcon } from 'lucide-react';
+import { PlusIcon, AlertCircle } from 'lucide-react';
 import DishFormAddOnly from './DishFormAddOnly';
 import { useGetDishByIdQuery } from '@/features/dish/dishApiSlice';
 import { MenuItem } from '@/features/menu/types';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface MenuItemFormProps {
   selectedItem: number | null;
@@ -29,8 +30,10 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
   onSuccess,
   menuId,
 }) => {
-  const [createMenuItem] = useCreateMenuItemMutation();
-  const [updateMenuItem] = useUpdateMenuItemMutation();
+  const [createMenuItem, { isLoading: isCreating }] =
+    useCreateMenuItemMutation();
+  const [updateMenuItem, { isLoading: isUpdating }] =
+    useUpdateMenuItemMutation();
   const [formData, setFormData] = useState<MenuItemRequest>({
     dishId: 0,
     menuId: menuId || 0,
@@ -38,23 +41,29 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
     price: 0,
     status: 'enable',
   });
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState({
+    dishId: '',
+    categoryId: '',
+    price: '',
+  });
 
   const {
     data: dishes,
     isLoading: dishesLoading,
     refetch: refetchDishes,
   } = useGetAllDishesQuery();
-  
+
   const { data: categories, isLoading: categoriesLoading } =
     useGetCategoriesQuery();
-  
+
   const { data: menus, isLoading: menusLoading } = useGetMenusQuery();
 
   const { data: menuItemData, isLoading: menuItemLoading } =
     useGetMenuItemByIdQuery(selectedItem!, {
       skip: !selectedItem,
     });
-  
+
   const { data: selectedDishData } = useGetDishByIdQuery(formData.dishId, {
     skip: formData.dishId === 0,
   });
@@ -62,6 +71,14 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
   const originalPrice = selectedDishData?.data?.price || 0;
   const [isDishFormOpen, setIsDishFormOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
+
+  const isLoading =
+    isCreating ||
+    isUpdating ||
+    dishesLoading ||
+    categoriesLoading ||
+    menusLoading ||
+    (menuItemLoading && selectedItem != null);
 
   useEffect(() => {
     setIsClient(true);
@@ -85,12 +102,46 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
     }
   }, [menuItemData, selectedItem, menuId]);
 
+  const validateForm = () => {
+    const errors = {
+      dishId: '',
+      categoryId: '',
+      price: '',
+    };
+    let isValid = true;
+
+    if (!formData.dishId || formData.dishId === 0) {
+      errors.dishId = 'Vui lòng chọn món ăn';
+      isValid = false;
+    }
+
+    if (!formData.categoryId || formData.categoryId === 0) {
+      errors.categoryId = 'Vui lòng chọn danh mục';
+      isValid = false;
+    }
+
+    if (!formData.price || formData.price <= 0) {
+      errors.price = 'Giá món ăn phải lớn hơn 0';
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+    return isValid;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setApiError(null);
+
+    if (!validateForm()) return;
+
     try {
       let response;
       if (selectedItem) {
-        response = await updateMenuItem({ id: selectedItem, body: formData }).unwrap();
+        response = await updateMenuItem({
+          id: selectedItem,
+          body: formData,
+        }).unwrap();
         onSuccess(response.data[0]);
       } else {
         response = await createMenuItem(formData).unwrap();
@@ -98,8 +149,37 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
         onSuccess(response.data[0]);
       }
       onClose();
-    } catch (error) {
-      console.error("Lỗi khi thêm/cập nhật menu item:", error);
+    } catch (error: any) {
+      console.error('Lỗi khi thêm/cập nhật menu item:', error);
+
+      // Handle API error response
+      if (error?.data) {
+        const { message, httpStatus, error: errorCode } = error.data;
+
+        if (httpStatus === 400) {
+          if (message) {
+            setApiError(message);
+          } else {
+            setApiError(
+              'Dữ liệu không hợp lệ. Vui lòng kiểm tra thông tin nhập vào.',
+            );
+          }
+        } else if (httpStatus === 409) {
+          setApiError(
+            'Món ăn này đã tồn tại trong thực đơn. Vui lòng chọn món ăn khác.',
+          );
+        } else if (message) {
+          setApiError(message);
+        } else {
+          setApiError(
+            'Đã xảy ra lỗi khi lưu món ăn thực đơn. Vui lòng thử lại sau.',
+          );
+        }
+      } else {
+        setApiError(
+          'Đã xảy ra lỗi khi kết nối đến máy chủ. Vui lòng thử lại sau.',
+        );
+      }
     }
   };
 
@@ -109,7 +189,12 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
     refetchDishes();
   };
 
-  if (dishesLoading || categoriesLoading || menusLoading || (menuItemLoading && selectedItem)) {
+  if (
+    dishesLoading ||
+    categoriesLoading ||
+    menusLoading ||
+    (menuItemLoading && selectedItem)
+  ) {
     return <div>Loading...</div>;
   }
 
@@ -117,14 +202,21 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
     <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white p-8 rounded-lg shadow-lg w-96 relative">
         <h2 className="text-2xl font-semibold mb-4 text-center">
-          {selectedItem ? 'Edit Menu Item' : 'Add Menu Item'}
+          {selectedItem ? 'Cập nhật món ăn thực đơn' : 'Thêm món ăn thực đơn'}
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {apiError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{apiError}</AlertDescription>
+            </Alert>
+          )}
+
           {/* Dish Dropdown with Plus Button */}
           <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Dish
+              Món ăn <span className="text-red-500">*</span>
             </label>
             <div className="flex items-center gap-2">
               <select
@@ -133,8 +225,9 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
                   setFormData({ ...formData, dishId: Number(e.target.value) })
                 }
                 className="block w-full p-2 border border-gray-300 rounded-md"
+                disabled={isLoading}
               >
-                <option value={0}>Select a Dish</option>
+                <option value={0}>Chọn món ăn</option>
                 {dishes?.data.map(dish => (
                   <option key={dish.id} value={dish.id}>
                     {dish.name}
@@ -150,16 +243,20 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
                   e.stopPropagation();
                   setIsDishFormOpen(true);
                 }}
+                disabled={isLoading}
               >
                 <PlusIcon className="h-4 w-4" />
               </Button>
             </div>
+            {formErrors.dishId && (
+              <p className="text-red-500 text-xs mt-1">{formErrors.dishId}</p>
+            )}
           </div>
 
           {/* Category Dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Category
+              Danh mục <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.categoryId}
@@ -167,21 +264,27 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
                 setFormData({ ...formData, categoryId: Number(e.target.value) })
               }
               className="block w-full p-2 border border-gray-300 rounded-md"
+              disabled={isLoading}
             >
-              <option value={0}>Select a Category</option>
+              <option value={0}>Chọn danh mục</option>
               {categories?.data.map(category => (
                 <option key={category.id} value={category.id}>
                   {category.name}
                 </option>
               ))}
             </select>
+            {formErrors.categoryId && (
+              <p className="text-red-500 text-xs mt-1">
+                {formErrors.categoryId}
+              </p>
+            )}
           </div>
 
           {/* Menu Dropdown (hidden if menuId is provided from prop) */}
           {!menuId && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Menu
+                Menu <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.menuId}
@@ -189,8 +292,9 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
                   setFormData({ ...formData, menuId: Number(e.target.value) })
                 }
                 className="block w-full p-2 border border-gray-300 rounded-md"
+                disabled={isLoading}
               >
-                <option value={0}>Select a Menu</option>
+                <option value={0}>Chọn thực đơn</option>
                 {menus?.data.map(menu => (
                   <option key={menu.id} value={menu.id}>
                     {menu.name}
@@ -214,7 +318,7 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Price
+                Giá <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -223,13 +327,19 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
                   setFormData({ ...formData, price: Number(e.target.value) })
                 }
                 className="block w-full p-2 border border-gray-300 rounded-md"
+                disabled={isLoading}
               />
+              {formErrors.price && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.price}</p>
+              )}
             </div>
           </div>
 
           {/* Status Radio Buttons */}
           <div className="space-x-4">
-            <label className="text-sm font-medium text-gray-700">Status</label>
+            <label className="text-sm font-medium text-gray-700">
+              Trạng thái
+            </label>
             <div className="flex items-center">
               <label className="mr-4">
                 <input
@@ -240,8 +350,9 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
                     setFormData({ ...formData, status: 'enable' })
                   }
                   className="mr-2"
+                  disabled={isLoading}
                 />
-                Enable
+                Hoạt động
               </label>
               <label>
                 <input
@@ -252,8 +363,9 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
                     setFormData({ ...formData, status: 'disable' })
                   }
                   className="mr-2"
+                  disabled={isLoading}
                 />
-                Disable
+                Vô hiệu hóa
               </label>
             </div>
           </div>
@@ -263,8 +375,13 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
             <Button
               type="submit"
               className="w-full py-3 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors"
+              disabled={isLoading}
             >
-              {selectedItem ? 'Update' : 'Create'} Menu Item
+              {isLoading
+                ? 'Đang xử lý...'
+                : selectedItem
+                ? 'Cập nhật'
+                : 'Tạo mới'}
             </Button>
           </div>
         </form>
@@ -273,6 +390,7 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
         <button
           className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
           onClick={onClose}
+          disabled={isLoading}
         >
           X
         </button>

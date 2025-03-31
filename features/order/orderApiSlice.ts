@@ -10,6 +10,7 @@ import {
 } from './types';
 import baseQuery from '../baseQuery';
 import { endpoints } from '@/configs/endpoints';
+// import { Order, OrderResponse, UpdateOrderStatusRequest } from '@/features/order-cashier/types';
 
 export const orderApiSlice = createApi({
   reducerPath: 'orderApi',
@@ -18,7 +19,7 @@ export const orderApiSlice = createApi({
   endpoints: (builder) => ({
     // Get all orders
     getOrders: builder.query<OrderResponse, void>({
-      query: () => endpoints.Order,
+      query: () => '/api/v1/orders',
       providesTags: ['Order']
     }),
 

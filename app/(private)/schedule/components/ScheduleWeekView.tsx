@@ -84,13 +84,19 @@ export default function ScheduleWeekView({
 
   // State cho Check-in
   const [isQrDialogOpenCheckIn, setIsQrDialogOpenCheckIn] = useState(false);
-  const [qrImageUrlCheckIn, setQrImageUrlCheckIn] = useState<string | null>(null);
-  const [qrExpirationTimeCheckIn, setQrExpirationTimeCheckIn] = useState<Date | null>(null);
+  const [qrImageUrlCheckIn, setQrImageUrlCheckIn] = useState<string | null>(
+    null,
+  );
+  const [qrExpirationTimeCheckIn, setQrExpirationTimeCheckIn] =
+    useState<Date | null>(null);
 
   // State cho Check-out
   const [isQrDialogOpenCheckOut, setIsQrDialogOpenCheckOut] = useState(false);
-  const [qrImageUrlCheckOut, setQrImageUrlCheckOut] = useState<string | null>(null);
-  const [qrExpirationTimeCheckOut, setQrExpirationTimeCheckOut] = useState<Date | null>(null);
+  const [qrImageUrlCheckOut, setQrImageUrlCheckOut] = useState<string | null>(
+    null,
+  );
+  const [qrExpirationTimeCheckOut, setQrExpirationTimeCheckOut] =
+    useState<Date | null>(null);
 
   // Lấy ngày hiện tại
   const currentDate = new Date();
@@ -342,13 +348,22 @@ export default function ScheduleWeekView({
                       colSpan={colSpan}
                     >
                       <div className="space-y-2">
+                        {shifts.length > 0 && (
+                          <div className="mb-2 text-xs text-gray-500">
+                            {shifts.length > 1
+                              ? `${shifts.length} ca làm`
+                              : '1 ca làm'}
+                          </div>
+                        )}
                         {shifts.map(shift => (
                           <Card
                             key={shift.id}
                             className={cn(
-                              'border shadow-sm transition-all hover:shadow-md',
+                              'border shadow-sm transition-all hover:shadow-md mb-2',
                               isOvernightShift(shift.timeIn, shift.timeOut)
                                 ? 'border-violet-400 bg-violet-50'
+                                : shifts.length > 1
+                                ? 'border-green-400 bg-white'
                                 : 'border-blue-400 bg-white',
                             )}
                           >
@@ -420,6 +435,11 @@ export default function ScheduleWeekView({
                                 )}
                               </div>
                               <div className="mt-2 text-sm text-gray-600">
+                                <span className="text-xs text-gray-400">
+                                  ID: {shift.id}
+                                </span>
+                              </div>
+                              <div className="mt-2 text-sm text-gray-600">
                                 <User className="h-4 w-4 text-gray-500 inline-block mr-2" />
                                 {shift.detail.numberOfStaff} nhân viên
                               </div>
@@ -464,7 +484,10 @@ export default function ScheduleWeekView({
       </div>
 
       {/* Pop-up hiển thị mã QR Check-in */}
-      <Dialog open={isQrDialogOpenCheckIn} onOpenChange={setIsQrDialogOpenCheckIn}>
+      <Dialog
+        open={isQrDialogOpenCheckIn}
+        onOpenChange={setIsQrDialogOpenCheckIn}
+      >
         <DialogContent className="sm:max-w-md rounded-xl shadow-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl text-slate-800">
@@ -511,7 +534,10 @@ export default function ScheduleWeekView({
       </Dialog>
 
       {/* Pop-up hiển thị mã QR Check-out */}
-      <Dialog open={isQrDialogOpenCheckOut} onOpenChange={setIsQrDialogOpenCheckOut}>
+      <Dialog
+        open={isQrDialogOpenCheckOut}
+        onOpenChange={setIsQrDialogOpenCheckOut}
+      >
         <DialogContent className="sm:max-w-md rounded-xl shadow-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl text-slate-800">

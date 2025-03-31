@@ -22,7 +22,6 @@ const OrderDetailPage = ({ params }: { params: { reservationId: string } }) => {
   const { reservationId } = params;
   const router = useRouter();
 
-  // Lấy danh sách thực đơn
   const {
     data: menusData,
     isLoading: isMenusLoading,
@@ -31,7 +30,6 @@ const OrderDetailPage = ({ params }: { params: { reservationId: string } }) => {
   const [selectedMenuId, setSelectedMenuId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Lấy thông tin chi tiết của thực đơn được chọn, bao gồm menuItems
   const { data: menuData, isLoading: isMenuLoading } = useGetMenuItemByIdQuery(
     selectedMenuId || 0,
     {

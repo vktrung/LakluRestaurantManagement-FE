@@ -14,6 +14,13 @@ export interface StaffResponse {
   timestamp: string;
   error: string | null;
 }
+export interface StaffByIdResponse {
+  data: Staff;
+  message: string;
+  httpStatus: number;
+  timestamp: string;
+  error: string | null;
+}
 export interface CreateStaffPayload {
   username: string;
   password: string;

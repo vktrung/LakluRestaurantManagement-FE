@@ -1,9 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, ChangeEvent } from 'react';
 import { useGetCategoriesQuery } from '@/features/category/categoryApiSlice';
-import Link from 'next/link';
 import {
   Table,
   TableHeader,
@@ -11,20 +9,41 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { IoAddCircleSharp } from "react-icons/io5";
-import { GrUpdate } from "react-icons/gr";
-import { MdDeleteOutline } from "react-icons/md";
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { IoAddCircleSharp } from 'react-icons/io5';
+import { GrUpdate } from 'react-icons/gr';
+import { MdDeleteOutline } from 'react-icons/md';
 import { Category } from '@/features/category/types';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import CategoryForm from './CategoryForm';
+import DeleteConfirmation from './DeleteConfirmation';
+import { AlertCircle } from 'lucide-react';
 
 export default function DanhSachDanhMuc() {
   const [danhMuc, setDanhMuc] = useState<Category[]>([]);
-  const { data: danhMucResponse, isLoading, isError } = useGetCategoriesQuery();
-  const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState("");
+  const {
+    data: danhMucResponse,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetCategoriesQuery();
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Dialog states
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null,
+  );
 
   useEffect(() => {
     if (danhMucResponse?.data) {
@@ -35,40 +54,66 @@ export default function DanhSachDanhMuc() {
     }
   }, [danhMucResponse]);
 
-  if (isLoading)
-    return <div className="container mx-auto p-6">Đang tải...</div>;
-  if (isError)
-    return <div className="container mx-auto p-6">Lỗi khi tải danh mục</div>;
-
-  // Chuyển hướng đến trang sửa danh mục
-  const handleEdit = (danhMuc: Category) => {
-    router.push(
-      `/menu/category/edit/${danhMuc.id}?name=${danhMuc.name}&description=${
-        danhMuc.description || ''
-      }`,
-    );
-  };
-
-  // Chuyển hướng đến trang xóa danh mục
-  const handleDelete = (danhMuc: Category) => {
-    router.push(`/menu/category/delete/${danhMuc.id}?name=${danhMuc.name}`);
-  };
-
-  // Handle add category
-  const handleAdd = () => {
-    router.push('./category/add');
-  };
-
   // Handle search
-  const handleSearchChange = (e) => {
+  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 
+  // Open add dialog
+  const handleAdd = () => {
+    setIsAddDialogOpen(true);
+  };
+
+  // Open edit dialog
+  const handleEdit = (category: Category) => {
+    setSelectedCategory(category);
+    setIsEditDialogOpen(true);
+  };
+
+  // Open delete dialog
+  const handleDelete = (category: Category) => {
+    setSelectedCategory(category);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Success handlers for CRUD operations
+  const handleAddSuccess = () => {
+    setIsAddDialogOpen(false);
+    refetch();
+  };
+
+  const handleEditSuccess = () => {
+    setIsEditDialogOpen(false);
+    setSelectedCategory(null);
+    refetch();
+  };
+
+  const handleDeleteSuccess = () => {
+    setIsDeleteDialogOpen(false);
+    setSelectedCategory(null);
+    refetch();
+  };
+
   // Filter categories based on search term
-  const filteredCategories = danhMuc.filter((category) =>
-    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredCategories = danhMuc.filter(
+    category =>
+      category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (category.description &&
+        category.description.toLowerCase().includes(searchTerm.toLowerCase())),
   );
+
+  if (isLoading)
+    return <div className="container mx-auto p-6">Đang tải...</div>;
+
+  if (isError)
+    return (
+      <div className="p-6 rounded-lg bg-gray-50 border border-gray-200">
+        <div className="flex items-center gap-2 text-red-500">
+          <AlertCircle className="h-5 w-5" />
+          <p className="font-medium">Lỗi khi tải danh mục</p>
+        </div>
+      </div>
+    );
 
   return (
     <div className="space-y-4">
@@ -88,7 +133,7 @@ export default function DanhSachDanhMuc() {
               />
             </div>
             {/* Add button with green color */}
-            <Button 
+            <Button
               onClick={handleAdd}
               className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white"
             >
@@ -111,10 +156,12 @@ export default function DanhSachDanhMuc() {
             </TableHeader>
             <TableBody>
               {filteredCategories.length > 0 ? (
-                filteredCategories.map((category) => (
+                filteredCategories.map(category => (
                   <TableRow key={category.id}>
                     <TableCell>{category.name}</TableCell>
-                    <TableCell>{category.description || 'Không có mô tả'}</TableCell>
+                    <TableCell>
+                      {category.description || 'Không có mô tả'}
+                    </TableCell>
                     <TableCell>
                       {category.createdAt
                         ? new Date(category.createdAt).toLocaleDateString()
@@ -146,7 +193,9 @@ export default function DanhSachDanhMuc() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center">
-                    Không có danh mục nào.
+                    {searchTerm
+                      ? 'Không tìm thấy danh mục nào.'
+                      : 'Không có danh mục nào.'}
                   </TableCell>
                 </TableRow>
               )}
@@ -154,7 +203,58 @@ export default function DanhSachDanhMuc() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Add Category Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Thêm Danh Mục Mới</DialogTitle>
+          </DialogHeader>
+          <CategoryForm
+            onSuccess={handleAddSuccess}
+            onCancel={() => setIsAddDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Category Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Chỉnh Sửa Danh Mục</DialogTitle>
+          </DialogHeader>
+          {selectedCategory && (
+            <CategoryForm
+              category={selectedCategory}
+              isEdit
+              onSuccess={handleEditSuccess}
+              onCancel={() => {
+                setIsEditDialogOpen(false);
+                setSelectedCategory(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Category Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>Xóa Danh Mục</DialogTitle>
+          </DialogHeader>
+          {selectedCategory && (
+            <DeleteConfirmation
+              category={selectedCategory}
+              onSuccess={handleDeleteSuccess}
+              onCancel={() => {
+                setIsDeleteDialogOpen(false);
+                setSelectedCategory(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-

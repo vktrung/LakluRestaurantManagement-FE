@@ -67,12 +67,100 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     }[]
   >([]);
 
+  // Lấy token từ cookie để kiểm tra auth
+  const getAuthToken = () => {
+    if (typeof document !== 'undefined') {
+      const match = document.cookie.match(
+        '(^|;)\\s*auth_token\\s*=\\s*([^;]+)',
+      );
+      return match ? match.pop() : null;
+    }
+    return null;
+  };
+
+  const token = getAuthToken();
+
   // API calls
+  const { data: userData, refetch: refetchUser } = useGetUserMeQuery();
   const { data: ordersData } = useGetOrdersQuery(undefined, {
-    pollingInterval: 10000,
+    pollingInterval: 5000,
+    refetchOnMountOrArgChange: true,
   });
 
-  const { data: userData } = useGetUserMeQuery();
+  // Fetch user data khi có token
+  useEffect(() => {
+    if (token && !userData) {
+      console.log('Token found, fetching user data...');
+      refetchUser();
+    }
+  }, [token, userData, refetchUser]);
+
+  // Log trạng thái
+  useEffect(() => {
+    console.log('Auth State:', {
+      hasToken: !!token,
+      hasUserData: !!userData?.data,
+      hasOrdersData: !!ordersData?.data,
+      ordersCount: ordersData?.data?.length || 0,
+    });
+  }, [token, userData, ordersData]);
+
+  // Xử lý thông báo
+  useEffect(() => {
+    if (!ordersData?.data || !userData?.data) {
+      return;
+    }
+
+    console.log('Processing notifications with:', {
+      ordersCount: ordersData.data.length,
+      userId: userData.data.id,
+    });
+
+    // Reset states khi có dữ liệu mới
+    setProcessedOrderItemIds(new Set());
+    setPendingNotifications([]);
+
+    // Xử lý các món đã hoàn thành
+    const newPendingNotifications: {
+      id: string;
+      tableNames: string;
+      quantity: number;
+      orderItemId: number;
+      isProcessing: boolean;
+    }[] = [];
+
+    ordersData.data.forEach(order => {
+      if (String(order.staffId) === String(userData.data.id)) {
+        order.orderItems.forEach(item => {
+          if (item.statusLabel === 'Đã hoàn thành') {
+            const notificationId = `item-${item.orderItemId}`;
+            const tableNames = order.tables
+              ? order.tables.map(t => t.tableNumber).join(', ')
+              : '';
+
+            newPendingNotifications.push({
+              id: notificationId,
+              tableNames,
+              quantity: item.quantity,
+              orderItemId: item.orderItemId,
+              isProcessing: false,
+            });
+
+            setProcessedOrderItemIds(prev => {
+              const newSet = new Set(prev);
+              newSet.add(item.orderItemId);
+              return newSet;
+            });
+          }
+        });
+      }
+    });
+
+    // Cập nhật danh sách chờ thông báo
+    if (newPendingNotifications.length > 0) {
+      setPendingNotifications(newPendingNotifications);
+    }
+  }, [ordersData, userData]);
 
   // TEST FUNCTION
   const addTestNotification = () => {
@@ -163,8 +251,8 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             if (!isAlreadyPending) {
               // Thêm vào pending để chờ lấy tên món ăn
               const tableNames = order.tables
-                .map(t => t.tableNumber)
-                .join(', ');
+                ? order.tables.map(t => t.tableNumber).join(', ')
+                : '';
 
               newPendingNotifications.push({
                 id: notificationId,

@@ -1,6 +1,6 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import baseQuery from '@/features/baseQuery';
-import { AddRoleRequest, AddRoleResponse, RoleDetailResponse, RoleResponse } from './types';
+import { AddRoleRequest, AddRoleResponse, RoleDetailResponse, RoleResponse, UpdateRoleRequest } from './types';
 import { endpoints } from '@/configs/endpoints';
 
 export const roleApiSlice = createApi({
@@ -10,36 +10,46 @@ export const roleApiSlice = createApi({
   endpoints: (builder) => ({
     getRoles: builder.query<RoleResponse, void>({
       query: () => ({
-        url: `${endpoints.getRoles}`, // Đảm bảo cấu hình đúng URL trong file endpoints
+        url: `${endpoints.getRoles}`,
         method: 'GET',
       }),
       providesTags: ['role-list'],
     }),
     getRoleById: builder.query<RoleDetailResponse, number>({
       query: (id: number) => ({
-        url: `${endpoints.getRoles}${id}`, // Giả sử endpoint chi tiết thêm id vào cuối URL
+        url: `${endpoints.getRoles}${id}`,
         method: 'GET',
       }),
       providesTags: (result, error, id) => [{ type: 'role', id }],
     }),
-     addRole: builder.mutation<AddRoleResponse, AddRoleRequest>({
+    addRole: builder.mutation<AddRoleResponse, AddRoleRequest>({
       query: (newRole) => ({
-        url: `${endpoints.getRoles}`, // Giả sử endpoint thêm role sử dụng URL tương tự
+        url: `${endpoints.getRoles}`,
         method: 'POST',
         body: newRole,
       }),
-      // Khi thêm role thành công, invalidate cache của danh sách role để tự động refetch
       invalidatesTags: ['role-list'],
-     }),
-     deleteRoleById: builder.mutation<RoleResponse, number>({
-      query: (id:number) => ({
-        url: `${endpoints.getRoles}${id}`, // Đảm bảo cấu hình đúng URL trong file endpoints
+    }),
+    updateRolePermissions: builder.mutation<RoleDetailResponse, UpdateRoleRequest>({
+      query: (updateData) => ({
+        url: `${endpoints.getRoles}${updateData.id}`,
+        method: 'PUT',
+        body: {
+          name: updateData.name,
+          description: updateData.description,
+          permissions: updateData.permissions
+        },
+      }),
+      invalidatesTags: (_result, _error, { id }) => [{ type: 'role', id }, 'role-list'],
+    }),
+    deleteRoleById: builder.mutation<void, number>({
+      query: (id: number) => ({
+        url: `${endpoints.getRoles}${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['role-list'],
     }),
   }),
-  
 });
 
-export const { useGetRolesQuery,useGetRoleByIdQuery,useLazyGetRoleByIdQuery ,useAddRoleMutation, useDeleteRoleByIdMutation  } = roleApiSlice;
+export const { useGetRolesQuery, useGetRoleByIdQuery, useLazyGetRoleByIdQuery, useAddRoleMutation, useUpdateRolePermissionsMutation, useDeleteRoleByIdMutation } = roleApiSlice;

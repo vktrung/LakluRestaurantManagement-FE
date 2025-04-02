@@ -144,6 +144,9 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     ordersData.data.forEach(order => {
       // So sánh ID nhân viên - nếu đơn này thuộc về người đang đăng nhập
       if (String(order.staffId) === String(userData.data.id)) {
+        // Kiểm tra order.orderItems có tồn tại không
+        if (!order.orderItems) return;
+
         // Kiểm tra từng món trong đơn
         order.orderItems.forEach(item => {
           // Nếu món đã hoàn thành và chưa được xử lý
@@ -162,9 +165,9 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             // Chỉ thêm vào danh sách chờ nếu chưa có
             if (!isAlreadyPending) {
               // Thêm vào pending để chờ lấy tên món ăn
-              const tableNames = order.tables
-                .map(t => t.tableNumber)
-                .join(', ');
+              const tableNames = order.tables 
+                ? order.tables.map(t => t.tableNumber).join(', ')
+                : '';
 
               newPendingNotifications.push({
                 id: notificationId,

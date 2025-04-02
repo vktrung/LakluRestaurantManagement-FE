@@ -6,7 +6,9 @@ import {
   UpdateOrderItemStatusRequest,
   CreateOrderRequest, 
   OrderItem,
-  CreateOrderItemRequest
+  CreateOrderItemRequest,
+  OrderSplitRequest,
+  MergeOrderRequest
 } from './types';
 import baseQuery from '../baseQuery';
 import { endpoints } from '@/configs/endpoints';
@@ -100,6 +102,26 @@ export const orderApiSlice = createApi({
         method: 'DELETE'
       }),
       invalidatesTags: ['Order', 'ReservationOrder']
+    }),
+
+    // Split an order into two separate orders
+    splitOrder: builder.mutation<OrderResponse, OrderSplitRequest>({
+      query: (request) => ({
+        url: `${endpoints.Order}${request.orderId}/split`,
+        method: 'POST',
+        body: request
+      }),
+      invalidatesTags: ['Order', 'ReservationOrder']
+    }),
+
+    // Merge multiple orders into a single order
+    mergeOrders: builder.mutation<Order, MergeOrderRequest>({
+      query: (request) => ({
+        url: `${endpoints.Order}merge`,
+        method: 'POST',
+        body: request
+      }),
+      invalidatesTags: ['Order', 'ReservationOrder']
     })
   })
 });
@@ -114,5 +136,7 @@ export const {
   useUpdateOrderItemStatusMutation,
   useAddOrderItemMutation,
   useDeleteOrderItemMutation,
-  useDeleteOrderMutation
+  useDeleteOrderMutation,
+  useSplitOrderMutation,
+  useMergeOrdersMutation
 } = orderApiSlice;

@@ -59,3 +59,18 @@ export interface CreateOrderRequest {
   // staffId: number;
   orderItems: CreateOrderItemRequest[];
 }
+
+export interface OrderItemSplitRequest {
+  orderItemId: number;
+  quantity: number;
+}
+
+export interface OrderSplitRequest {
+  orderId: number;
+  orderItems: OrderItemSplitRequest[];
+}
+
+export interface MergeOrderRequest {
+  orderIds: number[];
+  reservationId: number;
+}

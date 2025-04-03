@@ -2,9 +2,9 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { format } from "date-fns"
+import { format, addDays, isToday, isBefore, parse } from "date-fns"
 import { CalendarIcon, Loader2 } from "lucide-react"
 import { vi } from "date-fns/locale"
 
@@ -30,9 +30,14 @@ export default function NewReservationPage() {
   const [customerName, setCustomerName] = useState("")
   const [customerPhone, setCustomerPhone] = useState("")
   const [checkInDate, setCheckInDate] = useState<Date | null>(null)
-  const [checkInTime, setCheckInTime] = useState("12:00")
+  const [checkInTime, setCheckInTime] = useState("")
   const [numberOfPeople, setNumberOfPeople] = useState<number>(2)
   const [selectedTables, setSelectedTables] = useState<number[]>([])
+
+  // Tính ngày hiện tại và ngày tối đa có thể chọn (7 ngày từ hôm nay)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const maxDate = addDays(today, 7)
 
   // Format date to YYYY-MM-DD for API
   const formattedDate = checkInDate ? format(checkInDate, "yyyy-MM-dd") : ""
@@ -48,6 +53,40 @@ export default function NewReservationPage() {
   
   // Get available tables from the API response
   const availableTables = tablesByDateResponse?.data || []
+
+  // Danh sách thời gian đặt bàn có thể chọn
+  const availableTimes = useMemo(() => {
+    const times = [];
+    const currentHour = new Date().getHours();
+    const currentMinute = new Date().getMinutes();
+    
+    // Chỉ hiển thị giờ từ 18:00 (6h chiều) trở đi
+    for (let hour = 18; hour <= 23; hour++) {
+      for (let minute of [0, 30]) {
+        // Nếu là ngày hôm nay, chỉ hiển thị giờ từ thời điểm hiện tại trở đi
+        if (checkInDate && isToday(checkInDate)) {
+          // Bỏ qua các thời điểm đã qua trong ngày
+          if (hour < currentHour || (hour === currentHour && minute <= currentMinute)) {
+            continue;
+          }
+        }
+        
+        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        times.push(timeString);
+      }
+    }
+    
+    return times;
+  }, [checkInDate]);
+
+  // Tự động chọn thời gian đầu tiên khi thay đổi ngày
+  useEffect(() => {
+    if (checkInDate && availableTimes.length > 0) {
+      setCheckInTime(availableTimes[0]);
+    } else {
+      setCheckInTime("");
+    }
+  }, [checkInDate, availableTimes]);
 
   // Reset selected tables when date changes
   useEffect(() => {
@@ -67,7 +106,7 @@ export default function NewReservationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!customerName || !customerPhone || selectedTables.length === 0 || !checkInDate) {
+    if (!customerName || !customerPhone || selectedTables.length === 0 || !checkInDate || !checkInTime) {
       toast.error("Vui lòng điền đầy đủ thông tin và chọn ít nhất một bàn.")
       return
     }
@@ -185,7 +224,9 @@ export default function NewReservationPage() {
                         onSelect={(date) => setCheckInDate(date ? date : null)}
                         initialFocus
                         locale={vi}
-                        disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                        disabled={(date) => {
+                          return isBefore(date, today) || isBefore(maxDate, date)
+                        }}
                       />
                     </PopoverContent>
                   </Popover>
@@ -194,42 +235,21 @@ export default function NewReservationPage() {
                   <Label>
                     Thời gian <span className="text-red-500">*</span>
                   </Label>
-                  <Select value={checkInTime} onValueChange={setCheckInTime}>
+                  <Select value={checkInTime} onValueChange={setCheckInTime} disabled={!checkInDate || availableTimes.length === 0}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Chọn thời gian" />
+                      <SelectValue placeholder={availableTimes.length ? "Chọn thời gian" : "Không có thời gian khả dụng"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {[
-                        "10:00",
-                        "10:30",
-                        "11:00",
-                        "11:30",
-                        "12:00",
-                        "12:30",
-                        "13:00",
-                        "13:30",
-                        "14:00",
-                        "14:30",
-                        "15:00",
-                        "15:30",
-                        "16:00",
-                        "16:30",
-                        "17:00",
-                        "17:30",
-                        "18:00",
-                        "18:30",
-                        "19:00",
-                        "19:30",
-                        "20:00",
-                        "20:30",
-                        "21:00",
-                      ].map((time) => (
+                      {availableTimes.map((time) => (
                         <SelectItem key={time} value={time}>
                           {time}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {checkInDate && isToday(checkInDate) && availableTimes.length === 0 && (
+                    <p className="text-xs text-red-500 mt-1">Không có khung giờ khả dụng cho ngày hôm nay</p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -334,7 +354,7 @@ export default function NewReservationPage() {
               </Button>
               <Button 
                 type="submit" 
-                disabled={isSubmitting || isCreating || !checkInDate || selectedTables.length === 0}
+                disabled={isSubmitting || isCreating || !checkInDate || selectedTables.length === 0 || !checkInTime}
               >
                 {(isSubmitting || isCreating) ? (
                   <>

@@ -14,7 +14,14 @@ import {
   RemoveTableRequest,
   RemoveTableResponse,
   AddTableRequest,
-  AddTableResponse 
+  AddTableResponse,
+  GetReservationsByTimeRangeResponse,
+  GetReservationsByTimeRangeParams,
+  TimeRangeType,
+  SearchReservationsResponse,
+  SearchReservationsParams,
+  FilterReservationsResponse,
+  FilterReservationsParams
 } from './type';
 
 export const reservationApiSlice = createApi({
@@ -106,6 +113,58 @@ export const reservationApiSlice = createApi({
         'reservation-list',
       ],
     }),
+    // Mutation huỷ đặt bàn
+    cancelReservation: builder.mutation<{ message: string }, number>({
+      query: (reservationId) => ({
+        url: `${endpoints.ReservationApi}${reservationId}/cancel`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, arg) => [
+        { type: 'reservation', id: arg },
+        'reservation-list',
+      ],
+    }),
+    // Mutation xác nhận đặt bàn
+    confirmReservation: builder.mutation<{ message: string }, number>({
+      query: (reservationId) => ({
+        url: `${endpoints.ReservationApi}${reservationId}/confirm`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, arg) => [
+        { type: 'reservation', id: arg },
+        'reservation-list',
+      ],
+    }),
+    // Query lấy danh sách đặt bàn theo khoảng thời gian (phân trang)
+    getReservationsByTimeRange: builder.query<GetReservationsByTimeRangeResponse, GetReservationsByTimeRangeParams>({
+      query: ({ timeRange, page = 0, size = 10 }) => ({
+        url: `${endpoints.ReservationApi}time-range?timeRange=${timeRange}&page=${page}&size=${size}`,
+        method: 'GET',
+      }),
+      providesTags: ['reservation-list'],
+    }),
+    // Query tìm kiếm đặt bàn theo tên hoặc số điện thoại
+    searchReservations: builder.query<SearchReservationsResponse, SearchReservationsParams>({
+      query: ({ keyword, page = 0, size = 10 }) => ({
+        url: `${endpoints.ReservationApi}search?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}`,
+        method: 'GET',
+      }),
+      providesTags: ['reservation-list'],
+    }),
+    // Query lọc đặt bàn theo ngày và trạng thái
+    filterReservations: builder.query<FilterReservationsResponse, FilterReservationsParams>({
+      query: ({ date, status, page = 0, size = 10 }) => {
+        let url = `${endpoints.ReservationApi}filter?date=${date}&page=${page}&size=${size}`;
+        if (status) {
+          url += `&status=${status}`;
+        }
+        return {
+          url,
+          method: 'GET',
+        };
+      },
+      providesTags: ['reservation-list'],
+    }),
   }),
 });
 
@@ -118,5 +177,10 @@ export const {
   useGetReservationByIdQuery,
   useMergeOrSplitTablesMutation,
   useRemoveTablesFromReservationMutation,
-  useAddTablesToReservationMutation
+  useAddTablesToReservationMutation,
+  useCancelReservationMutation,
+  useConfirmReservationMutation,
+  useGetReservationsByTimeRangeQuery,
+  useSearchReservationsQuery,
+  useFilterReservationsQuery
 } = reservationApiSlice;

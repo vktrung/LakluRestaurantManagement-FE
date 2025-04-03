@@ -38,21 +38,38 @@ export interface ReservationResponse {
   detail: ReservationDetail;
 }
 
-export interface GetReservationsResponse {
-  data: ReservationResponse[];
+export interface Pagination {
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+}
+
+export interface PagedData<T> {
+  content: T[];
+  pagination: Pagination;
+}
+
+// Base API Response interface
+export interface BaseApiResponse<T> {
+  data: T;
   message: string;
   httpStatus: number;
   timestamp: string;
   error: string | null;
 }
 
-export interface GetReservationByIdResponse {
-  data: ReservationResponse;
-  message: string;
-  httpStatus: number;
-  timestamp: string;
-  error: string | null;
-}
+// Tối ưu sử dụng generic type
+export type GetReservationsResponse = BaseApiResponse<ReservationResponse[]>;
+export type GetReservationByIdResponse = BaseApiResponse<ReservationResponse>;
+export type GetReservationsByTimeRangeResponse = BaseApiResponse<PagedData<ReservationResponse>>;
+export type SearchReservationsResponse = BaseApiResponse<PagedData<ReservationResponse>>;
+export type FilterReservationsResponse = BaseApiResponse<PagedData<ReservationResponse>>;
+export type MergeTableResponse = BaseApiResponse<ReservationResponse>;
+export type RemoveTableResponse = BaseApiResponse<ReservationResponse>;
+export type AddTableResponse = BaseApiResponse<ReservationResponse>;
 
 export interface TableByDate {
   id: number;
@@ -62,12 +79,27 @@ export interface TableByDate {
   isAvailable: boolean;
 }
 
-export interface GetTablesByDateResponse {
-  data: TableByDate[];
-  message: string;
-  httpStatus: number;
-  timestamp: string;
-  error: string | null;
+export type GetTablesByDateResponse = BaseApiResponse<TableByDate[]>;
+
+export type TimeRangeType = 'today' | 'yesterday' | 'week' | 'month';
+
+// Tham số cho API
+export interface PaginationParams {
+  page?: number;
+  size?: number;
+}
+
+export interface GetReservationsByTimeRangeParams extends PaginationParams {
+  timeRange: TimeRangeType;
+}
+
+export interface SearchReservationsParams extends PaginationParams {
+  keyword: string;
+}
+
+export interface FilterReservationsParams extends PaginationParams {
+  date: string; // định dạng 'yyyy-MM-dd'
+  status?: ReservationStatus;
 }
 
 export type MergeTableAction = 'MERGE' | 'SPLIT';
@@ -78,41 +110,12 @@ export interface MergeTableRequest {
   numberOfPeople: number;
 }
 
-export interface MergeTableResponse {
-  data: {
-    id: number;
-    timeIn: string;
-    timeOut: string | null;
-    detail: ReservationDetail;
-  };
-  message: string;
-  httpStatus: number;
-  timestamp: string;
-  error: string | null;
-}
-
 // Interfaces cho API xóa bàn khỏi đặt bàn
 export interface RemoveTableRequest {
   tableIds: number[];
 }
 
-export interface RemoveTableResponse {
-  data: ReservationResponse;
-  message: string;
-  httpStatus: number;
-  timestamp: string;
-  error: string | null;
-}
-
 // Interfaces cho API thêm bàn vào đặt bàn
 export interface AddTableRequest {
   tableIds: number[];
-}
-
-export interface AddTableResponse {
-  data: ReservationResponse;
-  message: string;
-  httpStatus: number;
-  timestamp: string;
-  error: string | null;
 }

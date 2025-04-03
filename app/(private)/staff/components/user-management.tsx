@@ -15,6 +15,7 @@ import {
   Search,
   Trash2,
   UserCog,
+  KeyRound
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -45,13 +46,17 @@ import { UserDialog } from "./user-dialog"
 import { useGetStaffQuery } from "@/features/staff/staffApiSlice"
 import { Staff } from "@/features/staff/types"
 import { CreateUserDialog } from "./create-user-dialog"
+import { ChangePasswordDialog } from "./change-password-dialog"
+import { useToast } from "@/components/ui/use-toast"
 
 export function UserManagement() {
   const router = useRouter()
+  const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedUser, setSelectedUser] = useState<Staff | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false)
   const [dialogMode, setDialogMode] = useState<"view" | "edit" | "add">("view")
   const [currentPage, setCurrentPage] = useState(0)
 
@@ -92,6 +97,11 @@ export function UserManagement() {
     setDialogMode("edit")
     setIsDialogOpen(true)
   }
+  
+  const handleChangePassword = (user: Staff) => {
+    setSelectedUser(user)
+    setIsChangePasswordDialogOpen(true)
+  }
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false)
@@ -100,9 +110,20 @@ export function UserManagement() {
   const handleCloseCreateDialog = () => {
     setIsCreateDialogOpen(false)
   }
+  
+  const handleCloseChangePasswordDialog = () => {
+    setIsChangePasswordDialogOpen(false)
+  }
 
   const handleCreateSuccess = () => {
     refetch()
+  }
+  
+  const handleChangePasswordSuccess = () => {
+    toast({
+      title: "Thành công",
+      description: `Đổi mật khẩu thành công cho tài khoản ${selectedUser?.username}`,
+    })
   }
 
   const handleRefresh = () => {
@@ -307,6 +328,10 @@ export function UserManagement() {
                                   <UserCog className="mr-2 h-4 w-4" />
                                   Chỉnh sửa
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleChangePassword(user)}>
+                                  <KeyRound className="mr-2 h-4 w-4" />
+                                  Đổi mật khẩu
+                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem className="text-red-600">
                                   <Trash2 className="mr-2 h-4 w-4" />
@@ -391,6 +416,15 @@ export function UserManagement() {
         onClose={handleCloseCreateDialog} 
         onSuccess={handleCreateSuccess} 
       />
+      
+      {selectedUser && isChangePasswordDialogOpen && (
+        <ChangePasswordDialog
+          userId={selectedUser.id}
+          isOpen={isChangePasswordDialogOpen}
+          onClose={handleCloseChangePasswordDialog}
+          onSuccess={handleChangePasswordSuccess}
+        />
+      )}
     </>
   )
 }

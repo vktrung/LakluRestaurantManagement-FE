@@ -11,6 +11,17 @@ export interface GetStaffParams {
   sortDir?: string;
 }
 
+export interface AdminChangePasswordRequest {
+  newPassword: string;
+}
+
+export interface ApiResponse {
+  message: string;
+  httpStatus: number;
+  timestamp: string;
+  error: string | null;
+}
+
 export const staffApiSlice = createApi({
   reducerPath: 'staffApi',
   baseQuery,
@@ -38,7 +49,7 @@ export const staffApiSlice = createApi({
     }),
     getStaffById: builder.query<StaffByIdResponse, string>({
       query: id => ({
-        url: `${endpoints.getListStaff}/${id}`,
+        url: `${endpoints.getListStaff}${id}`,
         method: 'GET',
       }),
       providesTags: ['staff'],
@@ -51,6 +62,13 @@ export const staffApiSlice = createApi({
       }),
       invalidatesTags: ['staff-list'],
     }),
+    adminChangePassword: builder.mutation<ApiResponse, { userId: number; payload: AdminChangePasswordRequest }>({
+      query: ({ userId, payload }) => ({
+        url: `${endpoints.getListStaff}${userId}/admin-change-password`,
+        method: 'POST',
+        body: payload,
+      }),
+    }),
   }),
 });
 
@@ -58,4 +76,5 @@ export const {
   useGetStaffByIdQuery,
   useGetStaffQuery,
   useCreateStaffMutation,
+  useAdminChangePasswordMutation,
 } = staffApiSlice;

@@ -263,13 +263,8 @@ export function UserManagement() {
 
   return (
     <>
-      <Tabs defaultValue="all" className="w-full">
+      <div className="w-full">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
-          <TabsList>
-            <TabsTrigger value="all">Tất cả</TabsTrigger>
-            <TabsTrigger value="admin">Quản trị viên</TabsTrigger>
-            <TabsTrigger value="staff">Nhân viên</TabsTrigger>
-          </TabsList>
           <div className="flex flex-col sm:flex-row w-full md:w-auto gap-2">
             <div className="relative w-full md:w-auto">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -304,206 +299,159 @@ export function UserManagement() {
           </div>
         </div>
 
-        <TabsContent value="all" className="m-0">
-          <Card>
-            <CardHeader className="p-4 md:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Danh sách người dùng</CardTitle>
-                  <CardDescription>Quản lý tất cả tài khoản người dùng trong hệ thống</CardDescription>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Download className="mr-2 h-4 w-4" />
-                      Xuất
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <FileText className="mr-2 h-4 w-4" />
-                      Excel
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <FileText className="mr-2 h-4 w-4" />
-                      PDF
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <FileText className="mr-2 h-4 w-4" />
-                      CSV
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+        <Card>
+          <CardHeader className="p-4 md:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Danh sách người dùng</CardTitle>
+                <CardDescription>Quản lý tất cả tài khoản người dùng trong hệ thống</CardDescription>
               </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[50px]">ID</TableHead>
-                      <TableHead className="min-w-[200px]">Người dùng</TableHead>
-                      <TableHead className="min-w-[150px]">Phòng ban</TableHead>
-                      <TableHead className="min-w-[150px]">Vai trò</TableHead>
-                      <TableHead className="min-w-[150px]">Trạng thái</TableHead>
-                      <TableHead className="min-w-[150px]">Mức lương</TableHead>
-                      <TableHead className="min-w-[100px]">Thao tác</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      Array(5).fill(0).map((_, index) => (
-                        <TableRow key={index}>
-                          <TableCell colSpan={7} className="h-14">
-                            <div className="w-full h-4 bg-gray-200 animate-pulse rounded"></div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : filteredUsers.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center h-24">
-                          Không tìm thấy người dùng nào
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[50px]">ID</TableHead>
+                    <TableHead className="min-w-[200px]">Người dùng</TableHead>
+                    <TableHead className="min-w-[150px]">Phòng ban</TableHead>
+                    <TableHead className="min-w-[150px]">Vai trò</TableHead>
+                    <TableHead className="min-w-[150px]">Trạng thái</TableHead>
+                    <TableHead className="min-w-[150px]">Mức lương</TableHead>
+                    <TableHead className="min-w-[100px]">Thao tác</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    Array(5).fill(0).map((_, index) => (
+                      <TableRow key={index}>
+                        <TableCell colSpan={7} className="h-14">
+                          <div className="w-full h-4 bg-gray-200 animate-pulse rounded"></div>
                         </TableCell>
                       </TableRow>
-                    ) : (
-                      filteredUsers.map((user) => (
-                        <TableRow key={user.id}>
-                          <TableCell className="font-medium">{user.id}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <Avatar>
-                                <AvatarImage src={user.profile.avatar || undefined} alt={user.profile.fullName} />
-                                <AvatarFallback>{user?.profile?.fullName ? getInitials(user.profile.fullName) : "NN"}</AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <div className="font-medium">{user.profile.fullName}</div>
-                                <div className="text-sm text-muted-foreground">{user.email}</div>
-                              </div>
+                    ))
+                  ) : filteredUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center h-24">
+                        Không tìm thấy người dùng nào
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.id}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarImage src={user.profile.avatar || undefined} alt={user.profile.fullName} />
+                              <AvatarFallback>{user?.profile?.fullName ? getInitials(user.profile.fullName) : "NN"}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium">{user.profile.fullName}</div>
+                              <div className="text-sm text-muted-foreground">{user.email}</div>
                             </div>
-                          </TableCell>
-                          <TableCell>{user.profile.department}</TableCell>
-                          <TableCell>
-                            {user.roles && user.roles.length > 0 ? (
-                              user.roles.map((role: string, index: number) => (
-                                <Badge key={index} variant="outline" className="mr-1">
-                                  {role}
-                                </Badge>
-                              ))
-                            ) : (
-                              <Badge variant="outline" className="bg-gray-100">
-                                Không có vai trò
+                          </div>
+                        </TableCell>
+                        <TableCell>{user.profile.department}</TableCell>
+                        <TableCell>
+                          {user.roles && user.roles.length > 0 ? (
+                            user.roles.map((role: string, index: number) => (
+                              <Badge key={index} variant="outline" className="mr-1">
+                                {role}
                               </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getStatusColor(user.profile.employmentStatus)}>
-                              {translateStatus(user.profile.employmentStatus)}
+                            ))
+                          ) : (
+                            <Badge variant="outline" className="bg-gray-100">
+                              Không có vai trò
                             </Badge>
-                          </TableCell>
-                          <TableCell>{user.nameSalaryRate}</TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Mở menu</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleViewUser(user)}>
-                                  <FileText className="mr-2 h-4 w-4" />
-                                  Xem chi tiết
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(user.profile.employmentStatus)}>
+                            {translateStatus(user.profile.employmentStatus)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{user.nameSalaryRate}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Mở menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleViewUser(user)}>
+                                <FileText className="mr-2 h-4 w-4" />
+                                Xem chi tiết
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                                <UserCog className="mr-2 h-4 w-4" />
+                                Chỉnh sửa
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleChangePassword(user)}>
+                                <KeyRound className="mr-2 h-4 w-4" />
+                                Đổi mật khẩu
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              {isUserTemporaryLeave(user) ? (
+                                <DropdownMenuItem onClick={() => handleActivateUser(user)} className="text-green-600">
+                                  <LockOpen className="mr-2 h-4 w-4" />
+                                  Kích hoạt lại
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEditUser(user)}>
-                                  <UserCog className="mr-2 h-4 w-4" />
-                                  Chỉnh sửa
+                              ) : (
+                                <DropdownMenuItem onClick={() => handleDeleteUser(user)} className="text-red-600">
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Tạm khóa
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleChangePassword(user)}>
-                                  <KeyRound className="mr-2 h-4 w-4" />
-                                  Đổi mật khẩu
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                {isUserTemporaryLeave(user) ? (
-                                  <DropdownMenuItem onClick={() => handleActivateUser(user)} className="text-green-600">
-                                    <LockOpen className="mr-2 h-4 w-4" />
-                                    Kích hoạt lại
-                                  </DropdownMenuItem>
-                                ) : (
-                                  <DropdownMenuItem onClick={() => handleDeleteUser(user)} className="text-red-600">
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Tạm khóa
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="flex items-center justify-between px-4 py-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                Hiển thị <strong>{filteredUsers.length}</strong> trên tổng số <strong>{staffResponse?.data?.totalItems || 0}</strong> người
+                dùng
               </div>
-              <div className="flex items-center justify-between px-4 py-4 border-t">
-                <div className="text-sm text-muted-foreground">
-                  Hiển thị <strong>{filteredUsers.length}</strong> trên tổng số <strong>{staffResponse?.data?.totalItems || 0}</strong> người
-                  dùng
-                </div>
-                {totalPages > 1 && (
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious 
-                          onClick={() => handlePageChange(Math.max(0, currentPage - 1))}
-                          className={currentPage === 0 ? "pointer-events-none opacity-50" : ""}
-                        />
+              {totalPages > 1 && (
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => handlePageChange(Math.max(0, currentPage - 1))}
+                        className={currentPage === 0 ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }).map((_, index) => (
+                      <PaginationItem key={index}>
+                        <PaginationLink 
+                          onClick={() => handlePageChange(index)}
+                          isActive={currentPage === index}
+                        >
+                          {index + 1}
+                        </PaginationLink>
                       </PaginationItem>
-                      {Array.from({ length: totalPages }).map((_, index) => (
-                        <PaginationItem key={index}>
-                          <PaginationLink 
-                            onClick={() => handlePageChange(index)}
-                            isActive={currentPage === index}
-                          >
-                            {index + 1}
-                          </PaginationLink>
-                        </PaginationItem>
-                      ))}
-                      <PaginationItem>
-                        <PaginationNext 
-                          onClick={() => handlePageChange(Math.min(totalPages - 1, currentPage + 1))}
-                          className={currentPage === totalPages - 1 ? "pointer-events-none opacity-50" : ""}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="admin" className="m-0">
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center py-10">
-                <h3 className="text-lg font-medium">Danh sách quản trị viên</h3>
-                <p className="text-muted-foreground mt-2">Hiển thị người dùng có vai trò quản trị viên</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="staff" className="m-0">
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center py-10">
-                <h3 className="text-lg font-medium">Danh sách nhân viên</h3>
-                <p className="text-muted-foreground mt-2">Hiển thị người dùng có vai trò nhân viên</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => handlePageChange(Math.min(totalPages - 1, currentPage + 1))}
+                        className={currentPage === totalPages - 1 ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {isDialogOpen && (
         <UserDialog user={selectedUser} mode={dialogMode} isOpen={isDialogOpen} onClose={handleCloseDialog} />

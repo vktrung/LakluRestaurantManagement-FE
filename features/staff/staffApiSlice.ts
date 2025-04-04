@@ -15,6 +15,31 @@ export interface AdminChangePasswordRequest {
   newPassword: string;
 }
 
+export interface UpdateEmploymentStatusRequest {
+  employmentStatus: 'RESIGNED' | 'TEMPORARY_LEAVE' | 'WORKING';
+}
+
+export interface UpdateUserProfileRequest {
+  email?: string;
+  phone?: string | null;
+  roleIds?: number[];
+  salaryRateId?: number;
+  fullName?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  phoneNumber?: string;
+  address?: string;
+  department?: string;
+  employmentStatus?: 'WORKING' | 'RESIGNED' | 'TEMPORARY_LEAVE';
+  hireDate?: string;
+  bankAccount?: string;
+  bankNumber?: string;
+}
+
+export interface UpdateProfileStatusRequest {
+  employmentStatus: 'WORKING' | 'RESIGNED' | 'TEMPORARY_LEAVE';
+}
+
 export interface ApiResponse {
   message: string;
   httpStatus: number;
@@ -49,7 +74,7 @@ export const staffApiSlice = createApi({
     }),
     getStaffById: builder.query<StaffByIdResponse, string>({
       query: id => ({
-        url: `${endpoints.getListStaff}${id}`,
+        url: `${endpoints.getListStaff}${id}/with-profile`,
         method: 'GET',
       }),
       providesTags: ['staff'],
@@ -69,6 +94,30 @@ export const staffApiSlice = createApi({
         body: payload,
       }),
     }),
+    updateEmploymentStatus: builder.mutation<ApiResponse, { userId: number; payload: UpdateEmploymentStatusRequest }>({
+      query: ({ userId, payload }) => ({
+        url: `${endpoints.getListStaff}${userId}/with-profile`,
+        method: 'PUT',
+        body: payload,
+      }),
+      invalidatesTags: ['staff-list', 'staff'],
+    }),
+    updateUserProfile: builder.mutation<ApiResponse, { userId: number; payload: UpdateUserProfileRequest }>({
+      query: ({ userId, payload }) => ({
+        url: `${endpoints.getListStaff}${userId}/with-profile`,
+        method: 'PUT',
+        body: payload,
+      }),
+      invalidatesTags: ['staff-list', 'staff'],
+    }),
+    updateProfileStatus: builder.mutation<ApiResponse, { profileId: number; payload: UpdateProfileStatusRequest }>({
+      query: ({ profileId, payload }) => ({
+        url: `${endpoints.ProfileApi}${profileId}/status`,
+        method: 'PUT',
+        body: payload,
+      }),
+      invalidatesTags: ['staff-list', 'staff'],
+    }),
   }),
 });
 
@@ -77,4 +126,7 @@ export const {
   useGetStaffQuery,
   useCreateStaffMutation,
   useAdminChangePasswordMutation,
+  useUpdateEmploymentStatusMutation,
+  useUpdateUserProfileMutation,
+  useUpdateProfileStatusMutation,
 } = staffApiSlice;

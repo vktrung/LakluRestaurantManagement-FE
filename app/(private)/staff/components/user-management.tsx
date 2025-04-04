@@ -15,7 +15,9 @@ import {
   Search,
   Trash2,
   UserCog,
-  KeyRound
+  KeyRound,
+  Loader2,
+  LockOpen
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -43,11 +45,21 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import { UserDialog } from "./user-dialog"
-import { useGetStaffQuery } from "@/features/staff/staffApiSlice"
+import { useGetStaffQuery, useUpdateProfileStatusMutation } from "@/features/staff/staffApiSlice"
 import { Staff } from "@/features/staff/types"
 import { CreateUserDialog } from "./create-user-dialog"
 import { ChangePasswordDialog } from "./change-password-dialog"
 import { useToast } from "@/components/ui/use-toast"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export function UserManagement() {
   const router = useRouter()
@@ -59,6 +71,11 @@ export function UserManagement() {
   const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false)
   const [dialogMode, setDialogMode] = useState<"view" | "edit" | "add">("view")
   const [currentPage, setCurrentPage] = useState(0)
+  const [userToDeactivate, setUserToDeactivate] = useState<Staff | null>(null)
+  const [isConfirmDeactivateOpen, setIsConfirmDeactivateOpen] = useState(false)
+  const [updateProfileStatus, { isLoading: isDeactivating }] = useUpdateProfileStatusMutation()
+  const [userToActivate, setUserToActivate] = useState<Staff | null>(null)
+  const [isConfirmActivateOpen, setIsConfirmActivateOpen] = useState(false)
 
   // Gọi API với tham số currentPage
   const { data: staffResponse, isLoading, refetch } = useGetStaffQuery(
@@ -148,9 +165,9 @@ export function UserManagement() {
     switch (status) {
       case "WORKING":
         return "bg-green-100 text-green-800 hover:bg-green-200"
-      case "ON_LEAVE":
+      case "TEMPORARY_LEAVE":
         return "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
-      case "TERMINATED":
+      case "RESIGNED":
         return "bg-red-100 text-red-800 hover:bg-red-200"
       default:
         return "bg-gray-100 text-gray-800 hover:bg-gray-200"
@@ -161,13 +178,87 @@ export function UserManagement() {
     switch (status) {
       case "WORKING":
         return "Đang làm việc"
-      case "ON_LEAVE":
-        return "Nghỉ phép"
-      case "TERMINATED":
+      case "TEMPORARY_LEAVE":
+        return "Tạm nghỉ"
+      case "RESIGNED":
         return "Đã nghỉ việc"
       default:
         return status
     }
+  }
+
+  const handleDeleteUser = (user: Staff) => {
+    setUserToDeactivate(user)
+    setIsConfirmDeactivateOpen(true)
+  }
+
+  const handleConfirmDeactivate = async () => {
+    if (!userToDeactivate) return
+    
+    try {
+      await updateProfileStatus({
+        profileId: userToDeactivate.profile.id,
+        payload: {
+          employmentStatus: 'TEMPORARY_LEAVE'
+        }
+      }).unwrap()
+      
+      toast({
+        title: "Thành công",
+        description: `Đã tạm khóa tài khoản ${userToDeactivate.username}`,
+      })
+      
+      refetch()
+    } catch (error) {
+      console.error("Lỗi khi tạm khóa tài khoản:", error)
+      toast({
+        variant: "destructive",
+        title: "Lỗi",
+        description: "Có lỗi xảy ra khi tạm khóa tài khoản",
+      })
+    } finally {
+      setIsConfirmDeactivateOpen(false)
+      setUserToDeactivate(null)
+    }
+  }
+
+  const handleActivateUser = (user: Staff) => {
+    setUserToActivate(user)
+    setIsConfirmActivateOpen(true)
+  }
+
+  const handleConfirmActivate = async () => {
+    if (!userToActivate) return
+    
+    try {
+      await updateProfileStatus({
+        profileId: userToActivate.profile.id,
+        payload: {
+          employmentStatus: 'WORKING'
+        }
+      }).unwrap()
+      
+      toast({
+        title: "Thành công",
+        description: `Đã kích hoạt lại tài khoản ${userToActivate.username}`,
+      })
+      
+      refetch()
+    } catch (error) {
+      console.error("Lỗi khi kích hoạt lại tài khoản:", error)
+      toast({
+        variant: "destructive",
+        title: "Lỗi",
+        description: "Có lỗi xảy ra khi kích hoạt lại tài khoản",
+      })
+    } finally {
+      setIsConfirmActivateOpen(false)
+      setUserToActivate(null)
+    }
+  }
+
+  const isUserTemporaryLeave = (user: Staff) => {
+    return user.profile.employmentStatus === 'TEMPORARY_LEAVE'
   }
 
   return (
@@ -333,10 +424,17 @@ export function UserManagement() {
                                   Đổi mật khẩu
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-red-600">
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Xóa
-                                </DropdownMenuItem>
+                                {isUserTemporaryLeave(user) ? (
+                                  <DropdownMenuItem onClick={() => handleActivateUser(user)} className="text-green-600">
+                                    <LockOpen className="mr-2 h-4 w-4" />
+                                    Kích hoạt lại
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem onClick={() => handleDeleteUser(user)} className="text-red-600">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Tạm khóa
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -425,6 +523,68 @@ export function UserManagement() {
           onSuccess={handleChangePasswordSuccess}
         />
       )}
+
+      {/* Dialog xác nhận tạm khóa tài khoản */}
+      <AlertDialog open={isConfirmDeactivateOpen} onOpenChange={setIsConfirmDeactivateOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận tạm khóa tài khoản</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn tạm khóa tài khoản <strong>{userToDeactivate?.username}</strong>?
+              <br />
+              Người dùng này sẽ không thể đăng nhập vào hệ thống cho đến khi được kích hoạt lại.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeactivating}>Hủy</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDeactivate}
+              disabled={isDeactivating}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isDeactivating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Đang xử lý...
+                </>
+              ) : (
+                "Xác nhận tạm khóa"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog xác nhận kích hoạt lại tài khoản */}
+      <AlertDialog open={isConfirmActivateOpen} onOpenChange={setIsConfirmActivateOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận kích hoạt lại tài khoản</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn kích hoạt lại tài khoản <strong>{userToActivate?.username}</strong>?
+              <br />
+              Người dùng này sẽ có thể đăng nhập và sử dụng hệ thống bình thường.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeactivating}>Hủy</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmActivate}
+              disabled={isDeactivating}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {isDeactivating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Đang xử lý...
+                </>
+              ) : (
+                "Xác nhận kích hoạt"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { CalendarIcon, Save, X } from "lucide-react"
+import { useState, useEffect } from "react"
+import { CalendarIcon, Save, X, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 
 import { Button } from "@/components/ui/button"
@@ -24,462 +24,752 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useGetStaffByIdQuery, useUpdateEmploymentStatusMutation, useUpdateUserProfileMutation } from "@/features/staff/staffApiSlice"
+import { Staff, Profile } from "@/features/staff/types"
+import { useGetSalaryRatesQuery } from "@/features/salary/salaryApiSlice"
+import { useGetRolesQuery } from "@/features/role/roleApiSlice"
+import { useToast } from "@/components/ui/use-toast"
+
+// Định nghĩa interface cho formData để mở rộng từ Staff và Profile
+interface UserFormData {
+  id?: number
+  username: string
+  email: string
+  phone?: string | null
+  avatar?: string | null
+  roles: string[]
+  nameSalaryRate: string
+  profile: {
+    id?: number
+    userId?: number
+    username?: string
+    email?: string
+    fullName: string
+    gender: string
+    dateOfBirth: string
+    phoneNumber: string
+    address: string
+    avatar?: string | null
+    employmentStatus: string
+    hireDate: string
+    bankAccount: string
+    bankNumber: string
+    avatarImages?: string | null
+    department: string
+  }
+}
 
 interface UserDialogProps {
-  user: any
+  user: Staff | null
   mode: "view" | "edit" | "add"
   isOpen: boolean
   onClose: () => void
 }
 
 export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
-    const [formData, setFormData] = useState(
-      user || {
-        username: "",
-        email: "",
-        roles: [],
-        nameSalaryRate: "",
+  const toast = useToast()
+  const userId = user?.id.toString() || ""
+  const { data: staffResponse, isLoading, error } = useGetStaffByIdQuery(userId, {
+    skip: mode === "add" || !isOpen || !userId,
+  })
+  
+  const [updateEmploymentStatus, { isLoading: isUpdatingStatus }] = useUpdateEmploymentStatusMutation()
+  const [updateUserProfile, { isLoading: isUpdatingProfile }] = useUpdateUserProfileMutation()
+  
+  // Lấy danh sách mức lương từ API
+  const { data: salaryRatesResponse, isLoading: isLoadingSalaryRates } = useGetSalaryRatesQuery()
+  
+  // Lấy danh sách vai trò từ API
+  const { data: rolesResponse, isLoading: isLoadingRoles } = useGetRolesQuery()
+  
+  // Danh sách phòng ban cố định
+  const departments = [
+    { value: 'CASHIER', label: 'Thu ngân' },
+    { value: 'KITCHEN', label: 'Nhà bếp' },
+    { value: 'MANAGER', label: 'Quản lý' },
+    { value: 'SERVICE', label: 'Phục vụ' }
+  ]
+
+  // Định dạng tiền tệ
+  const formatCurrency = (amount: number | undefined) => {
+    if (!amount) return '0 ₫'
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)
+  }
+  
+  // Dịch loại lương
+  const translateSalaryType = (type: string) => {
+    switch (type) {
+      case 'MONTHLY': return 'Tháng'
+      case 'HOURLY': return 'Giờ'
+      case 'SHIFTLY': return 'Ca'
+      default: return type
+    }
+  }
+
+  // Khởi tạo với giá trị mặc định
+  const defaultFormData: UserFormData = {
+    username: "",
+    email: "",
+    roles: [],
+    nameSalaryRate: "",
+    profile: {
+      fullName: "",
+      gender: "MALE",
+      dateOfBirth: new Date().toISOString(),
+      phoneNumber: "",
+      address: "",
+      employmentStatus: "WORKING",
+      hireDate: new Date().toISOString(),
+      bankAccount: "",
+      bankNumber: "",
+      department: "",
+    },
+  }
+
+  // Tạo state formData với kiểu dữ liệu cụ thể
+  const [formData, setFormData] = useState<UserFormData>(defaultFormData)
+
+  // Cập nhật formData khi có dữ liệu từ props hoặc API
+  useEffect(() => {
+    if (staffResponse?.data) {
+      // Convert từ Staff sang UserFormData
+      const userData: UserFormData = {
+        ...staffResponse.data,
         profile: {
-          fullName: "",
-          gender: "MALE",
-          dateOfBirth: new Date().toISOString(),
-          phoneNumber: "",
-          address: "",
-          employmentStatus: "WORKING",
-          hireDate: new Date().toISOString(),
-          bankAccount: "",
-          bankNumber: "",
-          department: "",
-          salary: "",
-        },
-      },
-    )
-  
-    const [activeTab, setActiveTab] = useState("info")
-    const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(
-      user?.profile?.dateOfBirth ? new Date(user.profile.dateOfBirth) : undefined,
-    )
-    const [hireDate, setHireDate] = useState<Date | undefined>(
-      user?.profile?.hireDate ? new Date(user.profile.hireDate) : undefined,
-    )
-  
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const { name, value } = e.target
-      if (name.includes(".")) {
-        const [parent, child] = name.split(".")
-        setFormData({
-          ...formData,
-          [parent]: {
-            ...formData[parent],
-            [child]: value,
-          },
-        })
-      } else {
-        setFormData({
-          ...formData,
-          [name]: value,
-        })
+          ...staffResponse.data.profile,
+        }
+      }
+      setFormData(userData)
+      
+      // Cập nhật các state date
+      if (staffResponse.data.profile?.dateOfBirth) {
+        setDateOfBirth(new Date(staffResponse.data.profile.dateOfBirth))
+      }
+      
+      if (staffResponse.data.profile?.hireDate) {
+        setHireDate(new Date(staffResponse.data.profile.hireDate))
+      }
+    } else if (user) {
+      // Nếu không có dữ liệu từ API nhưng có user từ props
+      const userData: UserFormData = {
+        ...user,
+        profile: {
+          ...user.profile,
+        }
+      }
+      setFormData(userData)
+      
+      // Cập nhật các state date
+      if (user.profile?.dateOfBirth) {
+        setDateOfBirth(new Date(user.profile.dateOfBirth))
+      }
+      
+      if (user.profile?.hireDate) {
+        setHireDate(new Date(user.profile.hireDate))
       }
     }
+  }, [staffResponse, user])
   
-    const handleSelectChange = (name: string, value: string) => {
-      if (name.includes(".")) {
-        const [parent, child] = name.split(".")
-        setFormData({
-          ...formData,
-          [parent]: {
-            ...formData[parent],
-            [child]: value,
-          },
-        })
-      } else {
-        setFormData({
-          ...formData,
-          [name]: value,
-        })
-      }
-    }
+  const [activeTab, setActiveTab] = useState("info")
+  const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(undefined)
+  const [hireDate, setHireDate] = useState<Date | undefined>(undefined)
   
-    const handleDateChange = (field: string, date: Date | undefined) => {
-      if (field === "dateOfBirth") {
-        setDateOfBirth(date)
-      } else if (field === "hireDate") {
-        setHireDate(date)
-      }
-  
-      if (date) {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    if (name.includes(".")) {
+      const [parent, child] = name.split(".")
+      if (parent === "profile") {
         setFormData({
           ...formData,
           profile: {
             ...formData.profile,
-            [field]: date.toISOString(),
+            [child]: value,
           },
         })
       }
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      })
     }
-  
-    const handleSave = () => {
-      // Here you would typically send the data to your API
-      console.log("Saving user data:", formData)
+  }
+
+  const handleSelectChange = (name: string, value: string) => {
+    if (name.includes(".")) {
+      const [parent, child] = name.split(".")
+      if (parent === "profile") {
+        setFormData({
+          ...formData,
+          profile: {
+            ...formData.profile,
+            [child]: value,
+          },
+        })
+        
+        // Nếu thay đổi trạng thái làm việc và không ở chế độ xem
+        if (child === "employmentStatus" && mode === "edit" && userId) {
+          const validStatuses = ['RESIGNED', 'TEMPORARY_LEAVE', 'WORKING']
+          if (validStatuses.includes(value)) {
+            // Gọi API cập nhật trạng thái
+            updateEmploymentStatus({
+              userId: parseInt(userId),
+              payload: {
+                employmentStatus: value as 'RESIGNED' | 'TEMPORARY_LEAVE' | 'WORKING'
+              }
+            }).unwrap()
+              .then(() => {
+                // Hiển thị thông báo thành công nếu cần
+                console.log(`Cập nhật trạng thái thành công: ${value}`)
+              })
+              .catch(err => {
+                // Xử lý lỗi nếu có
+                console.error("Lỗi khi cập nhật trạng thái:", err)
+              })
+          }
+        }
+      }
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      })
+    }
+  }
+
+  const handleDateChange = (field: string, date: Date | undefined) => {
+    if (field === "dateOfBirth") {
+      setDateOfBirth(date)
+    } else if (field === "hireDate") {
+      setHireDate(date)
+    }
+
+    if (date) {
+      setFormData({
+        ...formData,
+        profile: {
+          ...formData.profile,
+          [field]: date.toISOString(),
+        },
+      })
+    }
+  }
+
+  const handleSave = async () => {
+    if (mode !== "edit" || !userId) {
       onClose()
+      return
     }
-  
-    const getInitials = (name: string) => {
-      return name
-        ? name
-            .split(" ")
-            .map((part) => part[0])
-            .join("")
-            .toUpperCase()
-            .substring(0, 2)
-        : "NN"
-    }
-  
-    const translateStatus = (status: string) => {
-      switch (status) {
-        case "WORKING":
-          return "Đang làm việc"
-        case "ON_LEAVE":
-          return "Nghỉ phép"
-        case "TERMINATED":
-          return "Đã nghỉ việc"
-        default:
-          return status
+
+    try {
+      // Lấy ID của salary rate từ các options nếu có
+      let salaryRateId: number | undefined
+      if (salaryRatesResponse?.data && salaryRatesResponse.data.length > 0) {
+        const selectedRate = salaryRatesResponse.data.find(rate => rate.levelName === formData.nameSalaryRate)
+        if (selectedRate) {
+          salaryRateId = selectedRate.id
+        }
       }
-    }
-  
-    const translateGender = (gender: string) => {
-      switch (gender) {
-        case "MALE":
-          return "Nam"
-        case "FEMALE":
-          return "Nữ"
-        case "OTHER":
-          return "Khác"
-        default:
-          return gender
+
+      // Lấy role IDs từ roleResponse nếu có
+      let roleIds: number[] | undefined
+      if (rolesResponse?.data && rolesResponse.data.length > 0 && formData.roles && formData.roles.length > 0) {
+        const roleNames = formData.roles
+        roleIds = roleNames.map(roleName => {
+          const foundRole = rolesResponse.data.find(r => r.name === roleName)
+          return foundRole ? foundRole.id : 0
+        }).filter(id => id !== 0)
       }
-    }
-  
-    const getStatusColor = (status: string) => {
-      switch (status) {
-        case "WORKING":
-          return "bg-green-100 text-green-800 hover:bg-green-200"
-        case "ON_LEAVE":
-          return "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
-        case "TERMINATED":
-          return "bg-red-100 text-red-800 hover:bg-red-200"
-        default:
-          return "bg-gray-100 text-gray-800 hover:bg-gray-200"
+
+      // Chuẩn bị dữ liệu gửi lên API
+      const payload = {
+        email: formData.email,
+        phone: formData.phone || undefined,
+        roleIds: roleIds,
+        salaryRateId: salaryRateId,
+        fullName: formData.profile.fullName,
+        gender: formData.profile.gender,
+        dateOfBirth: formData.profile.dateOfBirth,
+        phoneNumber: formData.profile.phoneNumber,
+        address: formData.profile.address,
+        department: formData.profile.department,
+        employmentStatus: formData.profile.employmentStatus as 'WORKING' | 'RESIGNED' | 'TEMPORARY_LEAVE',
+        hireDate: formData.profile.hireDate,
+        bankAccount: formData.profile.bankAccount,
+        bankNumber: formData.profile.bankNumber
       }
+
+      // Gọi API cập nhật thông tin
+      await updateUserProfile({
+        userId: parseInt(userId),
+        payload
+      }).unwrap()
+
+      toast.toast({
+        title: "Thành công",
+        description: "Cập nhật thông tin người dùng thành công",
+      })
+      onClose()
+    } catch (err) {
+      console.error("Lỗi khi cập nhật thông tin:", err)
+      toast.toast({
+        variant: "destructive",
+        title: "Lỗi",
+        description: "Có lỗi xảy ra khi cập nhật thông tin người dùng",
+      })
     }
-  
-    const isViewMode = mode === "view"
-    const dialogTitle =
-      mode === "add" ? "Thêm người dùng mới" : mode === "edit" ? "Chỉnh sửa thông tin người dùng" : "Thông tin người dùng"
-  
+  }
+
+  const getInitials = (name: string) => {
+    return name
+      ? name
+          .split(" ")
+          .map((part) => part[0])
+          .join("")
+          .toUpperCase()
+          .substring(0, 2)
+      : "NN"
+  }
+
+  const translateStatus = (status: string) => {
+    switch (status) {
+      case "WORKING":
+        return "Đang làm việc"
+      case "RESIGNED":
+        return "Đã nghỉ việc"
+      case "TEMPORARY_LEAVE":
+        return "Tạm nghỉ"
+      default:
+        return status
+    }
+  }
+
+  const translateGender = (gender: string) => {
+    switch (gender) {
+      case "MALE":
+        return "Nam"
+      case "FEMALE":
+        return "Nữ"
+      case "OTHER":
+        return "Khác"
+      default:
+        return gender
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "WORKING":
+        return "bg-green-100 text-green-800 hover:bg-green-200"
+      case "ON_LEAVE":
+        return "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+      case "TERMINATED":
+        return "bg-red-100 text-red-800 hover:bg-red-200"
+      default:
+        return "bg-gray-100 text-gray-800 hover:bg-gray-200"
+    }
+  }
+
+  const isViewMode = mode === "view"
+  const dialogTitle =
+    mode === "add" ? "Thêm người dùng mới" : mode === "edit" ? "Chỉnh sửa thông tin người dùng" : "Thông tin người dùng"
+
+  // Loading state
+  if (isLoading && mode !== "add") {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{dialogTitle}</DialogTitle>
-            <DialogDescription>
-              {mode === "add"
-                ? "Nhập thông tin để tạo người dùng mới"
-                : mode === "edit"
-                  ? "Chỉnh sửa thông tin người dùng"
-                  : "Xem chi tiết thông tin người dùng"}
-            </DialogDescription>
           </DialogHeader>
-  
-          <div className="flex flex-col items-center py-4">
-            <Avatar className="h-20 w-20 mb-2">
-              <AvatarImage src={user?.profile?.avatar || undefined} alt={formData.profile?.fullName || "User"} />
-              <AvatarFallback className="text-lg">{getInitials(formData.profile?.fullName || "")}</AvatarFallback>
-            </Avatar>
-            <h3 className="text-lg font-medium">{formData.profile?.fullName}</h3>
-            <p className="text-sm text-muted-foreground">{formData.email}</p>
-            {formData.profile?.employmentStatus && (
-              <Badge className={`mt-2 ${getStatusColor(formData.profile.employmentStatus)}`}>
-                {translateStatus(formData.profile.employmentStatus)}
-              </Badge>
-            )}
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2">Đang tải thông tin người dùng...</span>
           </div>
-  
-          <Tabs defaultValue="info" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols-3 mb-4">
-              <TabsTrigger value="info">Thông tin cơ bản</TabsTrigger>
-              <TabsTrigger value="work">Công việc</TabsTrigger>
-              <TabsTrigger value="bank">Tài khoản ngân hàng</TabsTrigger>
-            </TabsList>
-  
-            <TabsContent value="info" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username">Tên đăng nhập</Label>
-                  <Input
-                    id="username"
-                    name="username"
-                    value={formData.username || ""}
-                    onChange={handleInputChange}
-                    disabled={isViewMode}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={formData.email || ""}
-                    onChange={handleInputChange}
-                    disabled={isViewMode}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Họ và tên</Label>
-                  <Input
-                    id="fullName"
-                    name="profile.fullName"
-                    value={formData.profile?.fullName || ""}
-                    onChange={handleInputChange}
-                    disabled={isViewMode}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="gender">Giới tính</Label>
-                  {isViewMode ? (
-                    <Input id="gender" value={translateGender(formData.profile?.gender || "")} disabled />
-                  ) : (
-                    <Select
-                      value={formData.profile?.gender || "MALE"}
-                      onValueChange={(value) => handleSelectChange("profile.gender", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn giới tính" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="MALE">Nam</SelectItem>
-                        <SelectItem value="FEMALE">Nữ</SelectItem>
-                        <SelectItem value="OTHER">Khác</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dateOfBirth">Ngày sinh</Label>
-                  {isViewMode ? (
-                    <Input id="dateOfBirth" value={dateOfBirth ? format(dateOfBirth, "dd/MM/yyyy") : ""} disabled />
-                  ) : (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !dateOfBirth && "text-muted-foreground",
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {dateOfBirth ? format(dateOfBirth, "dd/MM/yyyy") : <span>Chọn ngày</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={dateOfBirth}
-                          onSelect={(date) => handleDateChange("dateOfBirth", date)}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phoneNumber">Số điện thoại</Label>
-                  <Input
-                    id="phoneNumber"
-                    name="profile.phoneNumber"
-                    value={formData.profile?.phoneNumber || ""}
-                    onChange={handleInputChange}
-                    disabled={isViewMode}
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="address">Địa chỉ</Label>
-                  <Textarea
-                    id="address"
-                    name="profile.address"
-                    value={formData.profile?.address || ""}
-                    onChange={handleInputChange}
-                    disabled={isViewMode}
-                    className="resize-none"
-                  />
-                </div>
-              </div>
-            </TabsContent>
-  
-            <TabsContent value="work" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="department">Phòng ban</Label>
-                  <Input
-                    id="department"
-                    name="profile.department"
-                    value={formData.profile?.department || ""}
-                    onChange={handleInputChange}
-                    disabled={isViewMode}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nameSalaryRate">Chức vụ</Label>
-                  <Input
-                    id="nameSalaryRate"
-                    name="nameSalaryRate"
-                    value={formData.nameSalaryRate || ""}
-                    onChange={handleInputChange}
-                    disabled={isViewMode}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="salary">Mức lương</Label>
-                  <Input
-                    id="salary"
-                    name="profile.salary"
-                    value={formData.profile?.salary || ""}
-                    onChange={handleInputChange}
-                    disabled={isViewMode}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="employmentStatus">Trạng thái làm việc</Label>
-                  {isViewMode ? (
-                    <Input
-                      id="employmentStatus"
-                      value={translateStatus(formData.profile?.employmentStatus || "")}
-                      disabled
-                    />
-                  ) : (
-                    <Select
-                      value={formData.profile?.employmentStatus || "WORKING"}
-                      onValueChange={(value) => handleSelectChange("profile.employmentStatus", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn trạng thái" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="WORKING">Đang làm việc</SelectItem>
-                        <SelectItem value="ON_LEAVE">Nghỉ phép</SelectItem>
-                        <SelectItem value="TERMINATED">Đã nghỉ việc</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="hireDate">Ngày vào làm</Label>
-                  {isViewMode ? (
-                    <Input id="hireDate" value={hireDate ? format(hireDate, "dd/MM/yyyy") : ""} disabled />
-                  ) : (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !hireDate && "text-muted-foreground",
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {hireDate ? format(hireDate, "dd/MM/yyyy") : <span>Chọn ngày</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={hireDate}
-                          onSelect={(date) => handleDateChange("hireDate", date)}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  )}
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="roles">Vai trò</Label>
-                  {isViewMode ? (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {formData.roles && formData.roles.length > 0 ? (
-                        formData.roles.map((role: string, index: number) => (
-                          <Badge key={index} variant="outline">
-                            {role}
-                          </Badge>
-                        ))
-                      ) : (
-                        <Badge variant="outline" className="bg-gray-100">
-                          Không có vai trò
-                        </Badge>
-                      )}
-                    </div>
-                  ) : (
-                    <Select
-                      value={formData.roles && formData.roles.length > 0 ? formData.roles[0] : ""}
-                      onValueChange={(value) => setFormData({ ...formData, roles: [value] })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn vai trò" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Quản trị viên hệ thống">Quản trị viên hệ thống</SelectItem>
-                        <SelectItem value="Nhân viên">Nhân viên</SelectItem>
-                        <SelectItem value="Quản lý">Quản lý</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-              </div>
-            </TabsContent>
-  
-            <TabsContent value="bank" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bankAccount">Tên tài khoản ngân hàng</Label>
-                  <Input
-                    id="bankAccount"
-                    name="profile.bankAccount"
-                    value={formData.profile?.bankAccount || ""}
-                    onChange={handleInputChange}
-                    disabled={isViewMode}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bankNumber">Số tài khoản</Label>
-                  <Input
-                    id="bankNumber"
-                    name="profile.bankNumber"
-                    value={formData.profile?.bankNumber || ""}
-                    onChange={handleInputChange}
-                    disabled={isViewMode}
-                  />
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-  
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
+  // Error state
+  if (error && mode !== "add") {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{dialogTitle}</DialogTitle>
+          </DialogHeader>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Có lỗi xảy ra khi tải thông tin người dùng. Vui lòng thử lại sau.
+            </AlertDescription>
+          </Alert>
           <DialogFooter>
             <Button variant="outline" onClick={onClose}>
               <X className="mr-2 h-4 w-4" />
-              {isViewMode ? "Đóng" : "Hủy"}
+              Đóng
             </Button>
-            {!isViewMode && (
-              <Button onClick={handleSave}>
-                <Save className="mr-2 h-4 w-4" />
-                Lưu
-              </Button>
-            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
     )
   }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{dialogTitle}</DialogTitle>
+          <DialogDescription>
+            {mode === "add"
+              ? "Nhập thông tin để tạo người dùng mới"
+              : mode === "edit"
+                ? "Chỉnh sửa thông tin người dùng"
+                : "Xem chi tiết thông tin người dùng"}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col items-center py-4">
+          <Avatar className="h-20 w-20 mb-2">
+            <AvatarImage src={formData.profile?.avatar || undefined} alt={formData.profile?.fullName || "User"} />
+            <AvatarFallback className="text-lg">{getInitials(formData.profile?.fullName || "")}</AvatarFallback>
+          </Avatar>
+          <h3 className="text-lg font-medium">{formData.profile?.fullName}</h3>
+          <p className="text-sm text-muted-foreground">{formData.email}</p>
+          {formData.profile?.employmentStatus && (
+            <Badge className={`mt-2 ${getStatusColor(formData.profile.employmentStatus)}`}>
+              {translateStatus(formData.profile.employmentStatus)}
+            </Badge>
+          )}
+        </div>
+  
+        <Tabs defaultValue="info" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid grid-cols-3 mb-4">
+            <TabsTrigger value="info">Thông tin cơ bản</TabsTrigger>
+            <TabsTrigger value="work">Công việc</TabsTrigger>
+            <TabsTrigger value="bank">Tài khoản ngân hàng</TabsTrigger>
+          </TabsList>
+  
+          <TabsContent value="info" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Tên đăng nhập</Label>
+                <Input
+                  id="username"
+                  name="username"
+                  value={formData.username || ""}
+                  onChange={handleInputChange}
+                  disabled={isViewMode}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email || ""}
+                  onChange={handleInputChange}
+                  disabled={isViewMode}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Họ và tên</Label>
+                <Input
+                  id="fullName"
+                  name="profile.fullName"
+                  value={formData.profile?.fullName || ""}
+                  onChange={handleInputChange}
+                  disabled={isViewMode}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="gender">Giới tính</Label>
+                {isViewMode ? (
+                  <Input id="gender" value={translateGender(formData.profile?.gender || "")} disabled />
+                ) : (
+                  <Select
+                    value={formData.profile?.gender || "MALE"}
+                    onValueChange={(value) => handleSelectChange("profile.gender", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn giới tính" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MALE">Nam</SelectItem>
+                      <SelectItem value="FEMALE">Nữ</SelectItem>
+                      <SelectItem value="OTHER">Khác</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dateOfBirth">Ngày sinh</Label>
+                {isViewMode ? (
+                  <Input id="dateOfBirth" value={dateOfBirth ? format(dateOfBirth, "dd/MM/yyyy") : ""} disabled />
+                ) : (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !dateOfBirth && "text-muted-foreground",
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateOfBirth ? format(dateOfBirth, "dd/MM/yyyy") : <span>Chọn ngày</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={dateOfBirth}
+                        onSelect={(date) => handleDateChange("dateOfBirth", date)}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phoneNumber">Số điện thoại</Label>
+                <Input
+                  id="phoneNumber"
+                  name="profile.phoneNumber"
+                  value={formData.profile?.phoneNumber || ""}
+                  onChange={handleInputChange}
+                  disabled={isViewMode}
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="address">Địa chỉ</Label>
+                <Textarea
+                  id="address"
+                  name="profile.address"
+                  value={formData.profile?.address || ""}
+                  onChange={handleInputChange}
+                  disabled={isViewMode}
+                  className="resize-none"
+                />
+              </div>
+            </div>
+          </TabsContent>
+  
+          <TabsContent value="work" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="department">Phòng ban</Label>
+                {isViewMode ? (
+                  <Input
+                    id="department"
+                    value={formData.profile?.department || ""}
+                    disabled
+                  />
+                ) : (
+                  <Select
+                    value={formData.profile?.department || ""}
+                    onValueChange={(value) => handleSelectChange("profile.department", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn phòng ban" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((department) => (
+                        <SelectItem key={department.value} value={department.value}>
+                          {department.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="nameSalaryRate">Mức lương</Label>
+                {isViewMode ? (
+                  <Input
+                    id="nameSalaryRate"
+                    value={formData.nameSalaryRate || ""}
+                    disabled
+                  />
+                ) : (
+                  <Select
+                    value={formData.nameSalaryRate || ""}
+                    onValueChange={(value) => handleSelectChange("nameSalaryRate", value)}
+                    disabled={isLoadingSalaryRates}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn mức lương" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {isLoadingSalaryRates ? (
+                        <SelectItem value="loading">Đang tải...</SelectItem>
+                      ) : salaryRatesResponse?.data && salaryRatesResponse.data.length > 0 ? (
+                        salaryRatesResponse.data.map((rate) => (
+                          <SelectItem key={rate.id} value={rate.levelName}>
+                            {rate.levelName} - {formatCurrency(rate.amount)} ({translateSalaryType(rate.type)})
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="none">Không có dữ liệu</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="employmentStatus">Trạng thái làm việc</Label>
+                {isViewMode ? (
+                  <Input
+                    id="employmentStatus"
+                    value={translateStatus(formData.profile?.employmentStatus || "")}
+                    disabled
+                  />
+                ) : (
+                  <Select
+                    value={formData.profile?.employmentStatus || "WORKING"}
+                    onValueChange={(value) => handleSelectChange("profile.employmentStatus", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="WORKING">Đang làm việc</SelectItem>
+                      <SelectItem value="TEMPORARY_LEAVE">Tạm nghỉ</SelectItem>
+                      <SelectItem value="RESIGNED">Đã nghỉ việc</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hireDate">Ngày vào làm</Label>
+                {isViewMode ? (
+                  <Input id="hireDate" value={hireDate ? format(hireDate, "dd/MM/yyyy") : ""} disabled />
+                ) : (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !hireDate && "text-muted-foreground",
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {hireDate ? format(hireDate, "dd/MM/yyyy") : <span>Chọn ngày</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={hireDate}
+                        onSelect={(date) => handleDateChange("hireDate", date)}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="roles">Vai trò</Label>
+                {isViewMode ? (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {formData.roles && formData.roles.length > 0 ? (
+                      formData.roles.map((role: string, index: number) => (
+                        <Badge key={index} variant="outline">
+                          {role}
+                        </Badge>
+                      ))
+                    ) : (
+                      <Badge variant="outline" className="bg-gray-100">
+                        Không có vai trò
+                      </Badge>
+                    )}
+                  </div>
+                ) : (
+                  <Select
+                    value={formData.roles && formData.roles.length > 0 ? formData.roles[0] : ""}
+                    onValueChange={(value) => setFormData({ ...formData, roles: [value] })}
+                    disabled={isLoadingRoles}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn vai trò" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {isLoadingRoles ? (
+                        <SelectItem value="loading">Đang tải...</SelectItem>
+                      ) : rolesResponse?.data && rolesResponse.data.length > 0 ? (
+                        rolesResponse.data.map((role) => (
+                          <SelectItem key={role.id} value={role.name}>
+                            {role.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="none">Không có dữ liệu</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+  
+          <TabsContent value="bank" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="bankAccount">Tên tài khoản ngân hàng</Label>
+                <Input
+                  id="bankAccount"
+                  name="profile.bankAccount"
+                  value={formData.profile?.bankAccount || ""}
+                  onChange={handleInputChange}
+                  disabled={isViewMode}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bankNumber">Số tài khoản</Label>
+                <Input
+                  id="bankNumber"
+                  name="profile.bankNumber"
+                  value={formData.profile?.bankNumber || ""}
+                  onChange={handleInputChange}
+                  disabled={isViewMode}
+                />
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+  
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            <X className="mr-2 h-4 w-4" />
+            {isViewMode ? "Đóng" : "Hủy"}
+          </Button>
+          {!isViewMode && (
+            <Button 
+              onClick={handleSave} 
+              disabled={isUpdatingProfile || isUpdatingStatus}
+            >
+              {isUpdatingProfile ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Đang lưu...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Lưu
+                </>
+              )}
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
 

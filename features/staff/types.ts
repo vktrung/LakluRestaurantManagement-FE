@@ -20,7 +20,7 @@ export interface Profile {
   phoneNumber: string;
   address: string;
   avatar: string | null;
-  employmentStatus: string;
+  employmentStatus: 'WORKING' | 'RESIGNED' | 'TEMPORARY_LEAVE';
   hireDate: string;
   bankAccount: string;
   bankNumber: string;

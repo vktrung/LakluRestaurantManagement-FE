@@ -3,7 +3,7 @@
 import { endpoints } from '@/configs/endpoints';
 import baseQuery from '@/features/baseQuery';
 import { createApi } from '@reduxjs/toolkit/query/react';
-import { OrderResponse,OrderResponseId,CreateOrderItemResponse,CreateOrderItemRequest ,GetOrdersParams, UpdateOrderStatusRequest, UpdateOrderItemStatusRequest, OrderItemResponse} from './types';
+import { OrderResponse,OrderResponseId,CreateOrderItemResponse,CreateOrderItemRequest ,GetOrdersParams, UpdateOrderStatusRequest, UpdateOrderItemStatusRequest, OrderItemResponse, GetOrdersParamsEveningToDawn} from './types';
 
 export const orderCashierApiSlice = createApi({
   reducerPath: 'orderCashier',
@@ -31,7 +31,25 @@ export const orderCashierApiSlice = createApi({
       },
       providesTags: ['order-list'],
     }),
+    getOrdersEveningToDawn: builder.query<OrderResponse, GetOrdersParamsEveningToDawn | void>({
+      query: (params) => {
+        if (!params) {
+          return {
+            url: '/api/v1/order/evening-to-dawn',
+            method: 'GET',
+          };
+        }
 
+        const queryParams = new URLSearchParams();
+        if (params.date) queryParams.append('date', params.date);
+    
+        return {
+          url: `/api/v1/order/evening-to-dawn/?${queryParams.toString()}`,
+          method: 'GET',
+        };
+      },
+      providesTags: ['order-list'],
+    }),
 
     getOrderById: builder.query<OrderResponseId, number>({
       query: id => ({
@@ -76,6 +94,7 @@ export const orderCashierApiSlice = createApi({
 // Export các hooks để sử dụng trong components
 export const {
   useGetOrdersQuery,
+  useGetOrdersEveningToDawnQuery,
   useGetOrderByIdQuery,
   useUpdateOrderStatusMutation,
   useUpdateOrderItemStatusMutation,

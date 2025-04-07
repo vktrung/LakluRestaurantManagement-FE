@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useGetOrdersQuery } from '@/features/order-cashier/orderCashierApiSlice';
+import { useGetOrdersEveningToDawnQuery } from '@/features/order-cashier/orderCashierApiSlice';
 import { useGetUserMeQuery } from '@/features/auth/authApiSlice';
 import OrderList from './OrderList';
 import { Loader2, ChefHat, RefreshCw } from 'lucide-react';
@@ -16,9 +16,9 @@ export default function KitchenView() {
     refetch: refetchOrders,
     error: ordersError,
     isError: isOrdersError,
-  } = useGetOrdersQuery(undefined, {
+  } = useGetOrdersEveningToDawnQuery(undefined, {
     refetchOnMountOrArgChange: true,
-    pollingInterval: 10000, // Poll every 15 seconds
+    pollingInterval: 10000, // Poll every 10 seconds
   });
 
   // Lấy thông tin người dùng hiện tại

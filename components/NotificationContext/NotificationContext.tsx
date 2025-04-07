@@ -8,17 +8,26 @@ import React, {
   useEffect,
   ReactNode,
   useCallback,
+  useMemo,
 } from 'react';
-import { useGetOrdersQuery } from '@/features/order-cashier/orderCashierApiSlice';
+import { useGetOrdersEveningToDawnQuery } from '@/features/order-cashier/orderCashierApiSlice';
 import { useGetUserMeQuery } from '@/features/auth/authApiSlice';
-import { useGetOrderItemByIdQuery } from '@/features/order-cashier/orderCashierApiSlice';
-import { Order, OrderItem } from '@/features/order-cashier/types';
+import {
+  useGetOrderItemByIdQuery,
+  useUpdateOrderItemStatusMutation,
+} from '@/features/order-cashier/orderCashierApiSlice';
+import {
+  Order,
+  OrderItem,
+  OrderItemStatus,
+} from '@/features/order-cashier/types';
 
 interface Notification {
   id: string;
   message: string;
   read: boolean;
   timestamp: string;
+  orderItemId?: number;
 }
 
 interface NotificationContextType {
@@ -27,6 +36,7 @@ interface NotificationContextType {
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   addTestNotification: () => void;
+  markAsDelivered: (id: string) => Promise<void>;
 }
 
 // Component để lấy tên món ăn từ orderItemId
@@ -67,12 +77,129 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     }[]
   >([]);
 
-  // API calls
-  const { data: ordersData } = useGetOrdersQuery(undefined, {
-    pollingInterval: 10000,
-  });
+  const [updateOrderItemStatus] = useUpdateOrderItemStatusMutation();
 
-  const { data: userData } = useGetUserMeQuery();
+  // Lấy token từ cookie để kiểm tra auth
+  const getAuthToken = () => {
+    if (typeof document !== 'undefined') {
+      const match = document.cookie.match(
+        '(^|;)\\s*auth_token\\s*=\\s*([^;]+)',
+      );
+      return match ? match.pop() : null;
+    }
+    return null;
+  };
+
+  // API calls
+  const { data: userData, refetch: refetchUser } = useGetUserMeQuery();
+  const { data: ordersData, refetch: refetchOrders } =
+    useGetOrdersEveningToDawnQuery(undefined, {
+      pollingInterval: 3000, // Poll every 3 seconds
+      refetchOnMountOrArgChange: true,
+    });
+
+  // Fetch user data khi có token
+  useEffect(() => {
+    const token = getAuthToken();
+    if (token && !userData) {
+      refetchUser();
+    }
+  }, [userData, refetchUser]);
+
+  // Xử lý thông báo
+  useEffect(() => {
+    if (!ordersData?.data) {
+      return;
+    }
+
+    // Nếu chưa có userData, đợi userData
+    if (!userData?.data) {
+      return;
+    }
+
+    // Kiểm tra xem user có quyền nhận thông báo không
+    const hasNotificationPermission = userData.data.permissions.includes(
+      'order_items:get_noti',
+    );
+    if (!hasNotificationPermission) {
+      return;
+    }
+
+    // Lấy tất cả OrderItem IDs đã có trạng thái DELIVERED
+    const deliveredOrderItemIds = new Set<number>();
+    ordersData.data.forEach(order => {
+      order.orderItems.forEach(item => {
+        if (item.statusLabel === 'Đã giao') {
+          deliveredOrderItemIds.add(item.orderItemId);
+        }
+      });
+    });
+
+    // Loại bỏ thông báo cho các OrderItem đã được đánh dấu DELIVERED
+    setNotifications(prev =>
+      prev.filter(notification => {
+        if (
+          notification.orderItemId &&
+          deliveredOrderItemIds.has(notification.orderItemId)
+        ) {
+          return false;
+        }
+        return true;
+      }),
+    );
+
+    const newPendingNotifications: {
+      id: string;
+      tableNames: string;
+      quantity: number;
+      orderItemId: number;
+      isProcessing: boolean;
+    }[] = [];
+
+    // Lọc các món đã hoàn thành chưa được xử lý
+    ordersData.data.forEach(order => {
+      order.orderItems.forEach(item => {
+        if (
+          item.statusLabel === 'Đã hoàn thành' &&
+          !processedOrderItemIds.has(item.orderItemId) &&
+          !deliveredOrderItemIds.has(item.orderItemId)
+        ) {
+          const notificationId = `item-${item.orderItemId}`;
+          const tableNames = order.tables
+            ? order.tables.map(t => t.tableNumber).join(', ')
+            : '';
+
+          newPendingNotifications.push({
+            id: notificationId,
+            tableNames,
+            quantity: item.quantity,
+            orderItemId: item.orderItemId,
+            isProcessing: false,
+          });
+        }
+      });
+    });
+
+    // Cập nhật danh sách chờ một lần duy nhất
+    if (newPendingNotifications.length > 0) {
+      setPendingNotifications(prev => {
+        const existingIds = new Set(prev.map(item => item.id));
+        const uniqueNewItems = newPendingNotifications.filter(
+          item => !existingIds.has(item.id),
+        );
+        return [...prev, ...uniqueNewItems];
+      });
+
+      // Cập nhật processedOrderItemIds một lần
+      setProcessedOrderItemIds(prev => {
+        const newSet = new Set(prev);
+        newPendingNotifications.forEach(item => {
+          newSet.add(item.orderItemId);
+        });
+        return newSet;
+      });
+    }
+  }, [ordersData, userData, processedOrderItemIds]);
 
   // TEST FUNCTION
   const addTestNotification = () => {
@@ -87,137 +214,76 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     console.log('Added test notification');
   };
 
-  // Xử lý các thông báo đang chờ để lấy tên món ăn
+  // Xử lý tên món ăn và tạo thông báo
   const handleNameFetched = useCallback(
-    (id: string, tableNames: string, quantity: number, dishName: string) => {
-      console.log(`Fetched dish name: ${dishName} for notification ${id}`);
+    (
+      id: string,
+      tableNames: string,
+      quantity: number,
+      dishName: string,
+      orderItemId: number,
+    ) => {
+      setPendingNotifications(prev => prev.filter(item => item.id !== id));
 
-      setPendingNotifications(prev =>
-        prev.map(item =>
-          item.id === id ? { ...item, isProcessing: true } : item,
-        ),
-      );
-
-      // Tạo thông báo mới với tên món ăn đã lấy được
-      const newNotification = {
-        id: `order-${id}`,
-        message: `Món ăn "${dishName}" ở bàn "${tableNames}" với số lượng "${quantity}" đã hoàn thành, đến lấy món ăn`,
-        read: false,
-        timestamp: new Date().toISOString(),
-      };
-
-      // Thêm thông báo vào danh sách
       setNotifications(prev => {
-        // Kiểm tra nếu thông báo đã tồn tại (tránh trùng lặp)
-        if (prev.some(notif => notif.id === newNotification.id)) {
+        const notificationId = `order-${id}`;
+        if (prev.some(notif => notif.id === notificationId)) {
           return prev;
         }
+
+        const newNotification = {
+          id: notificationId,
+          message: `Món ăn "${dishName}" ở bàn "${tableNames}" với số lượng "${quantity}" đã hoàn thành, đến lấy món ăn`,
+          read: false,
+          timestamp: new Date().toISOString(),
+          orderItemId: orderItemId,
+        };
+
         return [newNotification, ...prev];
       });
-
-      // Xóa khỏi danh sách chờ
-      setPendingNotifications(prev => prev.filter(item => item.id !== id));
     },
     [],
   );
 
-  // Kiểm tra các món đã hoàn thành để thông báo
-  useEffect(() => {
-    if (!ordersData?.data || !userData?.data) {
-      return;
-    }
-
-    // Xóa localStorage để đảm bảo không còn dữ liệu cũ
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('notified_order_items');
-    }
-
-    const newPendingNotifications: {
-      id: string;
-      tableNames: string;
-      quantity: number;
-      orderItemId: number;
-      isProcessing: boolean;
-    }[] = [];
-
-    // Duyệt qua từng đơn hàng
-    ordersData.data.forEach(order => {
-      // So sánh ID nhân viên - nếu đơn này thuộc về người đang đăng nhập
-      if (String(order.staffId) === String(userData.data.id)) {
-        // Kiểm tra order.orderItems có tồn tại không
-        if (!order.orderItems) return;
-
-        // Kiểm tra từng món trong đơn
-        order.orderItems.forEach(item => {
-          // Nếu món đã hoàn thành và chưa được xử lý
-          if (
-            item.statusLabel === 'Đã hoàn thành' &&
-            !processedOrderItemIds.has(item.orderItemId)
-          ) {
-            // Tạo ID ổn định cho món này
-            const notificationId = `item-${item.orderItemId}`;
-
-            // Kiểm tra xem món này đã trong danh sách chờ chưa
-            const isAlreadyPending = pendingNotifications.some(
-              pending => pending.id === notificationId,
-            );
-
-            // Chỉ thêm vào danh sách chờ nếu chưa có
-            if (!isAlreadyPending) {
-              // Thêm vào pending để chờ lấy tên món ăn
-              const tableNames = order.tables 
-                ? order.tables.map(t => t.tableNumber).join(', ')
-                : '';
-
-              newPendingNotifications.push({
-                id: notificationId,
-                tableNames,
-                quantity: item.quantity,
-                orderItemId: item.orderItemId,
-                isProcessing: false,
-              });
-
-              // Đánh dấu món này đã được xử lý
-              setProcessedOrderItemIds(prev => {
-                const newSet = new Set(prev);
-                newSet.add(item.orderItemId);
-                return newSet;
-              });
-            }
-          }
-        });
-      }
-    });
-
-    // Cập nhật danh sách chờ thông báo
-    if (newPendingNotifications.length > 0) {
-      setPendingNotifications(prev => {
-        // Lọc ra các món chưa được thêm vào danh sách chờ
-        const newItems = newPendingNotifications.filter(
-          newItem => !prev.some(existingItem => existingItem.id === newItem.id),
-        );
-        return [...prev, ...newItems];
-      });
-    }
-
-    // Cleanup function to cancel pending operations
-    return () => {
-      console.log('Cleaning up notification effect');
-    };
-  }, [ordersData, userData, pendingNotifications, processedOrderItemIds]);
-
-  // Các hàm xử lý thông báo
-  const markAsRead = (id: string) => {
+  const markAsRead = useCallback((id: string) => {
     setNotifications(prev =>
       prev.map(notif => (notif.id === id ? { ...notif, read: true } : notif)),
     );
-  };
+  }, []);
 
-  const markAllAsRead = () => {
+  const markAllAsRead = useCallback(() => {
     setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
-  };
+  }, []);
 
-  const unreadCount = notifications.filter(notif => !notif.read).length;
+  const markAsDelivered = useCallback(
+    async (id: string) => {
+      const notification = notifications.find(n => n.id === id);
+      if (!notification?.orderItemId) return;
+
+      try {
+        await updateOrderItemStatus({
+          id: notification.orderItemId,
+          data: { status: 'DELIVERED' as OrderItemStatus },
+        }).unwrap();
+
+        // Xóa thông báo ngay lập tức ở client này
+        setNotifications(prev => prev.filter(n => n.id !== id));
+
+        // Fetch lại dữ liệu để các client khác có thể cập nhật
+        setTimeout(() => {
+          refetchOrders();
+        }, 500);
+      } catch (error) {
+        console.error('Failed to update order item status:', error);
+      }
+    },
+    [notifications, updateOrderItemStatus, refetchOrders],
+  );
+
+  const unreadCount = useMemo(
+    () => notifications.filter(notif => !notif.read).length,
+    [notifications],
+  );
 
   return (
     <NotificationContext.Provider
@@ -227,9 +293,9 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         markAsRead,
         markAllAsRead,
         addTestNotification,
+        markAsDelivered,
       }}
     >
-      {/* Render OrderItemNameFetcher components for each pending notification */}
       {pendingNotifications
         .filter(item => !item.isProcessing)
         .map(item => (
@@ -237,7 +303,13 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             key={item.id}
             orderItemId={item.orderItemId}
             onNameFetched={name =>
-              handleNameFetched(item.id, item.tableNames, item.quantity, name)
+              handleNameFetched(
+                item.id,
+                item.tableNames,
+                item.quantity,
+                name,
+                item.orderItemId,
+              )
             }
           />
         ))}

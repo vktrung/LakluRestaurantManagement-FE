@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNotifications } from '../NotificationContext/NotificationContext';
 import {
@@ -17,7 +17,13 @@ import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
 export function NotificationBell() {
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    markAsDelivered,
+  } = useNotifications();
 
   const formatTime = (timestamp: string) => {
     try {
@@ -25,6 +31,11 @@ export function NotificationBell() {
     } catch (error) {
       return timestamp;
     }
+  };
+
+  const handleConfirm = async (id: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent triggering markAsRead
+    await markAsDelivered(id); // This will update status to DELIVERED and remove notification
   };
 
   return (
@@ -39,13 +50,16 @@ export function NotificationBell() {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
+      <DropdownMenuContent
+        align="end"
+        className="w-80 max-h-96 overflow-y-auto"
+      >
         <DropdownMenuLabel className="flex justify-between items-center">
           <span>Thông báo</span>
           {unreadCount > 0 && (
-            <Button 
-              variant="ghost" 
-              className="text-xs h-6 py-0 px-2" 
+            <Button
+              variant="ghost"
+              className="text-xs h-6 py-0 px-2"
               onClick={markAllAsRead}
             >
               Đánh dấu tất cả đã đọc
@@ -53,24 +67,41 @@ export function NotificationBell() {
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        
+
         {notifications.length === 0 ? (
           <div className="py-4 px-2 text-center text-gray-500">
             Không có thông báo nào
           </div>
         ) : (
-          notifications.map((notification) => (
-            <DropdownMenuItem 
-              key={notification.id} 
-              className={`p-3 cursor-pointer ${!notification.read ? 'bg-amber-50' : ''}`}
+          notifications.map(notification => (
+            <DropdownMenuItem
+              key={notification.id}
+              className={`p-3 cursor-pointer ${
+                !notification.read ? 'bg-amber-50' : ''
+              }`}
               onClick={() => markAsRead(notification.id)}
             >
               <div className="flex flex-col gap-1 w-full">
-                <div className={`text-sm ${!notification.read ? 'font-semibold' : ''}`}>
+                <div
+                  className={`text-sm ${
+                    !notification.read ? 'font-semibold' : ''
+                  }`}
+                >
                   {notification.message}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  {formatTime(notification.timestamp)}
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-xs text-gray-500">
+                    {formatTime(notification.timestamp)}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 border-blue-200"
+                    onClick={e => handleConfirm(notification.id, e)}
+                  >
+                    <Check className="h-3.5 w-3.5 mr-1" />
+                    Xác nhận
+                  </Button>
                 </div>
               </div>
             </DropdownMenuItem>

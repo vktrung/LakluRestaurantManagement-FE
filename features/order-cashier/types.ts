@@ -1,6 +1,6 @@
 // types.ts
 
-export type OrderItemStatus = 'PENDING' | 'DOING' | 'COMPLETED' | 'CANCELLED';
+export type OrderItemStatus = 'PENDING' | 'DOING' | 'COMPLETED' | 'CANCELLED' | 'DELIVERED';
 
 export interface Table {
   id: number;
@@ -62,6 +62,11 @@ export interface GetOrdersParams {
   date?: string;
   status?: string; 
   sort?: string; 
+}
+
+export interface GetOrdersParamsEveningToDawn {
+  date?: string;
+
 }
 
 export interface CreateOrderItemResponse {

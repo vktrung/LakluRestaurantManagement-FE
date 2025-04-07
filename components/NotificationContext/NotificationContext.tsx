@@ -9,13 +9,11 @@ import React, {
   ReactNode,
   useCallback,
   useMemo,
+  useRef,
 } from 'react';
 import { useGetOrdersEveningToDawnQuery } from '@/features/order-cashier/orderCashierApiSlice';
 import { useGetUserMeQuery } from '@/features/auth/authApiSlice';
-import {
-  useGetOrderItemByIdQuery,
-  useUpdateOrderItemStatusMutation,
-} from '@/features/order-cashier/orderCashierApiSlice';
+import { useUpdateOrderItemStatusMutation } from '@/features/order-cashier/orderCashierApiSlice';
 import {
   Order,
   OrderItem,
@@ -39,106 +37,113 @@ interface NotificationContextType {
   markAsDelivered: (id: string) => Promise<void>;
 }
 
-// Component để lấy tên món ăn từ orderItemId
-function OrderItemNameFetcher({
-  orderItemId,
-  onNameFetched,
-}: {
-  orderItemId: number;
-  onNameFetched: (name: string) => void;
-}) {
-  const { data: orderItemData } = useGetOrderItemByIdQuery(orderItemId);
-
-  useEffect(() => {
-    if (orderItemData?.data?.dish?.name) {
-      onNameFetched(orderItemData.data.dish.name);
-    }
-  }, [orderItemData, onNameFetched]);
-
-  return null; // This is a data-fetching component, no UI needed
-}
-
 const NotificationContext = createContext<NotificationContextType | undefined>(
   undefined,
 );
+
+// Lấy token từ cookie để kiểm tra auth
+const getAuthToken = () => {
+  if (typeof document !== 'undefined') {
+    const match = document.cookie.match('(^|;)\\s*auth_token\\s*=\\s*([^;]+)');
+    return match ? match.pop() : null;
+  }
+  return null;
+};
 
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [processedOrderItemIds, setProcessedOrderItemIds] = useState<
     Set<number>
   >(new Set());
-  const [pendingNotifications, setPendingNotifications] = useState<
-    {
-      id: string;
-      tableNames: string;
-      quantity: number;
-      orderItemId: number;
-      isProcessing: boolean;
-    }[]
-  >([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Sử dụng useRef để tránh re-render không cần thiết
+  const processedOrderItemIdsRef = useRef<Set<number>>(new Set());
+  const notificationIdsRef = useRef<Set<string>>(new Set());
+  const authTokenRef = useRef<string | null>(getAuthToken() || null);
 
   const [updateOrderItemStatus] = useUpdateOrderItemStatusMutation();
 
-  // Lấy token từ cookie để kiểm tra auth
-  const getAuthToken = () => {
-    if (typeof document !== 'undefined') {
-      const match = document.cookie.match(
-        '(^|;)\\s*auth_token\\s*=\\s*([^;]+)',
-      );
-      return match ? match.pop() : null;
-    }
-    return null;
-  };
-
   // API calls
-  const { data: userData, refetch: refetchUser } = useGetUserMeQuery();
-  const { data: ordersData, refetch: refetchOrders, error: ordersError } = useGetOrdersEveningToDawnQuery(undefined, {
-    pollingInterval: 10000, // Poll every 2 seconds
+  const {
+    data: userData,
+    refetch: refetchUser,
+    isSuccess: isUserSuccess,
+    isLoading: isUserLoading,
+    isError: isUserError,
+  } = useGetUserMeQuery();
+
+  const {
+    data: ordersData,
+    refetch: refetchOrders,
+    error: ordersError,
+    isSuccess: isOrdersSuccess,
+    isLoading: isOrdersLoading,
+  } = useGetOrdersEveningToDawnQuery(undefined, {
+    pollingInterval: 5000,
     refetchOnMountOrArgChange: true,
-    skip: !userData?.data, // Skip polling if user data is not available
-    refetchOnFocus: true, // Refetch when window regains focus
-    refetchOnReconnect: true, // Refetch when reconnected to network
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
   });
 
-  // Force refetch when component mounts
+  // Đồng bộ refs với states
   useEffect(() => {
-    if (userData?.data) {
-      refetchOrders();
-    }
-  }, [userData?.data, refetchOrders]);
+    processedOrderItemIdsRef.current = processedOrderItemIds;
+  }, [processedOrderItemIds]);
 
   useEffect(() => {
-    if (ordersError) {
-      console.error('Error fetching orders:', ordersError);
-      // Retry on error
-      setTimeout(() => {
-        refetchOrders();
-      }, 1000);
-    }
-  }, [ordersError, refetchOrders]);
+    notificationIdsRef.current = new Set(notifications.map(n => n.id));
+  }, [notifications]);
 
-  useEffect(() => {
-    if (ordersData) {
-      console.log('Orders data updated:', new Date().toISOString(), ordersData);
-    }
-  }, [ordersData]);
-
-  // Fetch user data khi có token
+  // Kiểm tra và cập nhật token khi component mount
   useEffect(() => {
     const token = getAuthToken();
-    if (token && !userData) {
-      refetchUser();
+    authTokenRef.current = token;
+  }, []);
+
+  // Khi userData thay đổi, fetch orders nếu đã có userData
+  useEffect(() => {
+    if (userData?.data && !isInitialized) {
+      setIsInitialized(true);
     }
-  }, [userData, refetchUser]);
+  }, [userData, isInitialized]);
+
+  // Định kỳ kiểm tra token và fetch data
+  useEffect(() => {
+    // Gọi lại dữ liệu mỗi 5 giây nếu đã có userData
+    const dataRefreshInterval = setInterval(() => {
+      const token = getAuthToken();
+
+      // Nếu có token mới (vừa đăng nhập) nhưng chưa có userData, gọi getUserMe
+      if (token && !userData) {
+        refetchUser();
+      }
+
+      // Nếu đã có userData, gọi getOrders
+      if (userData?.data) {
+        refetchOrders();
+      }
+    }, 5000);
+
+    return () => {
+      clearInterval(dataRefreshInterval);
+    };
+  }, [userData, refetchUser, refetchOrders]);
+
+  // Retry khi có lỗi
+  useEffect(() => {
+    if (ordersError) {
+      setTimeout(() => {
+        if (userData?.data) {
+          refetchOrders();
+        }
+      }, 1000);
+    }
+  }, [ordersError, refetchOrders, userData]);
 
   // Xử lý thông báo
   useEffect(() => {
-    if (!ordersData?.data) {
-      return;
-    }
-
-    // Nếu chưa có userData, đợi userData
-    if (!userData?.data) {
+    if (!ordersData?.data || !userData?.data) {
       return;
     }
 
@@ -152,77 +157,75 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
     // Lấy tất cả OrderItem IDs đã có trạng thái DELIVERED
     const deliveredOrderItemIds = new Set<number>();
+    // Danh sách thông báo mới cần thêm vào
+    const newNotificationsToAdd: Notification[] = [];
+    // Danh sách orderItemIds đã xử lý mới
+    const newProcessedIds = new Set<number>(processedOrderItemIdsRef.current);
+
+    // Xử lý tất cả đơn hàng để tìm các món đã hoàn thành và đã giao
     ordersData.data.forEach(order => {
       order.orderItems.forEach(item => {
+        // Thêm các món đã giao vào danh sách để lọc ra khỏi thông báo
         if (item.statusLabel === 'Đã giao') {
           deliveredOrderItemIds.add(item.orderItemId);
         }
-      });
-    });
 
-    console.log('deliveredOrderItemIds', ordersData);
-    console.log('deliveredOrderItemIds', deliveredOrderItemIds);
-
-    // Loại bỏ thông báo cho các OrderItem đã được đánh dấu DELIVERED
-    setNotifications(prev =>
-      prev.filter(notification => deliveredOrderItemIds.has(notification.orderItemId!)),
-    );
-
-    const newPendingNotifications: {
-      id: string;
-      tableNames: string;
-      quantity: number;
-      orderItemId: number;
-      isProcessing: boolean;
-    }[] = [];
-
-    // Lọc các món đã hoàn thành chưa được xử lý
-    ordersData.data.forEach(order => {
-      order.orderItems.forEach(item => {
+        // Tạo thông báo cho các món đã hoàn thành nhưng chưa được xử lý
         if (
           item.statusLabel === 'Đã hoàn thành' &&
-          !processedOrderItemIds.has(item.orderItemId) &&
-          !deliveredOrderItemIds.has(item.orderItemId)
+          !processedOrderItemIdsRef.current.has(item.orderItemId) &&
+          !deliveredOrderItemIds.has(item.orderItemId) &&
+          item.dish // Đảm bảo có thông tin món ăn
         ) {
-          const notificationId = `item-${item.orderItemId}`;
-          const tableNames = order.tables
-            ? order.tables.map(t => t.tableNumber).join(', ')
-            : '';
+          const notificationId = `order-item-${item.orderItemId}`;
 
-          newPendingNotifications.push({
-            id: notificationId,
-            tableNames,
-            quantity: item.quantity,
-            orderItemId: item.orderItemId,
-            isProcessing: false,
-          });
+          // Kiểm tra xem thông báo đã tồn tại chưa
+          if (!notificationIdsRef.current.has(notificationId)) {
+            const tableNames = order.tables
+              ? order.tables.map(t => t.tableNumber).join(', ')
+              : '';
+
+            newNotificationsToAdd.push({
+              id: notificationId,
+              message: `Món ăn "${item.dish.name}" ở bàn "${tableNames}" với số lượng "${item.quantity}" đã hoàn thành, đến lấy món ăn`,
+              read: false,
+              timestamp: new Date().toISOString(),
+              orderItemId: item.orderItemId,
+            });
+
+            // Đánh dấu là đã xử lý
+            newProcessedIds.add(item.orderItemId);
+          }
         }
       });
     });
 
-    // Cập nhật danh sách chờ một lần duy nhất
-    if (newPendingNotifications.length > 0) {
-      setPendingNotifications(prev => {
-        const existingIds = new Set(prev.map(item => item.id));
-        const uniqueNewItems = newPendingNotifications.filter(
-          item => !existingIds.has(item.id),
-        );
-        return [...prev, ...uniqueNewItems];
-      });
+    // Thực hiện các cập nhật state trong một lần duy nhất để tránh vòng lặp vô hạn
 
-      // Cập nhật processedOrderItemIds một lần
-      setProcessedOrderItemIds(prev => {
-        const newSet = new Set(prev);
-        newPendingNotifications.forEach(item => {
-          newSet.add(item.orderItemId);
+    // 1. Cập nhật danh sách thông báo: xóa các thông báo đã giao và thêm các thông báo mới
+    if (deliveredOrderItemIds.size > 0 || newNotificationsToAdd.length > 0) {
+      setNotifications(prev => {
+        // Lọc các thông báo đã giao
+        const filteredNotifications = prev.filter(notification => {
+          return !(
+            notification.orderItemId &&
+            deliveredOrderItemIds.has(notification.orderItemId)
+          );
         });
-        return newSet;
+
+        // Thêm các thông báo mới
+        return [...newNotificationsToAdd, ...filteredNotifications];
       });
     }
-  }, [ordersData, userData, processedOrderItemIds]);
+
+    // 2. Cập nhật danh sách các món đã xử lý
+    if (newProcessedIds.size > processedOrderItemIdsRef.current.size) {
+      setProcessedOrderItemIds(newProcessedIds);
+    }
+  }, [ordersData, userData]);
 
   // TEST FUNCTION
-  const addTestNotification = () => {
+  const addTestNotification = useCallback(() => {
     const newNotification = {
       id: `test-${Date.now()}`,
       message: `Món ăn "Test món" ở bàn "D01" đã hoàn thành, đến lấy món ăn`,
@@ -231,39 +234,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     };
 
     setNotifications(prev => [newNotification, ...prev]);
-    console.log('Added test notification');
-  };
-
-  // Xử lý tên món ăn và tạo thông báo
-  const handleNameFetched = useCallback(
-    (
-      id: string,
-      tableNames: string,
-      quantity: number,
-      dishName: string,
-      orderItemId: number,
-    ) => {
-      setPendingNotifications(prev => prev.filter(item => item.id !== id));
-
-      setNotifications(prev => {
-        const notificationId = `order-${id}`;
-        if (prev.some(notif => notif.id === notificationId)) {
-          return prev;
-        }
-
-        const newNotification = {
-          id: notificationId,
-          message: `Món ăn "${dishName}" ở bàn "${tableNames}" với số lượng "${quantity}" đã hoàn thành, đến lấy món ăn`,
-          read: false,
-          timestamp: new Date().toISOString(),
-          orderItemId: orderItemId,
-        };
-
-        return [newNotification, ...prev];
-      });
-    },
-    [],
-  );
+  }, []);
 
   const markAsRead = useCallback((id: string) => {
     setNotifications(prev =>
@@ -291,13 +262,15 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
         // Fetch lại dữ liệu để các client khác có thể cập nhật
         setTimeout(() => {
-          refetchOrders();
+          if (userData?.data) {
+            refetchOrders();
+          }
         }, 500);
       } catch (error) {
         console.error('Failed to update order item status:', error);
       }
     },
-    [notifications, updateOrderItemStatus, refetchOrders],
+    [notifications, updateOrderItemStatus, refetchOrders, userData],
   );
 
   const unreadCount = useMemo(
@@ -316,23 +289,6 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         markAsDelivered,
       }}
     >
-      {pendingNotifications
-        .filter(item => !item.isProcessing)
-        .map(item => (
-          <OrderItemNameFetcher
-            key={item.id}
-            orderItemId={item.orderItemId}
-            onNameFetched={name =>
-              handleNameFetched(
-                item.id,
-                item.tableNames,
-                item.quantity,
-                name,
-                item.orderItemId,
-              )
-            }
-          />
-        ))}
       {children}
     </NotificationContext.Provider>
   );

@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { EditTablesDialog } from "./edit-tables-dialog"
 import { ReservationResponse } from "@/features/reservation/type"
-import { useGetReservationByIdQuery } from "@/features/reservation/reservationApiSlice"
+import { useGetReservationByIdQuery, useCancelReservationMutation } from "@/features/reservation/reservationApiSlice"
 import { toast } from "sonner"
 import { vi } from "date-fns/locale"
 
@@ -47,6 +47,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
   const [isEditTablesOpen, setIsEditTablesOpen] = useState(false)
   // Key độc nhất cho dialog để ép React tạo mới component khi mở lại
   const [dialogKey, setDialogKey] = useState(0)
+  const [isCancelling, setIsCancelling] = useState(false)
   
   // Validate ID
   const reservationId = Number(params.id)
@@ -64,6 +65,9 @@ export default function ReservationDetailPage({ params }: { params: { id: string
   } = useGetReservationByIdQuery(reservationId, {
     refetchOnMountOrArgChange: true
   })
+  
+  // Hook huỷ đặt bàn
+  const [cancelReservation] = useCancelReservationMutation()
   
   // Lấy dữ liệu reservation từ response
   const reservation = reservationResponse?.data
@@ -105,6 +109,25 @@ export default function ReservationDetailPage({ params }: { params: { id: string
   const formatDateTime = (dateString: string | null) => {
     if (!dateString) return "-"
     return format(parseISO(dateString), "dd MMM yyyy, HH:mm", { locale: vi })
+  }
+
+  // Xử lý huỷ đặt bàn
+  const handleCancelReservation = async () => {
+    if (!reservationId) return;
+    
+    try {
+      setIsCancelling(true);
+      await cancelReservation(reservationId).unwrap();
+      toast.success("Đã huỷ đặt bàn thành công!");
+      setCancelDialogOpen(false);
+      // Sau khi huỷ thành công, refresh lại dữ liệu
+      refetch();
+    } catch (error) {
+      toast.error("Không thể huỷ đặt bàn. Vui lòng thử lại!");
+      console.error("Lỗi khi huỷ đặt bàn:", error);
+    } finally {
+      setIsCancelling(false);
+    }
   }
 
   if (isLoading) {
@@ -239,22 +262,6 @@ export default function ReservationDetailPage({ params }: { params: { id: string
               <CardDescription>Quản lý đặt bàn này</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {reservation.detail.status === "PENDING" && (
-                <Button className="w-full" variant="outline">
-                  <Check className="mr-2 h-4 w-4" />
-                  Xác nhận đặt bàn
-                </Button>
-              )}
-
-              {!reservation.detail.checkOut && reservation.detail.status !== "CANCELLED" && (
-                <Button
-                  className="w-full bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800"
-                  variant="outline"
-                >
-                  <Clock className="mr-2 h-4 w-4" />
-                  Check Out
-                </Button>
-              )}
 
               <Button className="w-full" variant="outline">
                 <Edit className="mr-2 h-4 w-4" />
@@ -282,11 +289,6 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                   </Button>
                 </>
               )}
-
-              <Button className="w-full" variant="outline">
-                <Trash className="mr-2 h-4 w-4" />
-                Xóa
-              </Button>
             </CardContent>
             <CardFooter>
               <p className="text-xs text-muted-foreground">Cập nhật lần cuối: {format(new Date(), "dd MMM yyyy, HH:mm", { locale: vi })}</p>
@@ -306,7 +308,14 @@ export default function ReservationDetailPage({ params }: { params: { id: string
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Không, giữ lại</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700">Có, hủy đặt bàn</AlertDialogAction>
+            <AlertDialogAction 
+              className="bg-red-600 hover:bg-red-700"
+              onClick={handleCancelReservation}
+              disabled={isCancelling}
+            >
+              {isCancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Có, hủy đặt bàn
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

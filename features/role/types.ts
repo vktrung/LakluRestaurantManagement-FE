@@ -17,11 +17,21 @@ export interface Permission {
   name: string;
 }
 
+export interface User {
+  id: number;
+  fullName: string;
+  email: string;
+  department: string;
+  employmentStatus: string;
+}
+
 export interface RoleDetail {
   id: number;
   name: string;
   description: string;
   permissions: Permission[];
+  userCount: number;
+  users: User[];
 }
 
 export interface RoleDetailResponse {
@@ -37,6 +47,15 @@ export interface AddRoleRequest {
   description: string;
   permissions: number[];
 }
+
+/* --- Dữ liệu gửi lên để cập nhật vai trò --- */
+export interface UpdateRoleRequest {
+  id: number;
+  name: string;
+  description: string;
+  permissions: number[];
+}
+
 /* --- Dữ liệu trả về sau khi thêm vai trò mới --- */
 export interface AddRoleResponse {
   data: RoleDetail; // Giả sử API trả về chi tiết của vai trò mới được tạo

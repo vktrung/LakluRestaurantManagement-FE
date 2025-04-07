@@ -11,6 +11,7 @@ import {
   useUpdateOrderItemQuantityMutation,
   useCreateOrderItemMutation,
   useGetBillQuery,
+  useCancelPaymentMutation,
   paymentApiSlice
 } from "@/features/payment/PaymentApiSlice"
 import {
@@ -112,7 +113,7 @@ export default function IntegratedPaymentPage() {
   const [totalAmount, setTotalAmount] = useState<string>("0")
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "PAID" | null>(null)
+  const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "PAID" | "FAILED" | null>(null)
   const [paymentCompleted, setPaymentCompleted] = useState(false)
 
   // Tạo một phiên bản tùy chỉnh của router để chặn navigation
@@ -134,14 +135,13 @@ export default function IntegratedPaymentPage() {
     return originalPush(href);
   }, [originalPush, paymentCompleted, selectedItems.length, pendingNavigation]);
 
-  // API hooks
+  // API hooks - Đặt tất cả các hooks ở đây để đảm bảo tính nhất quán
   const [createPayment, { isLoading: isCreating }] = useCreatePaymentMutation()
   const [processCashPayment, { isLoading: isProcessing }] = useProcessCashPaymentMutation()
   const { data: qrCodeData, isLoading: isQrLoading } = useGenerateQrCodeQuery(paymentId || 0, {
     skip: !paymentId || paymentMethod !== "TRANSFER",
   })
-
-  // Polling để kiểm tra trạng thái payment (cho thanh toán chuyển khoản)
+  const [cancelPayment, { isLoading: isCancelling }] = useCancelPaymentMutation()
   const { data: paymentData } = useGetPaymentByIdQuery(paymentId || 0, {
     skip: !paymentId || paymentMethod !== "TRANSFER" || paymentStatus === "PAID",
     pollingInterval: 5000,
@@ -1141,6 +1141,25 @@ export default function IntegratedPaymentPage() {
 
   const subtotal = calculateSubtotal()
 
+  // Thêm hàm xử lý hủy thanh toán
+  const handleCancelPayment = async () => {
+    if (!paymentId) return;
+    
+    try {
+      await cancelPayment(paymentId).unwrap();
+      setErrorMessage("Đã hủy thanh toán thành công");
+      setPaymentStatus("FAILED");
+      setPaymentCompleted(false);
+      // Chuyển hướng về trang danh sách đơn hàng sau 2 giây
+      setTimeout(() => {
+        handleNavigation('/cashier-order');
+      }, 2000);
+    } catch (error: any) {
+      const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định.";
+      setErrorMessage(`Lỗi hủ hủy thanh toán: ${message}`);
+    }
+  };
+
   return (
     <div className="container mx-auto p-4" ref={pageRef}>
       {/* Modal xác nhận rời trang */}
@@ -1443,6 +1462,18 @@ export default function IntegratedPaymentPage() {
                 />
               </div>
 
+              {/* Thêm nút hủy thanh toán */}
+              {paymentStatus !== "PAID" && (
+                <Button
+                  variant="destructive"
+                  onClick={handleCancelPayment}
+                  disabled={isCancelling}
+                  className="w-full"
+                >
+                  {isCancelling ? "Đang hủy..." : "Hủy thanh toán"}
+                </Button>
+              )}
+
               {paymentMethod === "CASH" ? (
                     <div className="bg-white rounded-lg border shadow-sm p-4">
                       <h3 className="font-medium text-lg mb-4">
@@ -1524,7 +1555,7 @@ export default function IntegratedPaymentPage() {
                           Hệ thống sẽ tự động cập nhật khi nhận được thanh toán
                         </p>
                             
-                        {/* Hiển thị trạng thái thanh toán */}
+                            {/* Hiển thị trạng thái thanh toán */}
                             <div className="mt-4 py-2 px-4 rounded-full flex items-center justify-center gap-2">
                             {paymentStatus === "PENDING" && (
                                 <div className="bg-yellow-50 text-yellow-700 py-2 px-4 rounded-full flex items-center">

@@ -1,6 +1,6 @@
 //features/payment/types.ts
 export type PaymentMethod = "CASH" | "TRANSFER"
-export type PaymentStatus = "PENDING" | "PAID"
+export type PaymentStatus = "PENDING" | "PAID" | "FAILED"
 export type DiscountType = "PERCENTAGE" | "FIXEDAMOUNT";
 export type VoucherStatus = "ACTIVE" | "INACTIVE";
 

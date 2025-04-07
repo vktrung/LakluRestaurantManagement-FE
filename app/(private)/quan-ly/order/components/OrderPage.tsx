@@ -91,7 +91,7 @@ export default function OrderPage() {
       });
       router.push(`./order/menu-order/${reservation.id}`); // Navigate to create order
     }
-  };
+  }
 
   const activeReservations = reservations.filter(
     (reservation) => reservation.detail.status !== "CANCELLED"
@@ -126,7 +126,7 @@ export default function OrderPage() {
           </p>
         </div>
       ) : (
-        <div className="flex overflow-x-auto space-x-6 pb-4 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pb-4">
           {activeReservations.map((reservation) => {
             // Fetch orders for each reservation
             const { data: ordersResponse, isFetching: ordersFetching } = useGetOrdersByReservationIdQuery(reservation.id);
@@ -138,7 +138,7 @@ export default function OrderPage() {
                 key={reservation.id}
                 className={`${getCardColor(
                   reservation.detail.status
-                )} min-w-[300px] shadow-md hover:shadow-lg transition-shadow duration-200 border rounded-lg`}
+                )} shadow-md hover:shadow-lg transition-shadow duration-200 border rounded-lg`}
               >
                 <CardHeader className="pb-2 bg-opacity-50 bg-white">
                   <div className="flex justify-between items-center">

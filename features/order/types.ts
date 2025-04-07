@@ -59,3 +59,8 @@ export interface CreateOrderRequest {
   // staffId: number;
   orderItems: CreateOrderItemRequest[];
 }
+export interface CreateOrderTableRequest {
+  // reservationId: number;
+  // staffId: number;
+  orderItems: CreateOrderItemRequest[];
+}

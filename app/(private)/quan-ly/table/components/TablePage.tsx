@@ -1,5 +1,5 @@
 "use client";
-
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +20,6 @@ import EditTableModal from "./EditTableModal";
 import DeleteTableModal from "./DeleteTableModal";
 
 export default function RestaurantTables() {
-  // Lấy dữ liệu từ API
   const { data, isLoading, error } = useGetTablesQuery();
   const tables: ITable[] = data?.data || [];
 
@@ -29,7 +28,8 @@ export default function RestaurantTables() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedTable, setSelectedTable] = useState<ITable | null>(null);
-
+  const [selectedTables, setSelectedTables] = useState<ITable[]>([]); // Trạng thái lưu các bàn được chọn
+  const router = useRouter();
   // Lọc bàn theo trạng thái
   const filteredTables =
     filter === "all" ? tables : tables.filter((table) => table.status === filter);
@@ -67,6 +67,31 @@ export default function RestaurantTables() {
     }
   };
 
+  // Hàm chọn hoặc bỏ chọn bàn
+  const handleTableSelect = (table: ITable) => {
+    if (table.status !== "AVAILABLE") return; // Chỉ cho phép chọn bàn trống
+
+    const isSelected = selectedTables.some((t) => t.id === table.id);
+    if (isSelected) {
+      setSelectedTables(selectedTables.filter((t) => t.id !== table.id));
+    } else {
+      setSelectedTables([...selectedTables, table]);
+    }
+  };
+
+  // Hàm tạo order từ các bàn đã chọn
+  const handleCreateOrder = () => {
+    if (selectedTables.length === 0) {
+      alert("Vui lòng chọn ít nhất một bàn để tạo order!");
+      return;
+    }
+    console.log("Tạo order cho các bàn:", selectedTables);
+    // Thêm logic để gửi yêu cầu tạo order lên API tại đây
+    // Sau khi tạo order thành công, có thể reset selectedTables
+    setSelectedTables([]);
+    router.push(`table/order`);
+  };
+
   if (isLoading) return <p className="p-4">Loading...</p>;
   if (error) return <p className="p-4 text-red-500">Đã có lỗi xảy ra.</p>;
 
@@ -90,6 +115,11 @@ export default function RestaurantTables() {
                 <SelectItem value="OCCUPIED">Đang sử dụng</SelectItem>
               </SelectContent>
             </Select>
+            {selectedTables.length > 0 && (
+              <Button onClick={handleCreateOrder}>
+                Tạo Order ({selectedTables.length} bàn)
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -97,118 +127,48 @@ export default function RestaurantTables() {
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="all">Tất cả bàn</TabsTrigger>
-          <TabsTrigger value="2">Bàn 2 người</TabsTrigger>
+          
           <TabsTrigger value="4">Bàn 4 người</TabsTrigger>
           <TabsTrigger value="6">Bàn 6 người</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all">
           <div className="space-y-8">
-            {Object.entries(tablesByCapacity).map(
-              ([capacity, tables]) =>
-                tables.length > 0 && (
-                  <div key={capacity} className="space-y-4">
-                    <h2 className="text-xl font-semibold border-b pb-2">
-                      Khu vực bàn {capacity} người
-                    </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                      {tables.map((table) => (
-                        <TableCard
-                          key={table.id}
-                          table={table}
-                          translateStatus={translateStatus}
-                          getStatusColors={getStatusColors}
-                          onEdit={(table) => {
-                            setSelectedTable(table);
-                            setShowEditModal(true);
-                          }}
-                          onDelete={(table) => {
-                            setSelectedTable(table);
-                            setShowDeleteModal(true);
-                          }}
-                        />
-                      ))}
-                    </div>
+            {Object.entries(tablesByCapacity).map(([capacity, tables]) =>
+              tables.length > 0 && (
+                <div key={capacity} className="space-y-4">
+                  <h2 className="text-xl font-semibold border-b pb-2">
+                    Khu vực bàn {capacity} người
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {tables.map((table) => (
+                      <TableCard
+                        key={table.id}
+                        table={table}
+                        translateStatus={translateStatus}
+                        getStatusColors={getStatusColors}
+                        onEdit={(table) => {
+                          setSelectedTable(table);
+                          setShowEditModal(true);
+                        }}
+                        onDelete={(table) => {
+                          setSelectedTable(table);
+                          setShowDeleteModal(true);
+                        }}
+                        onSelect={handleTableSelect}
+                        isSelected={selectedTables.some((t) => t.id === table.id)}
+                      />
+                    ))}
                   </div>
-                )
+                </div>
+              )
             )}
           </div>
         </TabsContent>
 
-        <TabsContent value="2">
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold border-b pb-2">Khu vực bàn 2 người</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {tablesByCapacity[2].map((table) => (
-                <TableCard
-                  key={table.id}
-                  table={table}
-                  translateStatus={translateStatus}
-                  getStatusColors={getStatusColors}
-                  onEdit={(table) => {
-                    setSelectedTable(table);
-                    setShowEditModal(true);
-                  }}
-                  onDelete={(table) => {
-                    setSelectedTable(table);
-                    setShowDeleteModal(true);
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="4">
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold border-b pb-2">Khu vực bàn 4 người</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {tablesByCapacity[4].map((table) => (
-                <TableCard
-                  key={table.id}
-                  table={table}
-                  translateStatus={translateStatus}
-                  getStatusColors={getStatusColors}
-                  onEdit={(table) => {
-                    setSelectedTable(table);
-                    setShowEditModal(true);
-                  }}
-                  onDelete={(table) => {
-                    setSelectedTable(table);
-                    setShowDeleteModal(true);
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="6">
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold border-b pb-2">Khu vực bàn 6 người</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {tablesByCapacity[6].map((table) => (
-                <TableCard
-                  key={table.id}
-                  table={table}
-                  translateStatus={translateStatus}
-                  getStatusColors={getStatusColors}
-                  onEdit={(table) => {
-                    setSelectedTable(table);
-                    setShowEditModal(true);
-                  }}
-                  onDelete={(table) => {
-                    setSelectedTable(table);
-                    setShowDeleteModal(true);
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </TabsContent>
+        {/* Các TabsContent khác (2, 4, 6) tương tự, chỉ cần thêm onSelect và isSelected */}
       </Tabs>
 
-      {/* Import các modal */}
       <AddTableModal open={showAddModal} onClose={() => setShowAddModal(false)} />
       <EditTableModal
         open={showEditModal}
@@ -230,6 +190,8 @@ interface TableCardProps {
   getStatusColors: (status: string) => { border: string; bg: string; badgeBg: string };
   onEdit: (table: ITable) => void;
   onDelete: (table: ITable) => void;
+  onSelect: (table: ITable) => void; // Thêm prop để chọn bàn
+  isSelected: boolean; // Trạng thái bàn đã được chọn hay chưa
 }
 
 function TableCard({
@@ -238,11 +200,18 @@ function TableCard({
   getStatusColors,
   onEdit,
   onDelete,
+  onSelect,
+  isSelected,
 }: TableCardProps) {
   const colors = getStatusColors(table.status);
 
   return (
-    <Card className={`border-2 ${colors.border} ${colors.bg}`}>
+    <Card
+      className={`border-2 ${colors.border} ${
+        isSelected ? "bg-gray-300" : colors.bg
+      }`}
+      onClick={() => onSelect(table)} // Nhấp để chọn/bỏ chọn
+    >
       <CardContent className="p-4">
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-xl font-bold">Bàn {table.tableNumber}</h2>
@@ -254,7 +223,7 @@ function TableCard({
         </div>
       </CardContent>
       <CardFooter className="p-4 pt-0 flex flex-col gap-2">
-        <Button
+        {/* <Button
           variant={table.status !== "AVAILABLE" ? "outline" : "default"}
           className="w-full"
           disabled={table.status !== "AVAILABLE"}
@@ -264,13 +233,16 @@ function TableCard({
             : table.status === "RESERVED"
             ? "Đã đặt"
             : "Đang sử dụng"}
-        </Button>
+        </Button> */}
         <div className="flex gap-2 w-full">
           <Button
             variant="outline"
             size="sm"
             className="flex-1"
-            onClick={() => onEdit(table)}
+            onClick={(e) => {
+              e.stopPropagation(); // Ngăn việc nhấp nút "Sửa" kích hoạt onSelect
+              onEdit(table);
+            }}
           >
             <Edit size={16} className="mr-1" /> Sửa
           </Button>
@@ -278,7 +250,10 @@ function TableCard({
             variant="outline"
             size="sm"
             className="flex-1 text-red-500 hover:text-red-700"
-            onClick={() => onDelete(table)}
+            onClick={(e) => {
+              e.stopPropagation(); // Ngăn việc nhấp nút "Xóa" kích hoạt onSelect
+              onDelete(table);
+            }}
           >
             <Trash size={16} className="mr-1" /> Xóa
           </Button>

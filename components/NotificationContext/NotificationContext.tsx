@@ -92,11 +92,36 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
   // API calls
   const { data: userData, refetch: refetchUser } = useGetUserMeQuery();
-  const { data: ordersData, refetch: refetchOrders } =
-    useGetOrdersEveningToDawnQuery(undefined, {
-      pollingInterval: 3000, // Poll every 3 seconds
-      refetchOnMountOrArgChange: true,
-    });
+  const { data: ordersData, refetch: refetchOrders, error: ordersError } = useGetOrdersEveningToDawnQuery(undefined, {
+    pollingInterval: 10000, // Poll every 2 seconds
+    refetchOnMountOrArgChange: true,
+    skip: !userData?.data, // Skip polling if user data is not available
+    refetchOnFocus: true, // Refetch when window regains focus
+    refetchOnReconnect: true, // Refetch when reconnected to network
+  });
+
+  // Force refetch when component mounts
+  useEffect(() => {
+    if (userData?.data) {
+      refetchOrders();
+    }
+  }, [userData?.data, refetchOrders]);
+
+  useEffect(() => {
+    if (ordersError) {
+      console.error('Error fetching orders:', ordersError);
+      // Retry on error
+      setTimeout(() => {
+        refetchOrders();
+      }, 1000);
+    }
+  }, [ordersError, refetchOrders]);
+
+  useEffect(() => {
+    if (ordersData) {
+      console.log('Orders data updated:', new Date().toISOString(), ordersData);
+    }
+  }, [ordersData]);
 
   // Fetch user data khi có token
   useEffect(() => {
@@ -135,17 +160,12 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       });
     });
 
+    console.log('deliveredOrderItemIds', ordersData);
+    console.log('deliveredOrderItemIds', deliveredOrderItemIds);
+
     // Loại bỏ thông báo cho các OrderItem đã được đánh dấu DELIVERED
     setNotifications(prev =>
-      prev.filter(notification => {
-        if (
-          notification.orderItemId &&
-          deliveredOrderItemIds.has(notification.orderItemId)
-        ) {
-          return false;
-        }
-        return true;
-      }),
+      prev.filter(notification => deliveredOrderItemIds.has(notification.orderItemId!)),
     );
 
     const newPendingNotifications: {

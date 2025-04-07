@@ -9,6 +9,10 @@ export const orderCashierApiSlice = createApi({
   reducerPath: 'orderCashier',
   baseQuery,
   tagTypes: ['order-list', 'order'],
+  keepUnusedDataFor: 0,
+  refetchOnMountOrArgChange: true,
+  refetchOnFocus: true,
+  refetchOnReconnect: true,
   endpoints: builder => ({
     getOrders: builder.query<OrderResponse, GetOrdersParams | void>({
       query: (params) => {
@@ -39,7 +43,7 @@ export const orderCashierApiSlice = createApi({
             method: 'GET',
           };
         }
-
+        console.log('params', params);
         const queryParams = new URLSearchParams();
         if (params.date) queryParams.append('date', params.date);
     

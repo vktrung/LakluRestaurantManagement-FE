@@ -16,26 +16,22 @@ export default function OrderList({
   status,
   refetchOrders,
 }: OrderListProps) {
-  // Tính toán số thứ tự đơn hàng
-  const getOrderNumber = (orderId: number) => {
-    // Lấy tất cả các đơn hàng và sắp xếp theo ID giảm dần (ID cao nhất = đơn #1)
-    const activeOrders = allOrders
-      .filter(order => {
-        // Chỉ lọc những đơn có ít nhất một món chưa hoàn thành và chưa bị hủy
-        return order.orderItems.some(
-          item =>
-            item.statusLabel !== 'Đã hoàn thành' &&
-            item.statusLabel !== 'Đã hủy',
-        );
-      })
-      .sort((a, b) => b.id - a.id); // Sắp xếp ID giảm dần (cao nhất đầu tiên)
+  // Lọc các đơn có ít nhất một món chưa hoàn thành
+  const activeOrders = orders.filter(order =>
+    order.orderItems.some(
+      item =>
+        item.statusLabel !== 'Đã hoàn thành' &&
+        item.statusLabel !== 'Đã hủy' &&
+        item.statusLabel !== 'Đã giao',
+    ),
+  );
 
-    // ID cao nhất sẽ là đơn #1, kế tiếp là #2, v.v.
-    const index = activeOrders.findIndex(order => order.id === orderId);
-    return index + 1; // Số thứ tự từ 1
-  };
+  // Sắp xếp đơn theo thời gian tạo, đơn mới nhất lên đầu
+  const sortedOrders = [...activeOrders].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  );
 
-  if (!orders || orders.length === 0) {
+  if (!sortedOrders || sortedOrders.length === 0) {
     return (
       <div className="border rounded p-6 text-center">
         <div className="text-zinc-500">Không có đơn hàng nào.</div>
@@ -44,13 +40,16 @@ export default function OrderList({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {orders.map(order => (
-        <div key={order.id} className="w-full">
+    <div className="flex flex-wrap gap-4">
+      {sortedOrders.map(order => (
+        <div
+          key={order.id}
+          className="w-full sm:w-[calc(50%-8px)] lg:w-[calc(33.333%-11px)]"
+        >
           <OrderCard
             order={order}
             refetchOrders={refetchOrders}
-            orderNumber={getOrderNumber(order.id)}
+            orderNumber={order.id}
           />
         </div>
       ))}

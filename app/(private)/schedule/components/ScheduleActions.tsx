@@ -2,11 +2,12 @@
 import { Button } from "@/components/ui/button";
 import { Plus, Copy } from "lucide-react";
 import type { Shift } from '@/features/schedule/types';
-import { daysInWeek } from "date-fns";
 
 interface ScheduleActionsProps {
   handleOpenAddDialog: (day?: string ) => void;
 }
+
+const DAYS_IN_WEEK = 7;
 
 export default function ScheduleActions({ handleOpenAddDialog }: ScheduleActionsProps) {
   return (

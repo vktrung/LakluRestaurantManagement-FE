@@ -9,7 +9,9 @@ export default function AddStaffPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
+  const [department, setDepartment] = useState("");
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
+  const [salaryRateId, setSalaryRateId] = useState<number>(1);
 
   // Mutation tạo mới staff
   const [createStaff, { isLoading }] = useCreateStaffMutation();
@@ -27,12 +29,18 @@ export default function AddStaffPage() {
       alert("Vui lòng chọn role cho nhân viên");
       return;
     }
+    if (!department) {
+      alert("Vui lòng nhập phòng ban");
+      return;
+    }
     try {
       const newStaff = await createStaff({
         username,
         password,
         email,
-        roleIds: [selectedRoleId], // Gửi mảng roleIds
+        department,
+        roleIds: [selectedRoleId],
+        salaryRateId,
       }).unwrap();
       console.log("Tạo mới thành công:", newStaff);
       // Xử lý sau khi tạo thành công (chuyển trang, hiển thị thông báo, ...)
@@ -81,6 +89,18 @@ export default function AddStaffPage() {
           />
         </div>
 
+        {/* Department */}
+        <div>
+          <label className="block mb-1">Phòng ban</label>
+          <input
+            type="text"
+            className="border border-gray-300 rounded px-3 py-2 w-full"
+            placeholder="Nhập phòng ban..."
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+          />
+        </div>
+
         {/* Select Role */}
         <div>
           <label className="block mb-1">Role</label>
@@ -100,6 +120,19 @@ export default function AddStaffPage() {
               ))}
             </select>
           )}
+        </div>
+
+        {/* Salary Rate ID (có thể thay bằng dropdown nếu cần) */}
+        <div>
+          <label className="block mb-1">Mức lương</label>
+          <input
+            type="number"
+            className="border border-gray-300 rounded px-3 py-2 w-full"
+            placeholder="Nhập mã mức lương..."
+            value={salaryRateId}
+            onChange={(e) => setSalaryRateId(Number(e.target.value))}
+            min="1"
+          />
         </div>
 
         {/* Nút submit */}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { formatPrice } from "@/lib/utils"
-import { useGetBillQuery } from "@/features/payment/paymentApiSlice"
+import { useGetBillQuery } from "@/features/payment/PaymentApiSlice"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"

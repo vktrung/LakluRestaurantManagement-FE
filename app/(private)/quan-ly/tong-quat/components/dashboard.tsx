@@ -145,7 +145,6 @@ export default function Dashboard() {
       </Card>
 
       <TopDishes
-        dishes={topDishes}
         formatCurrency={formatCurrency}
       />
     </div>

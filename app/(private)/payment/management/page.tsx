@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 
 export default function PaymentManagementPage() {
-    const { data, error, isLoading } = useGetPaymentsQuery();
+    const { data, error, isLoading } = useGetPaymentsQuery({});
     const router = useRouter();
 
     if (isLoading) return <div>Đang tải...</div>;
@@ -28,7 +28,9 @@ export default function PaymentManagementPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <PaymentList payments={payments} />
+                    <PaymentList payments={Array.isArray(data?.data) ? data.data : []} currentPage={0} totalPages={0} totalItems={0} onPageChange={function (page: number): void {
+                        throw new Error('Function not implemented.');
+                    } } />
                 </CardContent>
             </Card>
         </div>

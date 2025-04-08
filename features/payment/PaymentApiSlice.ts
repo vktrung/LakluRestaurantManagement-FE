@@ -40,6 +40,9 @@ export const paymentApiSlice = createApi({
                 const queryParams = new URLSearchParams();
                 queryParams.append('page', page.toString());
                 queryParams.append('pageSize', pageSize.toString());
+                // Luôn sử dụng sắp xếp mặc định - ngày tạo giảm dần
+                queryParams.append('sortBy', 'createdAt');
+                queryParams.append('sortDirection', 'desc');
                 
                 if (startDate) {
                     queryParams.append('startDate', startDate);

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { useParams } from "next/navigation"; // For dynamic routing in Next.js
+import { useParams, useRouter } from "next/navigation"; // Added useRouter for navigation
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { Order, OrderItem } from "@/features/order/types";
 
 export default function ReservationOrdersPage() {
   const params = useParams(); // Get dynamic route params
+  const router = useRouter(); // Added for navigation
   const reservationId = Number(params.id); // Extract reservation ID from URL
 
   const { data: ordersResponse, isLoading, isError } = useGetOrdersByReservationIdQuery(reservationId);
@@ -51,6 +52,11 @@ export default function ReservationOrdersPage() {
     }
   };
 
+  // Handle adding a new order
+  const handleAddOrder = () => {
+    router.push(`./menu-order/${reservationId}`); // Navigate to create order page
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
@@ -69,9 +75,19 @@ export default function ReservationOrdersPage() {
 
   return (
     <div className="w-full min-h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6 tracking-tight">
-        Đơn hàng cho đặt bàn {reservationId}
-      </h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-800 tracking-tight">
+          Đơn hàng cho đơn {reservationId}
+        </h1>
+        <Button
+          variant="default"
+          size="sm"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white"
+          onClick={handleAddOrder}
+        >
+          Thêm đơn hàng
+        </Button>
+      </div>
 
       {orders.length === 0 ? (
         <div className="flex items-center justify-center h-[calc(100vh-12rem)] bg-white rounded-lg shadow-sm">

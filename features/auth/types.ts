@@ -62,6 +62,7 @@ export interface UserMeResponse {
     email: string;
     permissions: string[];
     nameSalary: string; 
+    roleNames: string[];
   };
   message: string;
   httpStatus: number;

@@ -103,13 +103,14 @@ export const authApiSlice = createApi({
           throw new Error('Không tìm thấy token trong cookie!');
         }
         return {
-          url: '/api/v1/auth/me',
+          url: endpoints.authMe,
           method: 'GET',
           headers: {
             Authorization: `Bearer ${token}`,
           },
         };
       },
+      keepUnusedDataFor: 0,
   // @ts-ignore
   pollingInterval: 0,
     }),

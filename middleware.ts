@@ -1,3 +1,4 @@
+import { endpoints } from '@/configs/endpoints';
 import { NextRequest, NextResponse } from 'next/server';
 
 export interface UserData {
@@ -72,7 +73,7 @@ export async function middleware(request: NextRequest) {
     if (token) {
       try {
         const userDataResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_SERVER_URL}/api/v1/auth/me`,
+          `${process.env.NEXT_PUBLIC_SERVER_URL}${endpoints.authMe}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

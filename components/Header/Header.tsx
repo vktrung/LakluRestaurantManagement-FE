@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSidebar } from '../Sidebar/SidebarContext';
 import { cn } from '@/lib/utils';
@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useGetUserMeQuery } from '@/features/auth/authApiSlice';
 
 interface BreadcrumbItem {
   label: string;
@@ -27,22 +28,26 @@ const pathMap: Record<string, string> = {
   'tong-quat': 'Tổng quát',
   'giao-dich': 'Giao dịch',
   'mon-an': 'Món ăn',
-  luong: 'Lương',
-  menu: 'Menu',
-  category: 'Danh mục',
-  staff: 'Nhân viên',
-  salary: 'Mức Lương',
-  role: 'Vai trò',
-  permission: 'Quyền',
+  'salary': 'Lương',
+  'menu': 'Menu',
+  'category': 'Danh mục',
+  'staff': 'Nhân viên',
+  // 'salary': 'Mức Lương',
+  'order': 'Gọi món',
+  'role': 'Vai trò',
+  'permission': 'Quyền',
   'nha-hang': 'Nhà hàng',
   'may-pos': 'Máy POS',
   'chon-mon': 'Chọn món',
+  'table': 'Bàn Ăn',
+  'kitchen': 'Bếp',
+  'schedule':'Lịch làm việc'
 };
 
 export function Header({ className }: { className?: string }) {
   const { collapsed } = useSidebar();
   const pathname = usePathname();
-
+  const router = useRouter();
   // Generate breadcrumb items from pathname
   const generateBreadcrumbs = (): BreadcrumbItem[] => {
     if (!pathname || pathname === '/') {
@@ -62,6 +67,15 @@ export function Header({ className }: { className?: string }) {
   };
 
   const breadcrumbs = generateBreadcrumbs();
+
+  // Handle logout function
+  const handleLogout = () => {
+    // Delete auth_token cookie by setting its expiration date to the past
+    document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    
+    // Redirect to login page
+    router.push('/login');
+  };
 
   return (
     <header
@@ -124,7 +138,7 @@ export function Header({ className }: { className?: string }) {
               <DropdownMenuItem>Hồ sơ</DropdownMenuItem>
               <DropdownMenuItem>Cài đặt</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Đăng xuất</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>Đăng xuất</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

@@ -1,5 +1,5 @@
 // pages/OrderPage.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { useRouter } from "next/navigation";
@@ -7,16 +7,46 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { useGetReservationsQuery } from "@/features/reservation/reservationApiSlice";
+import { 
+  useGetReservationsByTimeRangeQuery
+} from "@/features/reservation/reservationApiSlice";
 import { useGetOrdersByReservationIdQuery } from "@/features/order/orderApiSlice";
-import { ReservationResponse, TableInfo } from "@/features/reservation/type";
+import { ReservationResponse, TableInfo, TimeRangeType } from "@/features/reservation/type";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function OrderPage() {
-  const [isViewOpen] = useState(false);
+  const [timeRange, setTimeRange] = useState<TimeRangeType>("today");
   const router = useRouter();
 
-  const { data: reservationsResponse, isLoading, isError } = useGetReservationsQuery();
-  const reservations = reservationsResponse?.data || [];
+  // Use the time range query instead of the general getReservations
+  const { 
+    data: reservationsResponse, 
+    isLoading, 
+    isError,
+    refetch
+  } = useGetReservationsByTimeRangeQuery({
+    timeRange: timeRange,
+    page: 0,
+    size: 10
+  });
+
+  // Extract reservations from the paged response - access the content array
+  const reservations = reservationsResponse?.data?.content || [];
+
+  // Handle time range change
+  const handleTimeRangeChange = (value: string) => {
+    setTimeRange(value as TimeRangeType);
+  };
+
+  useEffect(() => {
+    refetch();
+  }, [timeRange, refetch]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -38,6 +68,12 @@ export default function OrderPage() {
             Hoàn thành
           </Badge>
         );
+      case "CANCELLED":
+        return (
+          <Badge className="bg-red-200 text-red-900 hover:bg-red-300">
+            Đã hủy
+          </Badge>
+        );
       default:
         return <Badge className="bg-gray-200 text-gray-900">{status}</Badge>;
     }
@@ -56,21 +92,10 @@ export default function OrderPage() {
         return "bg-blue-50 border-blue-300";
       case "COMPLETED":
         return "bg-green-50 border-green-300";
+      case "CANCELLED":
+        return "bg-red-50 border-red-300";
       default:
         return "bg-gray-50 border-gray-300";
-    }
-  };
-
-  const getTableBadgeStyle = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return "bg-yellow-200 text-yellow-900 px-2 py-1 rounded-md text-sm font-medium";
-      case "CONFIRMED":
-        return "bg-blue-200 text-blue-900 px-2 py-1 rounded-md text-sm font-medium";
-      case "COMPLETED":
-        return "bg-green-200 text-green-900 px-2 py-1 rounded-md text-sm font-medium";
-      default:
-        return "bg-gray-200 text-gray-900 px-2 py-1 rounded-md text-sm font-medium";
     }
   };
 
@@ -91,11 +116,7 @@ export default function OrderPage() {
       });
       router.push(`./order/menu-order/${reservation.id}`); // Navigate to create order
     }
-  }
-
-  const activeReservations = reservations.filter(
-    (reservation) => reservation.detail.status !== "CANCELLED"
-  );
+  };
 
   if (isLoading) {
     return (
@@ -115,19 +136,35 @@ export default function OrderPage() {
 
   return (
     <div className="w-full min-h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6 tracking-tight">
-        Quản lý đặt bàn
-      </h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-800 tracking-tight mb-4 sm:mb-0">
+          Quản lý đặt bàn
+        </h1>
+        
+        <div className="w-full sm:w-64">
+          <Select value={timeRange} onValueChange={handleTimeRangeChange}>
+            <SelectTrigger className="bg-white">
+              <SelectValue placeholder="Chọn khoảng thời gian" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today">Hôm nay</SelectItem>
+              <SelectItem value="yesterday">Hôm qua</SelectItem>
+              <SelectItem value="week">Tuần này</SelectItem>
+              <SelectItem value="month">Tháng này</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-      {activeReservations.length === 0 ? (
+      {reservations.length === 0 ? (
         <div className="flex items-center justify-center h-[calc(100vh-12rem)] bg-white rounded-lg shadow-sm">
           <p className="text-gray-600 text-lg font-medium">
-            Không có dữ liệu đặt bàn hiện tại
+            Không có dữ liệu đặt bàn trong khoảng thời gian đã chọn
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pb-4">
-          {activeReservations.map((reservation) => {
+          {reservations.map((reservation) => {
             // Fetch orders for each reservation
             const { data: ordersResponse, isFetching: ordersFetching } = useGetOrdersByReservationIdQuery(reservation.id);
             const orders = ordersResponse?.data || [];
@@ -143,7 +180,7 @@ export default function OrderPage() {
                 <CardHeader className="pb-2 bg-opacity-50 bg-white">
                   <div className="flex justify-between items-center">
                     <CardTitle className="text-lg font-semibold text-gray-800">
-                      Bàn {reservation.id}
+                      Bàn {getTableNumbers(reservation.detail.tables)}
                     </CardTitle>
                     <div className="flex items-center space-x-2">
                       {getStatusBadge(reservation.detail.status)}
@@ -174,10 +211,8 @@ export default function OrderPage() {
                       <p className="text-gray-800">{reservation.detail.numberOfPeople}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600 font-medium">Bàn</p>
-                      <span className={getTableBadgeStyle(reservation.detail.status)}>
-                        {getTableNumbers(reservation.detail.tables)}
-                      </span>
+                      <p className="text-gray-600 font-medium">ID đặt bàn</p>
+                      <p className="text-gray-800">#{reservation.id}</p>
                     </div>
                   </div>
                   <div>

@@ -11,7 +11,7 @@ export const endpoints = {
   SalaryRatesApi:'/api/v1/salary-rates/',
   // addStaff : '/api/v1/users',
   getRoles: '/api/v1/roles/',
-
+  authMe: '/api/v1/auth/me',
   getPermissions : '/api/v1/permissions/',
   DishApi:'/api/v1/dishes/',
   MenuApi:'/api/v1/menus/',
@@ -31,5 +31,6 @@ export const endpoints = {
   ProfileMe: '/api/v1/profiles/me',
   UploadAvatar: '/api/v1/profiles/me/upload-avatar',
   ActivityLogs: '/api/v1/activity-logs',
+  Table_Order :'/api/v1/table_order',
 }
 

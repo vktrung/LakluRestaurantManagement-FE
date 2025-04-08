@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGetTablesQuery } from "@/features/table/tableApiSlice";
+import { useGetUserMeQuery } from "@/features/auth/authApiSlice";
 import { ITable } from "@/features/table/type";
 import AddTableModal from "./AddTableModal";
 import EditTableModal from "./EditTableModal";
@@ -21,7 +22,12 @@ import DeleteTableModal from "./DeleteTableModal";
 
 export default function RestaurantTables() {
   const { data, isLoading, error } = useGetTablesQuery();
+  const { data: userData } = useGetUserMeQuery();
   const tables: ITable[] = data?.data || [];
+  
+  // Check if the user has the "Phục vụ" role
+  const userRoles = userData?.data?.roleNames || [];
+  const isWaiter = userRoles.includes("Phục vụ");
 
   const [filter, setFilter] = useState<string>("all");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -30,6 +36,7 @@ export default function RestaurantTables() {
   const [selectedTable, setSelectedTable] = useState<ITable | null>(null);
   const [selectedTables, setSelectedTables] = useState<ITable[]>([]); // Trạng thái lưu các bàn được chọn
   const router = useRouter();
+  
   // Lọc bàn theo trạng thái
   const filteredTables =
     filter === "all" ? tables : tables.filter((table) => table.status === filter);
@@ -101,9 +108,12 @@ export default function RestaurantTables() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h1 className="text-2xl font-bold">Sơ Đồ Bàn Nhà Hàng</h1>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => setShowAddModal(true)}>
-              <Plus className="mr-2 h-4 w-4" /> Thêm bàn mới
-            </Button>
+            {/* Ẩn nút "Thêm bàn mới" nếu là Phục vụ */}
+            {!isWaiter && (
+              <Button variant="outline" onClick={() => setShowAddModal(true)}>
+                <Plus className="mr-2 h-4 w-4" /> Thêm bàn mới
+              </Button>
+            )}
             <Select value={filter} onValueChange={setFilter}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Lọc theo trạng thái" />
@@ -127,7 +137,6 @@ export default function RestaurantTables() {
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="all">Tất cả bàn</TabsTrigger>
-          
           <TabsTrigger value="4">Bàn 4 người</TabsTrigger>
           <TabsTrigger value="6">Bàn 6 người</TabsTrigger>
         </TabsList>
@@ -157,6 +166,7 @@ export default function RestaurantTables() {
                         }}
                         onSelect={handleTableSelect}
                         isSelected={selectedTables.some((t) => t.id === table.id)}
+                        isWaiter={isWaiter} // Pass the waiter role status
                       />
                     ))}
                   </div>
@@ -166,20 +176,25 @@ export default function RestaurantTables() {
           </div>
         </TabsContent>
 
-        {/* Các TabsContent khác (2, 4, 6) tương tự, chỉ cần thêm onSelect và isSelected */}
+        {/* Các TabsContent khác (2, 4, 6) tương tự, chỉ cần thêm isWaiter */}
       </Tabs>
 
-      <AddTableModal open={showAddModal} onClose={() => setShowAddModal(false)} />
-      <EditTableModal
-        open={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        table={selectedTable}
-      />
-      <DeleteTableModal
-        open={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        table={selectedTable}
-      />
+      {/* Only render modals if not waiter */}
+      {!isWaiter && (
+        <>
+          <AddTableModal open={showAddModal} onClose={() => setShowAddModal(false)} />
+          <EditTableModal
+            open={showEditModal}
+            onClose={() => setShowEditModal(false)}
+            table={selectedTable}
+          />
+          <DeleteTableModal
+            open={showDeleteModal}
+            onClose={() => setShowDeleteModal(false)}
+            table={selectedTable}
+          />
+        </>
+      )}
     </div>
   );
 }
@@ -190,8 +205,9 @@ interface TableCardProps {
   getStatusColors: (status: string) => { border: string; bg: string; badgeBg: string };
   onEdit: (table: ITable) => void;
   onDelete: (table: ITable) => void;
-  onSelect: (table: ITable) => void; // Thêm prop để chọn bàn
-  isSelected: boolean; // Trạng thái bàn đã được chọn hay chưa
+  onSelect: (table: ITable) => void;
+  isSelected: boolean;
+  isWaiter: boolean; // Add prop to check if user is waiter
 }
 
 function TableCard({
@@ -202,6 +218,7 @@ function TableCard({
   onDelete,
   onSelect,
   isSelected,
+  isWaiter, // Receive the waiter role status
 }: TableCardProps) {
   const colors = getStatusColors(table.status);
 
@@ -210,7 +227,7 @@ function TableCard({
       className={`border-2 ${colors.border} ${
         isSelected ? "bg-gray-300" : colors.bg
       }`}
-      onClick={() => onSelect(table)} // Nhấp để chọn/bỏ chọn
+      onClick={() => onSelect(table)}
     >
       <CardContent className="p-4">
         <div className="flex justify-between items-center mb-2">
@@ -223,41 +240,33 @@ function TableCard({
         </div>
       </CardContent>
       <CardFooter className="p-4 pt-0 flex flex-col gap-2">
-        {/* <Button
-          variant={table.status !== "AVAILABLE" ? "outline" : "default"}
-          className="w-full"
-          disabled={table.status !== "AVAILABLE"}
-        >
-          {table.status === "AVAILABLE"
-            ? "Đặt bàn"
-            : table.status === "RESERVED"
-            ? "Đã đặt"
-            : "Đang sử dụng"}
-        </Button> */}
-        <div className="flex gap-2 w-full">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1"
-            onClick={(e) => {
-              e.stopPropagation(); // Ngăn việc nhấp nút "Sửa" kích hoạt onSelect
-              onEdit(table);
-            }}
-          >
-            <Edit size={16} className="mr-1" /> Sửa
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1 text-red-500 hover:text-red-700"
-            onClick={(e) => {
-              e.stopPropagation(); // Ngăn việc nhấp nút "Xóa" kích hoạt onSelect
-              onDelete(table);
-            }}
-          >
-            <Trash size={16} className="mr-1" /> Xóa
-          </Button>
-        </div>
+        {/* Hide Edit and Delete buttons for waiters */}
+        {!isWaiter && (
+          <div className="flex gap-2 w-full">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={(e) => {
+                e.stopPropagation(); // Ngăn việc nhấp nút "Sửa" kích hoạt onSelect
+                onEdit(table);
+              }}
+            >
+              <Edit size={16} className="mr-1" /> Sửa
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-red-500 hover:text-red-700"
+              onClick={(e) => {
+                e.stopPropagation(); // Ngăn việc nhấp nút "Xóa" kích hoạt onSelect
+                onDelete(table);
+              }}
+            >
+              <Trash size={16} className="mr-1" /> Xóa
+            </Button>
+          </div>
+        )}
       </CardFooter>
     </Card>
   );

@@ -54,12 +54,12 @@ const OrderPanel = ({
         position: "top-right",
       });
       console.log("Order created successfully:", response);
-
+      router.push('./order/')
       // Reset order or close panel
       onClose();
 
       // Optionally navigate back to the order list page
-      router.push(`/order/${reservationId}`);
+      // router.push(`./order/${reservationId}`);
     } catch (error) {
       console.error("Failed to create order:", error);
       toast.error("Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.", {

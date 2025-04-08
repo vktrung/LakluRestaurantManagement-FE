@@ -607,8 +607,8 @@ export default function EventForm({
                         <SelectItem value="loading" disabled>
                           Đang tải...
                         </SelectItem>
-                      ) : staffData?.data?.length ? (
-                        staffData.data.map(s => (
+                      ) : staffData?.data?.users?.length ? (
+                        staffData.data.users.map(s => (
                           <SelectItem
                             key={s.id}
                             value={s.id.toString()}

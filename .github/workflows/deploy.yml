@@ -16,7 +16,7 @@ jobs:
           node-version: '18'
           
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
         
       - name: Build
         run: npm run build
@@ -30,7 +30,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           source: ".next/*,public/*,package.json,package-lock.json,next.config.mjs"
-          target: "/home/user/cmslaklu"
+          target: "/var/www/cmslaklu"
           strip_components: 0
           
       - name: Restart PM2
@@ -40,6 +40,6 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /home/user/cmslaklu
-            npm install --production
+            cd /var/www/cmslaklu
+            npm install --production --legacy-peer-deps
             pm2 restart cmslaklu 

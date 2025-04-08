@@ -1,6 +1,7 @@
 //app/(private)/payment/management/page.tsx
 'use client';
 
+import { useState } from 'react';
 import { useGetPaymentsQuery } from '@/features/payment/PaymentApiSlice';
 import { PaymentList } from '../components/PaymentList';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,13 +9,23 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 
 export default function PaymentManagementPage() {
-    const { data, error, isLoading } = useGetPaymentsQuery();
+    const [currentPage, setCurrentPage] = useState(1);
+    const { data, error, isLoading } = useGetPaymentsQuery({
+        page: currentPage - 1,
+        pageSize: 10
+    });
     const router = useRouter();
 
     if (isLoading) return <div>Đang tải...</div>;
     if (error) return <div>Có lỗi xảy ra: {JSON.stringify(error)}</div>;
 
-    const payments = data?.data || [];
+    // Đảm bảo dữ liệu phân trang được lấy đúng
+    const paginatedResponse = data?.data || { payments: [], currentPage: 1, totalItems: 0, totalPages: 1 };
+    const { payments, totalItems, totalPages } = paginatedResponse;
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
 
     return (
         <div className="container mx-auto p-4">
@@ -28,7 +39,13 @@ export default function PaymentManagementPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <PaymentList payments={payments} />
+                    <PaymentList 
+                        payments={payments} 
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        onPageChange={handlePageChange}
+                    />
                 </CardContent>
             </Card>
         </div>

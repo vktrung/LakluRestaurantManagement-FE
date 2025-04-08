@@ -1,15 +1,15 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import {
-  Button,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  Modal as ModalNextUI,
-  useDisclosure,
-} from '@nextui-org/react';
-import React from 'react';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import React, { useState } from 'react';
 import { IoPencil } from 'react-icons/io5';
 
 interface ModalFormProps {
@@ -46,9 +46,12 @@ export const ModalForm: React.FC<ModalFormProps> = ({
   isAlwaysOpen = false,
   ...props
 }) => {
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const [isOpen, setIsOpen] = useState(isAlwaysOpen);
 
-  const handleAction = async (onClose: () => void) => {
+  const handleOpen = () => setIsOpen(true);
+  const handleClose = () => setIsOpen(false);
+
+  const handleAction = async () => {
     if (onSubmit) {
       try {
         await onSubmit();
@@ -56,93 +59,70 @@ export const ModalForm: React.FC<ModalFormProps> = ({
         console.error('Error in onSubmit:', error);
       }
     }
-    onClose();
+    handleClose();
   };
 
   React.useEffect(() => {
-    const modalWrapper = document.querySelector('.custom-modal-wrapper');
-    const handleClick = (e: Event) => {
-      e.stopPropagation();
-    };
-
-    if (modalWrapper) {
-      modalWrapper.addEventListener('click', handleClick);
-    }
-
-    if (cleanupFunction) {
+    if (cleanupFunction && !isOpen) {
       cleanupFunction();
     }
-
-    return () => {
-      if (modalWrapper) {
-        modalWrapper.removeEventListener('click', handleClick);
-      }
-    };
-  }, [isOpen]);
+  }, [isOpen, cleanupFunction]);
 
   return (
-    <>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       {icon && (
-        <Button
-          isIconOnly
-          variant="bordered"
-          radius="full"
-          size="sm"
-          aria-label={props['aria-label'] || 'Open modal'}
-          onPress={onOpen}
-        >
-          {icon}
-        </Button>
+        <DialogTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full"
+            aria-label={props['aria-label'] || 'Open modal'}
+            onClick={handleOpen}
+          >
+            {icon}
+          </Button>
+        </DialogTrigger>
       )}
-      {nodeTrigger &&
-        React.isValidElement(nodeTrigger) &&
-        React.cloneElement(nodeTrigger as React.ReactElement, {
-          onPress: onOpen,
-        })}
-      <ModalNextUI
-        isOpen={isAlwaysOpen || isOpen}
-        onOpenChange={(open: boolean) => {
-          onOpenChange();
-        }}
-        onClick={e => {
-          e.stopPropagation();
-        }}
-        classNames={{
-          wrapper: 'custom-modal-wrapper',
-        }}
+      
+      {nodeTrigger && (
+        <DialogTrigger asChild>
+          {React.isValidElement(nodeTrigger) &&
+            React.cloneElement(nodeTrigger as React.ReactElement, {
+              onClick: handleOpen,
+            })}
+        </DialogTrigger>
+      )}
+      
+      <DialogContent 
+        className="sm:max-w-md" 
+        onClick={(e) => e.stopPropagation()}
         {...props}
       >
-        <ModalContent>
-          {onClose => (
-            <>
-              {header && (
-                <ModalHeader style={headerStyle}>{header}</ModalHeader>
-              )}
-              <ModalBody style={bodyStyle}>
-                {' '}
-                {typeof children === 'function' ? children(onClose) : children}
-              </ModalBody>
-              {!isActionDisabled && (
-                <ModalFooter style={footerStyle}>
-                  {isCloseBtn && (
-                    <Button color="danger" variant="light" onPress={onClose}>
-                      Close
-                    </Button>
-                  )}
-                  {actionButtonText && (
-                    <Button
-                      color="primary"
-                      onPress={() => handleAction(onClose)}
-                    >
-                      {actionButtonText}
-                    </Button>
-                  )}
-                </ModalFooter>
-              )}
-            </>
-          )}
-        </ModalContent>
-      </ModalNextUI>
-    </>
+        {header && (
+          <DialogHeader style={headerStyle}>
+            <DialogTitle>{header}</DialogTitle>
+          </DialogHeader>
+        )}
+        
+        <div style={bodyStyle} className="py-4">
+          {typeof children === 'function' ? children(handleClose) : children}
+        </div>
+        
+        {!isActionDisabled && (
+          <DialogFooter style={footerStyle}>
+            {isCloseBtn && (
+              <Button variant="outline" onClick={handleClose}>
+                Close
+              </Button>
+            )}
+            {actionButtonText && (
+              <Button onClick={handleAction}>
+                {actionButtonText}
+              </Button>
+            )}
+          </DialogFooter>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };

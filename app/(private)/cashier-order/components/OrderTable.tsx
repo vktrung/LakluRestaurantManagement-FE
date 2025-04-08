@@ -76,6 +76,9 @@ interface OrderTableProps {
 }
 
 const OrderTable = ({ orders }: OrderTableProps) => {
+  // Thêm useRouter hook tại đây
+  const router = useRouter();
+  
   // Log toàn bộ orders được truyền vào OrderTable
   console.log('Orders in OrderTable:', orders);
 

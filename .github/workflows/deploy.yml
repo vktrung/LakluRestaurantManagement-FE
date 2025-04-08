@@ -17,15 +17,23 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            # Kiểm tra và cài đặt Node.js 18 nếu cần
+            if ! command -v node &> /dev/null || [ $(node -v | cut -d. -f1 | tr -d 'v') -lt 18 ]; then
+              echo "Cài đặt Node.js 18..."
+              curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+              sudo apt-get install -y nodejs
+            fi
+            
+            # Kiểm tra phiên bản Node.js
+            node -v
+            npm -v
+            
             # Tạo thư mục tạm để build
             rm -rf /var/www/cmslaklu-temp || true
             mkdir -p /var/www/cmslaklu-temp
             cd /var/www/cmslaklu-temp
             
-            # Nếu repository là public, có thể sử dụng URL công khai
-            # git clone https://github.com/${{ secrets.GH_USERNAME }}/${{ secrets.GH_REPO }}.git .
-            
-            # Hoặc nếu vẫn cần xác thực:
+            # Clone repository với xác thực
             git clone https://oauth2:${{ secrets.GH_TOKEN }}@github.com/${{ secrets.GH_USERNAME }}/${{ secrets.GH_REPO }}.git .
             
             # Cài đặt dependencies với flag legacy-peer-deps
@@ -48,6 +56,11 @@ jobs:
               
               # Di chuyển thư mục mới vào vị trí
               mv /var/www/cmslaklu-temp /var/www/cmslaklu
+              
+              # Đảm bảo PM2 đã được cài đặt
+              if ! command -v pm2 &> /dev/null; then
+                sudo npm install -g pm2
+              fi
               
               # Khởi động lại ứng dụng
               cd /var/www/cmslaklu

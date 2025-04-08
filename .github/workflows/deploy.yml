@@ -22,12 +22,11 @@ jobs:
             mkdir -p /var/www/cmslaklu-temp
             cd /var/www/cmslaklu-temp
             
-            # Phương pháp 1: Clone repository sử dụng HTTPS với personal access token
-            git clone https://${{ secrets.GH_TOKEN }}@github.com/${{ secrets.GH_USERNAME }}/${{ secrets.GH_REPO }}.git .
+            # Nếu repository là public, có thể sử dụng URL công khai
+            # git clone https://github.com/${{ secrets.GH_USERNAME }}/${{ secrets.GH_REPO }}.git .
             
-            # Phương pháp 2 (thay thế nếu phương pháp 1 không hiệu quả):
-            # git config --global core.sshCommand "ssh -o StrictHostKeyChecking=no"
-            # GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone ${{ secrets.GIT_REPO_URL }} .
+            # Hoặc nếu vẫn cần xác thực:
+            git clone https://oauth2:${{ secrets.GH_TOKEN }}@github.com/${{ secrets.GH_USERNAME }}/${{ secrets.GH_REPO }}.git .
             
             # Cài đặt dependencies với flag legacy-peer-deps
             npm install --legacy-peer-deps

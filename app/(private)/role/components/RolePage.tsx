@@ -30,15 +30,15 @@ import { GrUpdate } from "react-icons/gr"
 
 const RoleTable = () => {
   const { data: roleResponse, isLoading, error } = useGetRolesQuery();
-  const [selectedRoleId, setSelectedRoleId] = useState(null);
-  const [roleToDelete, setRoleToDelete] = useState(null);
+  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
+  const [roleToDelete, setRoleToDelete] = useState<number | null>(null);
   const [deleteRole, { isLoading: isDeleting, error: deleteError }] = useDeleteRoleByIdMutation();
   
   // Thêm state cho tìm kiếm như trong StaffTable
   const [searchTerm, setSearchTerm] = useState("");
 
   // Query lấy chi tiết role chỉ chạy khi selectedRoleId có giá trị
-  const { data: roleDetail, isLoading: isLoadingRoleDetail } = useGetRoleByIdQuery(selectedRoleId, {
+  const { data: roleDetail, isLoading: isLoadingRoleDetail } = useGetRoleByIdQuery(selectedRoleId || 0, {
     skip: !selectedRoleId,
   });
 

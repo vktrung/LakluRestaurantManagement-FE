@@ -3,7 +3,7 @@
 import { endpoints } from '@/configs/endpoints';
 import baseQuery from '@/features/baseQuery';
 import { createApi } from '@reduxjs/toolkit/query/react';
-import { OrderResponse,OrderResponseId,CreateOrderItemResponse,CreateOrderItemRequest ,GetOrdersParams, UpdateOrderStatusRequest, UpdateOrderItemStatusRequest, OrderItemResponse, GetOrdersParamsEveningToDawn} from './types';
+import { OrderResponse,OrderResponseId,CreateOrderItemResponse,CreateOrderItemRequest ,GetOrdersParams, UpdateOrderStatusRequest, UpdateOrderItemStatusRequest, OrderItemResponse, GetOrdersParamsEveningToDawn, BatchUpdateOrderItemStatusResponse, BatchUpdateOrderItemStatusRequest} from './types';
 
 export const orderCashierApiSlice = createApi({
   reducerPath: 'orderCashier',
@@ -92,6 +92,17 @@ export const orderCashierApiSlice = createApi({
       }),
       providesTags: ['order-list'],
     }),
+    batchUpdateOrderItemStatus: builder.mutation<
+      BatchUpdateOrderItemStatusResponse,
+      BatchUpdateOrderItemStatusRequest
+    >({
+      query: (data) => ({
+        url: `${endpoints.OrderItemApi}status/batch`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['order-list'],
+    }),
   }),
 });
 
@@ -103,6 +114,7 @@ export const {
   useUpdateOrderStatusMutation,
   useUpdateOrderItemStatusMutation,
   useGetOrderItemByIdQuery,
+  useBatchUpdateOrderItemStatusMutation,
 } = orderCashierApiSlice;
 
 export default orderCashierApiSlice;

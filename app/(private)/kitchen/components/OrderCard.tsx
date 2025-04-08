@@ -25,8 +25,6 @@ import {
   useGetOrderItemByIdQuery,
 } from '@/features/order-cashier/orderCashierApiSlice';
 import { useGetStaffByIdQuery } from '@/features/staff/staffApiSlice';
-import { Button } from '@/components/ui/button';
-import { skipToken } from '@reduxjs/toolkit/query';
 
 interface OrderCardProps {
   order: Order;
@@ -192,7 +190,13 @@ export default function OrderCard({
       className="border border-gray-300 rounded-lg overflow-hidden bg-white h-full"
     >
       {/* Header của đơn */}
-      <div className="border-b border-gray-300 bg-amber-50 px-2.5 py-2 flex justify-between items-center">
+      <div className="border-b border-gray-300 bg-amber-50 px-2.5 py-2">
+        <div className="flex justify-between items-center mb-1">
+          <span className="font-medium text-amber-800">Phiếu vào bếp</span>
+          <div className="text-right text-xs text-gray-600">
+            {staffData?.data?.username || 'admin'}
+          </div>
+        </div>
         <div className="font-medium">
           <div className="text-gray-600 text-xs">
             {formatTime(order.createdAt)}
@@ -200,9 +204,6 @@ export default function OrderCard({
           <div className="text-gray-600 text-xs">
             Bàn: {order.tables.map(table => table.tableNumber).join(', ')}
           </div>
-        </div>
-        <div className="text-right text-xs text-gray-600">
-          {staffData?.data?.username || 'admin'}
         </div>
       </div>
 

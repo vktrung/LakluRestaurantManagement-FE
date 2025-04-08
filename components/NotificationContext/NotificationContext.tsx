@@ -98,7 +98,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   // Kiểm tra và cập nhật token khi component mount
   useEffect(() => {
     const token = getAuthToken();
-    authTokenRef.current = token;
+    authTokenRef.current = token || null;
   }, []);
 
   // Khi userData thay đổi, fetch orders nếu đã có userData

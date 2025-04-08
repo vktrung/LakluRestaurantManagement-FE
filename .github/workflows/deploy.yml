@@ -17,12 +17,22 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            # Kiểm tra và cài đặt Node.js 18 nếu cần
-            if ! command -v node &> /dev/null || [ $(node -v | cut -d. -f1 | tr -d 'v') -lt 18 ]; then
-              echo "Cài đặt Node.js 18..."
-              curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-              sudo apt-get install -y nodejs
+            # Cài đặt NVM nếu chưa có
+            if [ ! -d "$HOME/.nvm" ]; then
+              echo "Cài đặt NVM..."
+              curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+              export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            else
+              echo "NVM đã được cài đặt"
+              export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             fi
+            
+            # Cài đặt Node.js 18
+            echo "Cài đặt Node.js 18..."
+            nvm install 18
+            nvm use 18
             
             # Kiểm tra phiên bản Node.js
             node -v
@@ -33,20 +43,21 @@ jobs:
             mkdir -p /var/www/cmslaklu-temp
             cd /var/www/cmslaklu-temp
             
-            # Clone repository với xác thực
+            # Clone repository
             git clone https://oauth2:${{ secrets.GH_TOKEN }}@github.com/${{ secrets.GH_USERNAME }}/${{ secrets.GH_REPO }}.git .
             
-            # Cài đặt dependencies với flag legacy-peer-deps
+            # Cài đặt dependencies
             npm install --legacy-peer-deps
             
-            # Thiết lập các biến môi trường
+            # Thiết lập biến môi trường
             echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}" > .env.local
             echo "NEXT_PUBLIC_SERVER_URL=${{ secrets.NEXT_PUBLIC_SERVER_URL }}" >> .env.local
             
             # Build project
+            export NODE_OPTIONS=--openssl-legacy-provider
             npm run build --no-lint
             
-            # Nếu build thành công, cập nhật thư mục chính
+            # Nếu build thành công
             if [ $? -eq 0 ]; then
               # Backup thư mục cũ nếu có
               if [ -d "/var/www/cmslaklu" ]; then
@@ -54,15 +65,15 @@ jobs:
                 mv /var/www/cmslaklu /var/www/cmslaklu-backup
               fi
               
-              # Di chuyển thư mục mới vào vị trí
+              # Di chuyển thư mục mới
               mv /var/www/cmslaklu-temp /var/www/cmslaklu
               
-              # Đảm bảo PM2 đã được cài đặt
+              # Cài đặt PM2 nếu chưa có
               if ! command -v pm2 &> /dev/null; then
-                sudo npm install -g pm2
+                npm install -g pm2
               fi
               
-              # Khởi động lại ứng dụng
+              # Khởi động ứng dụng
               cd /var/www/cmslaklu
               pm2 restart cmslaklu || pm2 start ecosystem.config.js
               

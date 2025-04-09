@@ -77,6 +77,11 @@ export default function CheckInPage({
     try {
       const { scheduleId, expiry, signature } = searchParams
 
+      console.log("scheduleId", scheduleId)
+      console.log("expiry", expiry)
+      console.log("signature", signature)
+
+
       if (!scheduleId || !expiry || !signature) {
         throw new Error("Thông tin không hợp lệ!")
       }

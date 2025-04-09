@@ -50,8 +50,7 @@ jobs:
             npm install --legacy-peer-deps
             
             # Thiết lập biến môi trường
-            echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}" > .env.local
-            echo "NEXT_PUBLIC_SERVER_URL=${{ secrets.NEXT_PUBLIC_SERVER_URL }}" >> .env.local
+            echo "NEXT_PUBLIC_SERVER_URL=${{ secrets.NEXT_PUBLIC_API_URL }}" > .env.local
             
             # Build project
             export NODE_OPTIONS=--openssl-legacy-provider

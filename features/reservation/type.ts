@@ -46,6 +46,14 @@ export interface Pagination {
   first: boolean;
   last: boolean;
 }
+export interface PaginationResponse {
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+}
 
 export interface PagedData<T> {
   content: T[];
@@ -55,6 +63,18 @@ export interface PagedData<T> {
 // Base API Response interface
 export interface BaseApiResponse<T> {
   data: T;
+  message: string;
+  httpStatus: number;
+  timestamp: string;
+  error: string | null;
+}
+export interface PageResponse<T> {
+  content: T[];
+  pagination: PaginationResponse;
+}
+
+export interface GetReservationsResponse1 {
+  data: PageResponse<ReservationResponse>;
   message: string;
   httpStatus: number;
   timestamp: string;

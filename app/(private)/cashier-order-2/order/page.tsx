@@ -1,10 +1,70 @@
 "use client"
 import { useGetReservationsQuery } from "@/features/reservation/reservationApiSlice"
 import OrderPage from "./components/OrderPage"
-import { Loader2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
+import { useState } from "react"
+
+// Định nghĩa kiểu dữ liệu phân trang
+interface PaginationData {
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+}
+
+// Định nghĩa kiểu dữ liệu đặt bàn
+interface ReservationTable {
+  id: number;
+  tableNumber: string;
+}
+
+interface ReservationDetail {
+  id: number;
+  customerName: string;
+  customerPhone: string;
+  reservationTime: string | null;
+  status: string;
+  createBy: string;
+  numberOfPeople: number;
+  checkIn: string | null;
+  checkOut: string | null;
+  tables: ReservationTable[];
+  timeIn: string;
+  timeOut: string | null;
+}
+
+interface Reservation {
+  id: number;
+  timeIn: string;
+  timeOut: string | null;
+  detail: ReservationDetail;
+}
 
 const Order = () => {
-  const { data, error, isLoading } = useGetReservationsQuery()
+  const [page, setPage] = useState(0) // API sử dụng zero-based pagination
+  const [pageSize, setPageSize] = useState(10)
+
+  const { data, error, isLoading } = useGetReservationsQuery({
+    page,
+    size: pageSize
+  })
+
+  // Xử lý chuyển trang
+  const handlePreviousPage = () => {
+    if (page > 0) {
+      setPage(page - 1)
+    }
+  }
+
+  const handleNextPage = () => {
+    const pagination = data?.data?.pagination
+    if (pagination && page < pagination.totalPages - 1) {
+      setPage(page + 1)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -28,8 +88,17 @@ const Order = () => {
     )
   }
 
-  // API trả về dạng GetReservationResponse, danh sách nằm trong thuộc tính data
-  const reservations = data?.data || []
+  // Dữ liệu trả về từ API đã thay đổi cấu trúc
+  const reservations = data?.data?.content || [];
+  const pagination = data?.data?.pagination || {
+    pageNumber: 1,
+    pageSize: 10,
+    totalElements: 0,
+    totalPages: 1,
+    first: true,
+    last: true
+  };
+  
   console.log(
     "Reservation details:",
     reservations.map((r) => ({
@@ -42,6 +111,35 @@ const Order = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <OrderPage />
+      
+      {/* Pagination Controls */}
+      {pagination.totalPages > 1 && (
+        <div className="flex justify-center items-center gap-4 py-6">
+          <Button 
+            variant="outline" 
+            onClick={handlePreviousPage}
+            disabled={page === 0}
+            className="flex items-center gap-1"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Trang trước
+          </Button>
+          
+          <span className="text-sm font-medium">
+            Trang {pagination.pageNumber} / {pagination.totalPages}
+          </span>
+          
+          <Button 
+            variant="outline" 
+            onClick={handleNextPage}
+            disabled={page >= pagination.totalPages - 1}
+            className="flex items-center gap-1"
+          >
+            Trang sau
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

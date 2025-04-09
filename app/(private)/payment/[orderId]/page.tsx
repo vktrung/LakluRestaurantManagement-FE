@@ -9,14 +9,15 @@ import {
   useGetPaymentByIdQuery,
   useGetOrderItemsInOrderQuery,
   useUpdateOrderItemQuantityMutation,
-  useCreateOrderItemMutation,
   useGetBillQuery,
+  useCancelPaymentMutation,
   paymentApiSlice
 } from "@/features/payment/PaymentApiSlice"
 import {
   useGetMenusQuery,
   useGetMenuItemByIdQuery,
 } from '@/features/menu/menuApiSlice'
+import { useCreateNewItemByOrderIdMutation, useDeleteOrderItemByIdMutation } from '@/features/order/orderApiSlice'
 import { formatPrice } from "@/lib/utils"
 import { getTokenFromCookie } from "@/utils/token"
 
@@ -28,7 +29,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import Image from "next/image"
-import { CalendarIcon, Plus, Minus, X } from "lucide-react"
+import { CalendarIcon, Plus, Minus, X, Trash2 } from "lucide-react"
 import type { OrderItem, PaymentResponse } from "@/features/payment/types"
 import type { Menu, MenuItem } from '@/features/menu/types'
 import { Checkbox } from "@/components/ui/checkbox"
@@ -83,7 +84,7 @@ export default function IntegratedPaymentPage() {
   const orderIdNumber = Number(orderIdValue)
 
   // Lấy danh sách món ăn có sẵn trong order
-  const { data: existingOrderItemsData, isLoading: isExistingOrderItemsLoading } = 
+  const { data: existingOrderItemsData, isLoading: isExistingOrderItemsLoading, refetch: refetchOrderItems } = 
     useGetOrderItemsInOrderQuery(orderIdNumber, {
     skip: !orderIdNumber || isNaN(orderIdNumber)
   })
@@ -92,7 +93,6 @@ export default function IntegratedPaymentPage() {
   const { data: menusData, isLoading: isMenusLoading } = useGetMenusQuery()
   const [selectedMenuId, setSelectedMenuId] = useState<number | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedItems, setSelectedItems] = useState<ExtendedMenuItem[]>([])
 
   // Lấy danh sách món trong menu
   const { data: menuData, isLoading: isMenuLoading } = useGetMenuItemByIdQuery(
@@ -112,7 +112,7 @@ export default function IntegratedPaymentPage() {
   const [totalAmount, setTotalAmount] = useState<string>("0")
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "PAID" | null>(null)
+  const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "PAID" | "FAILED" | null>(null)
   const [paymentCompleted, setPaymentCompleted] = useState(false)
 
   // Tạo một phiên bản tùy chỉnh của router để chặn navigation
@@ -124,7 +124,7 @@ export default function IntegratedPaymentPage() {
     const allowedUrls = [pendingNavigation];
     
     // Kiểm tra nếu cần hiển thị dialog xác nhận
-    if (!paymentCompleted && selectedItems.length > 0 && !allowedUrls.includes(href)) {
+    if (!paymentCompleted && (existingOrderItemsData?.data?.length ?? 0) > 0 && !allowedUrls.includes(href)) {
       setPendingNavigation(href);
       setIsModalOpen(true);
       return Promise.resolve(false);
@@ -132,16 +132,15 @@ export default function IntegratedPaymentPage() {
     
     // Nếu không cần xác nhận, thực hiện navigation bình thường
     return originalPush(href);
-  }, [originalPush, paymentCompleted, selectedItems.length, pendingNavigation]);
+  }, [originalPush, paymentCompleted, existingOrderItemsData?.data, pendingNavigation]);
 
-  // API hooks
+  // API hooks - Đặt tất cả các hooks ở đây để đảm bảo tính nhất quán
   const [createPayment, { isLoading: isCreating }] = useCreatePaymentMutation()
   const [processCashPayment, { isLoading: isProcessing }] = useProcessCashPaymentMutation()
   const { data: qrCodeData, isLoading: isQrLoading } = useGenerateQrCodeQuery(paymentId || 0, {
     skip: !paymentId || paymentMethod !== "TRANSFER",
   })
-
-  // Polling để kiểm tra trạng thái payment (cho thanh toán chuyển khoản)
+  const [cancelPayment, { isLoading: isCancelling }] = useCancelPaymentMutation()
   const { data: paymentData } = useGetPaymentByIdQuery(paymentId || 0, {
     skip: !paymentId || paymentMethod !== "TRANSFER" || paymentStatus === "PAID",
     pollingInterval: 5000,
@@ -149,7 +148,8 @@ export default function IntegratedPaymentPage() {
 
   // Add the updateOrderItemQuantity mutation
   const [updateOrderItemQuantity, { isLoading: isUpdatingOrderItem }] = useUpdateOrderItemQuantityMutation()
-  const [createOrderItem, { isLoading: isCreatingOrderItem }] = useCreateOrderItemMutation()
+  const [createNewItemByOrderId, { isLoading: isCreatingNewItem }] = useCreateNewItemByOrderIdMutation()
+  const [deleteOrderItemById, { isLoading: isDeletingOrderItem }] = useDeleteOrderItemByIdMutation()
 
   // Khởi tạo selectedMenuId từ dữ liệu API
   useEffect(() => {
@@ -200,7 +200,7 @@ export default function IntegratedPaymentPage() {
       return;
     }
     
-    if (selectedItems.length > 0) {
+    if (selectedMenuId) {
       // Hiển thị modal xác nhận
       setPendingNavigation(path);
       setIsModalOpen(true);
@@ -208,7 +208,7 @@ export default function IntegratedPaymentPage() {
       // Nếu không có món nào được chọn, chuyển trang luôn
       originalPush(path);
     }
-  }, [originalPush, paymentCompleted, selectedItems.length]);
+  }, [originalPush, paymentCompleted, selectedMenuId]);
 
   // Cập nhật paymentStatus từ paymentData
   useEffect(() => {
@@ -221,86 +221,24 @@ export default function IntegratedPaymentPage() {
     }
   }, [paymentData])
 
-  // Khởi tạo selectedItems từ existingOrderItemsData khi có dữ liệu
+  // Update orderItems state based on the fetched data for OrderSummary
   useEffect(() => {
-    if (existingOrderItemsData?.data && existingOrderItemsData.data.length > 0 && selectedItems.length === 0) {
-      console.log("Existing order items:", existingOrderItemsData.data);
-      
-      // Chuyển đổi dữ liệu từ API thành định dạng selectedItems
-      const existingItems = existingOrderItemsData.data.map((item: any) => {
-        // Đảm bảo id không bao giờ undefined - sử dụng orderItemId nếu tồn tại
-        if (!item.id && !item.orderItemId) {
-          console.error("Found item without id or orderItemId:", item);
-        }
-        
-        // Ưu tiên sử dụng id, nếu không có thì dùng orderItemId
-        const itemId = item.id || item.orderItemId || 0;
-        
-        // Tạo đối tượng dish đúng kiểu dữ liệu
-        const dish = {
-          id: item.menuItemId || 0,
-          name: item.dishName || "Unknown", // Lưu dishName vào dish.name
-          description: "",
-          price: Number(item.price || 0),
-          status: "enable",
-          categoryId: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          images: [] as { id: number; link: string; name: string }[] // Mảng rỗng cho images với kiểu dữ liệu chính xác
-        };
-        
-        // Tạo ExtendedMenuItem
-        const extendedMenuItem: ExtendedMenuItem = {
-          id: itemId,
-          dishId: item.menuItemId || 0,
-          dish: dish,
-          price: Number(item.price || 0),
-          quantity: item.quantity || 0,
-          menuItemId: item.menuItemId || 0,
-          orderId: item.orderId || 0,
-          status: "enable",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          menuId: 0, 
-          categoryId: 0
-        };
-        
-        return extendedMenuItem;
-      });
-      
-      console.log("Converted to selectedItems:", existingItems);
-      setSelectedItems(existingItems);
-      
-      // Đồng thời cập nhật orderItems để đảm bảo tính nhất quán
-      const orderItemsFromAPI = existingOrderItemsData.data.map((item: any) => ({
-        id: item.id || item.orderItemId,
-        dishName: item.dishName || "Unknown", // Sử dụng trực tiếp dishName từ API
-        quantity: item.quantity || 0,
-        price: (item.price || 0).toString(),
-        orderId: item.orderId,
-        menuItemId: item.menuItemId,
-        statusLabel: item.statusLabel
-      }));
-      setOrderItems(orderItemsFromAPI);
-    }
-  }, [existingOrderItemsData, selectedItems.length]);
-
-  // Chuyển đổi selectedItems thành orderItems khi người dùng thay đổi món ăn
-  useEffect(() => {
-    // Chỉ cập nhật nếu có selectedItems và không phải lần đầu load dữ liệu
-    if (selectedItems.length > 0 && !isExistingOrderItemsLoading) {
-      const items: OrderItem[] = selectedItems.map(item => ({
-        id: item.id,
-        dishName: item.dish?.name || "Unknown",
+    if (existingOrderItemsData?.data && !isExistingOrderItemsLoading) {
+      // Directly use the fetched data structure if OrderSummary is compatible
+      // Or map if needed, e.g.:
+      const itemsForSummary: OrderItem[] = existingOrderItemsData.data.map(item => ({ 
+        id: item.id, // Use id
+        dishName: item.dishName || "Unknown", // Use dishName
         quantity: item.quantity,
-        price: item.price.toString(),
+        price: item.price?.toString() || "0", // Use price
         orderId: item.orderId,
         menuItemId: item.menuItemId,
-        statusLabel: item.statusLabel,
       }))
-      setOrderItems(items)
+      setOrderItems(itemsForSummary)
+    } else {
+      setOrderItems([]); // Clear if no data
     }
-  }, [selectedItems, isExistingOrderItemsLoading])
+  }, [existingOrderItemsData, isExistingOrderItemsLoading])
 
   // Thêm món vào đơn hàng
   const addItemToOrder = async (item: MenuItem) => {
@@ -310,74 +248,36 @@ export default function IntegratedPaymentPage() {
       return;
     }
     
-    // Kiểm tra xem món ăn đã tồn tại trong danh sách chưa
-    const existingItem = selectedItems.find(i => i.menuItemId === item.id)
-    
-    if (existingItem) {
-      // Nếu món ăn đã tồn tại, tăng số lượng
-      await changeItemQuantity(existingItem.id, existingItem.quantity + 1)
-      // Không hiển thị thông báo
-    } else {
-      // Nếu món ăn chưa tồn tại, tạo mới
-      try {
-        const result = await createOrderItem({
-          orderId: orderIdNumber,
+    // Backend handles merging/incrementing, so always call create
+    try {
+      await createNewItemByOrderId({ // Use the new hook
+        orderId: orderIdNumber, 
+        newOrderItemRequest: { // Pass the request body
           menuItemId: item.id,
-          quantity: 1
-        }).unwrap()
-        
-        if (result.data) {
-          // Thêm món ăn mới vào danh sách selectedItems
-          const newItem: ExtendedMenuItem = {
-            id: result.data.id ?? 0,
-            dishId: item.dishId,
-            dish: item.dish,
-            price: item.price,
-            quantity: 1,
-            menuItemId: item.id,
-            orderId: orderIdNumber,
-            menuId: item.menuId,
-            categoryId: item.categoryId,
-            // Các trường bắt buộc của MenuItem
-            status: item.status,
-            createdAt: item.createdAt,
-            updatedAt: item.updatedAt
-          }
-          
-          setSelectedItems(prev => [...prev, newItem])
-          // Không hiển thị thông báo
+          quantity: 1 // Always add 1, backend handles logic
         }
-      } catch (error) {
-        console.error('Failed to add item to order', error)
-        setErrorMessage('Không thể thêm món ăn vào đơn hàng. Vui lòng thử lại.')
-      }
+      }).unwrap()
+      
+      // Refetch after successful add/update
+      refetchOrderItems() 
+    } catch (error) {
+      console.error('Failed to add item to order', error)
+      setErrorMessage('Không thể thêm món ăn vào đơn hàng. Vui lòng thử lại.')
     }
   }
 
   // Thay đổi số lượng món và cập nhật lên server
   const changeItemQuantity = async (itemId: number, newQuantity: number) => {
-    // Kiểm tra xem đã tạo thanh toán chưa
-    if (isPaymentCreated) {
-      // Không hiển thị thông báo
-      return;
-    }
+    if (isPaymentCreated) return; 
     
     // Kiểm tra itemId có tồn tại không
     if (!itemId) {
       console.error('ItemId is undefined or null');
-      // Không hiển thị thông báo
       return;
     }
     
-    // Tìm item cần thay đổi
-    const item = selectedItems.find(item => item.id === itemId);
-    
-    if (!item) {
-      console.error(`Item with id ${itemId} not found`);
-      return;
-    }
-    
-    console.log(`Starting to update item with id=${itemId}, newQuantity=${newQuantity}`, item);
+    // No need to find item in local state
+    console.log(`Requesting update for item id=${itemId}, newQuantity=${newQuantity}`);
 
     try {
       if (newQuantity <= 0) {
@@ -390,9 +290,7 @@ export default function IntegratedPaymentPage() {
         
         console.log("Update response:", response);
         
-        // Cập nhật UI bằng cách loại bỏ item này
-        setSelectedItems(prev => prev.filter(item => item.id !== itemId));
-        // Không hiển thị thông báo
+        refetchOrderItems(); // Refetch after update
       } else {
         // Nếu số lượng > 0, cập nhật số lượng mới
         console.log(`Updating item ${itemId} to quantity ${newQuantity}, API call:`, {
@@ -407,14 +305,7 @@ export default function IntegratedPaymentPage() {
         
         console.log("Update response:", response);
         
-        // Cập nhật UI
-        setSelectedItems(prev => 
-          prev.map(item => 
-            item.id === itemId ? { ...item, quantity: newQuantity } : item
-          )
-        );
-        
-        // Không hiển thị thông báo thành công
+        refetchOrderItems(); // Refetch after update
       }
     } catch (error) {
       console.error('Failed to update item quantity', error);
@@ -422,12 +313,37 @@ export default function IntegratedPaymentPage() {
     }
   }
 
+  // Placeholder function for handling delete confirmation
+  const handleDeleteItem = async (itemId: number | undefined) => {
+    // Add check for undefined itemId
+    if (itemId === undefined) {
+      console.error("Attempted to delete item with undefined ID.");
+      setErrorMessage("Lỗi: Không thể xóa món ăn với ID không xác định.");
+      return;
+    }
+
+    if (window.confirm("Bạn có chắc chắn muốn xóa món ăn này?")) {
+      try {
+        console.log(`Attempting to delete item ID: ${itemId}`);
+        await deleteOrderItemById(itemId).unwrap();
+        setErrorMessage("Đã xóa món ăn thành công."); // Optional success message
+        refetchOrderItems(); // Refetch the list after successful deletion
+      } catch (error) {
+        console.error(`Failed to delete item ID: ${itemId}`, error);
+        const message = (error as any)?.data?.message || "Không thể xóa món ăn. Vui lòng thử lại.";
+        setErrorMessage(`Lỗi xóa món ăn: ${message}`);
+      }
+    }
+  };
+
   // Tính toán subtotal
   const calculateSubtotal = () => {
-    return selectedItems.reduce(
-      (sum, item) => sum + (item.price * item.quantity), 
+    // Calculate subtotal directly from fetched data, using price from the nested dish object
+    const itemsToSum = existingOrderItemsData?.data || [];
+    return itemsToSum.reduce(
+      (sum, item) => sum + (Number(item.price || 0) * item.quantity),
       0
-    )
+    );
   }
 
   // Sửa hàm xử lý tạo payment để đảm bảo kiểu dữ liệu đúng
@@ -529,37 +445,15 @@ export default function IntegratedPaymentPage() {
   const [printBill, setPrintBill] = useState<boolean>(false)
 
   // Hàm in phiếu tạm tính trực tiếp
-  const handlePrintTempBill = (tempBill: TempBillData): void => {
-    // Create a new window with only the bill content
-    const printWindow = window.open('', '_blank', 'width=400,height=600');
-    if (!printWindow) {
-      alert('Vui lòng cho phép cửa sổ pop-up để in phiếu tạm tính');
-      return;
-    }
-
-    // Format date for print window
-    const date = new Date(tempBill.date);
-    const printFormattedDate = new Intl.DateTimeFormat("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }).format(date);
-
-    // Format time for print window
-    const printFormattedTime = new Intl.DateTimeFormat("vi-VN", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(date);
-
-    // Generate the HTML content for the print window
+  const handlePrintTempBill = (tempBillData: TempBillData): void => {
+    // Use tempBillData directly passed to the function
     const printContent = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Phiếu tạm tính - Bàn ${tempBill.tableNumber}</title>
+        <title>Phiếu tạm tính - Bàn ${tempBillData.tableNumber}</title>
         <style>
           @page {
             size: 72mm auto;
@@ -692,11 +586,10 @@ export default function IntegratedPaymentPage() {
           <div class="grid gap-1 mb-3">
             <div>
               <div style="width: 50%;">
-                <p class="text-xs">BÀN: ${tempBill.tableNumber || "—"}</p>
+                <p class="text-xs">BÀN: ${tempBillData.tableNumber || "—"}</p>
               </div>
               <div style="width: 50%; text-align: right;">
-                <p class="text-xs">NGÀY: ${printFormattedDate}</p>
-                <p class="text-xs">GIỜ: ${printFormattedTime}</p>
+                <p class="text-xs">NGÀY: ${new Date(tempBillData.date).toLocaleDateString()}</p>
               </div>
             </div>
           </div>
@@ -716,7 +609,7 @@ export default function IntegratedPaymentPage() {
           <div class="border-t mb-1"></div>
 
           <!-- Items -->
-          ${tempBill.orderItems.map((item, index) => `
+          ${tempBillData.orderItems.map((item: TempOrderItem, index: number) => `
           <div class="grid mb-1">
             <div>
               <div class="col-span-1 text-xs">${index + 1}</div>
@@ -733,7 +626,7 @@ export default function IntegratedPaymentPage() {
 
           <!-- Payment Summary -->
           <div class="text-right space-y-1 mb-3">
-            <p class="text-xs font-bold">Tổng tạm tính: <span class="font-mono ml-2">${formatPrice(tempBill.subtotal)}</span></p>
+            <p class="text-xs font-bold">Tổng tạm tính: <span class="font-mono ml-2">${formatPrice(tempBillData.subtotal)} VND</span></p>
           </div>
 
           <!-- Footer -->
@@ -755,6 +648,13 @@ export default function IntegratedPaymentPage() {
       </body>
       </html>
     `;
+
+    // Create a new window with only the bill content
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    if (!printWindow) {
+      alert('Vui lòng cho phép cửa sổ pop-up để in phiếu tạm tính');
+      return;
+    }
 
     // Write to the new window and print
     printWindow.document.open();
@@ -1050,7 +950,7 @@ export default function IntegratedPaymentPage() {
     // Hàm xử lý trước khi rời trang
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       // Chỉ hiển thị xác nhận nếu chưa thanh toán và có thông tin cần lưu
-      if (!paymentCompleted && selectedItems.length > 0) {
+      if (!paymentCompleted && (existingOrderItemsData?.data?.length ?? 0) > 0) {
         // Chuẩn message cho các trình duyệt modern
         const message = "Bạn có chắc chắn muốn rời khỏi trang? Thông tin thanh toán có thể bị mất.";
         e.preventDefault();
@@ -1066,14 +966,14 @@ export default function IntegratedPaymentPage() {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [paymentCompleted, selectedItems.length]);
+  }, [paymentCompleted, existingOrderItemsData?.data]);
 
   // Xử lý khi người dùng nhấn nút Back của trình duyệt
   useEffect(() => {
     // Hàm xử lý khi người dùng nhấn nút Back
     const handlePopState = (e: PopStateEvent) => {
       // Ngăn chặn hành động mặc định nếu chưa thanh toán và có thông tin cần lưu
-      if (!paymentCompleted && selectedItems.length > 0) {
+      if (!paymentCompleted && (existingOrderItemsData?.data?.length ?? 0) > 0) {
         // Ngăn router của Next.js điều hướng
         e.preventDefault();
         
@@ -1097,12 +997,12 @@ export default function IntegratedPaymentPage() {
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [paymentCompleted, selectedItems.length]);
+  }, [paymentCompleted, existingOrderItemsData?.data]);
 
   // Lắng nghe tất cả các events click trên các thẻ <a> trong trang
   useEffect(() => {
     // Bỏ qua nếu thanh toán đã hoàn tất hoặc không có items
-    if (paymentCompleted || selectedItems.length === 0) {
+    if (paymentCompleted || (existingOrderItemsData?.data?.length ?? 0) === 0) {
       return;
     }
 
@@ -1132,7 +1032,7 @@ export default function IntegratedPaymentPage() {
     return () => {
       document.removeEventListener('click', handleLinkClick);
     };
-  }, [paymentCompleted, selectedItems.length]);
+  }, [paymentCompleted, existingOrderItemsData?.data]);
 
   // Tránh render trước khi hydration hoàn tất
   if (!isMounted) {
@@ -1140,6 +1040,25 @@ export default function IntegratedPaymentPage() {
   }
 
   const subtotal = calculateSubtotal()
+
+  // Thêm hàm xử lý hủy thanh toán
+  const handleCancelPayment = async () => {
+    if (!paymentId) return;
+    
+    try {
+      await cancelPayment(paymentId).unwrap();
+      setErrorMessage("Đã hủy thanh toán thành công");
+      setPaymentStatus("FAILED");
+      setPaymentCompleted(false);
+      // Chuyển hướng về trang danh sách đơn hàng sau 2 giây
+      setTimeout(() => {
+        handleNavigation('/cashier-order');
+      }, 2000);
+    } catch (error: any) {
+      const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định.";
+      setErrorMessage(`Lỗi hủ hủy thanh toán: ${message}`);
+    }
+  };
 
   return (
     <div className="container mx-auto p-4" ref={pageRef}>
@@ -1270,9 +1189,9 @@ export default function IntegratedPaymentPage() {
                             onClick={() => addItemToOrder(item)}
                             className="w-full mt-2"
                             size="sm"
-                            disabled={isCreatingOrderItem || isUpdatingOrderItem || isPaymentCreated}
+                            disabled={isCreatingNewItem || isUpdatingOrderItem || isPaymentCreated}
                           >
-                            {isCreatingOrderItem ? "Đang thêm..." : "Thêm vào order"}
+                            {isCreatingNewItem ? "Đang thêm..." : "Thêm vào order"}
                           </Button>
                         </CardContent>
                       </Card>
@@ -1309,17 +1228,17 @@ export default function IntegratedPaymentPage() {
                     <div className="p-4 text-center text-gray-500">
                       Đang tải danh sách món...
                 </div>
-                  ) : selectedItems.length === 0 ? (
+                  ) : (existingOrderItemsData?.data?.length ?? 0) === 0 ? (
                     <div className="p-4 text-center text-gray-500">
                       Chưa có món nào được chọn
                     </div>
                   ) : (
-                    selectedItems.map(item => (
+                    (existingOrderItemsData?.data || []).map(item => (
                       <div key={item.id} className="p-3 flex justify-between items-center">
                         <div>
-                          <div className="font-medium">{item.dish?.name}</div>
+                          <div className="font-medium">{item.dishName || 'Unknown'}</div>
                           <div className="text-sm text-gray-500">
-                            {item.price.toLocaleString('vi-VN')} VND × {item.quantity}
+                            {(Number(item.price) || 0).toLocaleString('vi-VN')} VND × {item.quantity}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1356,6 +1275,16 @@ export default function IntegratedPaymentPage() {
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
+                          {/* Add Delete Button */} 
+                          <Button 
+                            variant="destructive" 
+                            size="icon" 
+                            className="h-7 w-7" 
+                            onClick={() => handleDeleteItem(item.orderItemId)}
+                            disabled={isUpdatingOrderItem || isPaymentCreated || isDeletingOrderItem}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     ))
@@ -1381,25 +1310,22 @@ export default function IntegratedPaymentPage() {
               <Button
                       variant="outline"
                       onClick={() => {
-                        if (selectedItems.length > 0) {
+                        if (existingOrderItemsData?.data?.length ?? 0 > 0) {
                           // Tạo phiếu tạm tính từ dữ liệu hiện có
-                          const tempBill: TempBillData = {
-                            orderItems: selectedItems.map(item => ({
-                              id: item.id,
-                              dishName: item.dish?.name || "Unknown",
+                          const tempBillData: TempBillData = {
+                            orderItems: (existingOrderItemsData?.data || []).map(item => ({
+                              id: item.id ?? 0,
+                              dishName: item.dishName || "Unknown",
                               quantity: item.quantity,
                               price: item.price,
                             })),
-                            subtotal: subtotal,
+                            subtotal: calculateSubtotal(),
                             tableNumber: orderIdNumber,
                             date: new Date().toISOString(),
                           };
                           
-                          // Lưu vào localStorage để trang phiếu tạm tính có thể lấy ra
-                          localStorage.setItem('tempBill', JSON.stringify(tempBill));
-                          
                           // In phiếu tạm tính trực tiếp thay vì mở trang mới
-                          handlePrintTempBill(tempBill);
+                          handlePrintTempBill(tempBillData);
                         } else {
                           setErrorMessage('Vui lòng chọn ít nhất một món để xem phiếu tạm tính');
                         }
@@ -1411,7 +1337,7 @@ export default function IntegratedPaymentPage() {
                     
                     <Button
                       onClick={handleQuickPayment}
-                      disabled={isCreating || selectedItems.length === 0}
+                      disabled={isCreating || (existingOrderItemsData?.data?.length ?? 0) === 0}
                       className="flex-1 bg-primary"
                     >
                       {isCreating ? "Đang xử lý..." : "Thanh toán và in"}
@@ -1420,7 +1346,7 @@ export default function IntegratedPaymentPage() {
                   
                   <Button
                     onClick={handleCreatePayment}
-                    disabled={isCreating || selectedItems.length === 0}
+                    disabled={isCreating || (existingOrderItemsData?.data?.length ?? 0) === 0}
                     className="w-full py-6 text-lg"
                   >
                     {isCreating ? "Đang tạo thanh toán..." : "Tạo thanh toán"}
@@ -1442,6 +1368,18 @@ export default function IntegratedPaymentPage() {
                       orderItems={orderItems}
                 />
               </div>
+
+              {/* Thêm nút hủy thanh toán */}
+              {paymentStatus !== "PAID" && (
+                <Button
+                  variant="destructive"
+                  onClick={handleCancelPayment}
+                  disabled={isCancelling}
+                  className="w-full"
+                >
+                  {isCancelling ? "Đang hủy..." : "Hủy thanh toán"}
+                </Button>
+              )}
 
               {paymentMethod === "CASH" ? (
                     <div className="bg-white rounded-lg border shadow-sm p-4">
@@ -1524,7 +1462,7 @@ export default function IntegratedPaymentPage() {
                           Hệ thống sẽ tự động cập nhật khi nhận được thanh toán
                         </p>
                             
-                        {/* Hiển thị trạng thái thanh toán */}
+                            {/* Hiển thị trạng thái thanh toán */}
                             <div className="mt-4 py-2 px-4 rounded-full flex items-center justify-center gap-2">
                             {paymentStatus === "PENDING" && (
                                 <div className="bg-yellow-50 text-yellow-700 py-2 px-4 rounded-full flex items-center">

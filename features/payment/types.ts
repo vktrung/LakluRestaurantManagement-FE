@@ -1,6 +1,6 @@
 //features/payment/types.ts
 export type PaymentMethod = "CASH" | "TRANSFER"
-export type PaymentStatus = "PENDING" | "PAID"
+export type PaymentStatus = "PENDING" | "PAID" | "FAILED"
 export type DiscountType = "PERCENTAGE" | "FIXEDAMOUNT";
 export type VoucherStatus = "ACTIVE" | "INACTIVE";
 
@@ -73,6 +73,8 @@ export interface PaginatedPaymentResponse {
     currentPage: number
     totalItems: number
     totalPages: number
+    sortBy: string
+    sortDirection: string
 }
 
 export interface PaymentListParams {
@@ -80,6 +82,8 @@ export interface PaymentListParams {
     pageSize?: number
     startDate?: string
     endDate?: string
+    sortBy?: string
+    sortDirection?: string
 }
 
 export interface CashResponse{

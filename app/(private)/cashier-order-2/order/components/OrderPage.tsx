@@ -14,9 +14,16 @@ import { ReservationResponse, TableInfo } from "@/features/reservation/type";
 export default function OrderPage() {
   const [isViewOpen] = useState(false);
   const router = useRouter();
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
 
-  const { data: reservationsResponse, isLoading, isError } = useGetReservationsQuery();
-  const reservations = reservationsResponse?.data || [];
+  const { data: reservationsResponse, isLoading, isError } = useGetReservationsQuery({
+    page,
+    size: pageSize
+  });
+  
+  // Truy cập mảng reservations từ cấu trúc phân trang mới
+  const reservations = reservationsResponse?.data?.content || [];
 
   const getStatusBadge = (status: string) => {
     switch (status) {

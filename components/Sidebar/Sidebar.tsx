@@ -61,7 +61,7 @@ const roleBasedMenuItems = {
         },
         {
           label: 'Giao dịch',
-          href: '/quan-ly/giao-dich',
+          href: '/payment',
           icon: <DollarSign className="h-4 w-4" />,
         },
         {

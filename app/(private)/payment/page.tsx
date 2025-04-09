@@ -5,14 +5,13 @@ import { PaymentList } from "./components/PaymentList"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, FileText, Loader2, Search, Calendar, RefreshCw } from "lucide-react"
+import { ArrowLeft, FileText, Loader2, Calendar } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Input } from "@/components/ui/input"
-import { useState, useEffect } from "react"
-import { PaginatedPaymentResponse, PaymentListParams } from "@/features/payment/types"
+import { useState } from "react"
+import { PaginatedPaymentResponse } from "@/features/payment/types"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
-import { format, subDays, isAfter, endOfDay, startOfDay, parseISO, formatISO } from "date-fns"
+import { format, subDays, isAfter, endOfDay, startOfDay, formatISO } from "date-fns"
 import { vi } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 
@@ -44,7 +43,7 @@ export default function PaymentManagementPage() {
     page,
     pageSize,
     startDate: formattedStartDate,
-    endDate: formattedEndDate,
+    endDate: formattedEndDate
   })
 
   const router = useRouter()
@@ -55,6 +54,8 @@ export default function PaymentManagementPage() {
     currentPage: 1,
     totalItems: 0,
     totalPages: 0,
+    sortBy: "createdAt",
+    sortDirection: "desc"
   }
 
   const { payments, currentPage, totalItems, totalPages } = paginatedData;
@@ -121,7 +122,7 @@ export default function PaymentManagementPage() {
           <ArrowLeft className="h-4 w-4" />
           <span>Quay lại Dashboard</span>
         </Button>
-            </div>
+      </div>
 
       <Card className="shadow-lg border-muted/60 overflow-hidden">
         <CardHeader className="border-b bg-muted/30 px-6 py-4">
@@ -150,7 +151,7 @@ export default function PaymentManagementPage() {
                       ) : (
                         <span>Từ ngày</span>
                       )}
-            </Button>
+                    </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <CalendarComponent
@@ -166,7 +167,7 @@ export default function PaymentManagementPage() {
                 {/* Chọn ngày kết thúc */}
                 <Popover open={openEndDate} onOpenChange={setOpenEndDate}>
                   <PopoverTrigger asChild>
-            <Button
+                    <Button
                       variant="outline"
                       className={cn(
                         "justify-start text-left font-normal",
@@ -178,8 +179,8 @@ export default function PaymentManagementPage() {
                         format(dateRange.endDate, "dd/MM/yyyy", { locale: vi })
                       ) : (
                         <span>Đến ngày</span>
-              )}
-            </Button>
+                      )}
+                    </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <CalendarComponent
@@ -191,10 +192,10 @@ export default function PaymentManagementPage() {
                     />
                   </PopoverContent>
                 </Popover>
+              </div>
+            </div>
           </div>
-          </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center p-12 min-h-[400px] bg-background/50">
@@ -242,9 +243,9 @@ export default function PaymentManagementPage() {
                 onPageChange={handlePageChange}
               />
             </div>
-        )}
-      </CardContent>
+          )}
+        </CardContent>
       </Card>
-                </div>
+    </div>
   )
 }

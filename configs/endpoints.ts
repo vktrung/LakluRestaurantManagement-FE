@@ -25,6 +25,7 @@ export const endpoints = {
   OrderCashierApi:'/api/v1/order/',
   OrderItemApi: '/api/v1/order_items/',
   Order: '/api/v1/order/',
+  OrderItems: '/api/v1/order_items/',
   StatisticsApi: '/api/v1/statistics/',
   PayrollApi: '/api/v1/payslips/',
   ProfileApi: '/api/v1/profiles/',

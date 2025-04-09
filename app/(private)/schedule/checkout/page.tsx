@@ -1,8 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useRouter } from "next/navigation"
-import { useState, useRef, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useState, useRef, useEffect, Suspense } from "react"
 import { useCheckOut } from "@/app/(private)/schedule/components/useCheckOut" // Sử dụng useCheckOut thay vì useCheckIn
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,10 +11,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Loader2, CheckCircle2, XCircle } from "lucide-react"
 import { motion } from "framer-motion"
 
-export default function CheckOutPage({
-  searchParams,
-}: { searchParams: { scheduleId: string; expiry: string; signature: string } }) {
+// Client component để sử dụng useSearchParams
+function CheckOutForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const scheduleIdParam = searchParams.get('scheduleId')
+  const expiryParam = searchParams.get('expiry')
+  const signatureParam = searchParams.get('signature')
+
+  console.log("URL Params:", { scheduleIdParam, expiryParam, signatureParam })
+
   const { handleCheckOutFromQR } = useCheckOut() // Sử dụng useCheckOut
   const [checkOutStatus, setCheckOutStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -75,21 +81,26 @@ export default function CheckOutPage({
     setCheckOutStatus("loading")
 
     try {
-      const { scheduleId, expiry, signature } = searchParams
-
-      if (!scheduleId || !expiry || !signature) {
+      if (!scheduleIdParam || !expiryParam || !signatureParam) {
         throw new Error("Thông tin không hợp lệ!")
       }
 
-      const scheduleIdNum = Number.parseInt(scheduleId, 10) // Chuyển sang number
-      const expiryNum = Number.parseInt(expiry, 10) // Chuyển sang number
+      const scheduleIdNum = Number.parseInt(scheduleIdParam, 10) // Chuyển sang number
+      const expiryNum = Number.parseInt(expiryParam, 10) // Chuyển sang number
 
       if (!username || password.length !== 4) {
         throw new Error("Vui lòng nhập username và mã PIN 4 số!")
       }
 
-      console.log("Sending check-out request:", { scheduleId: scheduleIdNum, expiry: expiryNum, signature, username, password })
-      const response = await handleCheckOutFromQR(scheduleIdNum, expiryNum, signature, username, password)
+      console.log("Sending check-out request:", { 
+        scheduleId: scheduleIdNum, 
+        expiry: expiryNum, 
+        signature: signatureParam, 
+        username, 
+        password 
+      })
+      
+      const response = await handleCheckOutFromQR(scheduleIdNum, expiryNum, signatureParam, username, password)
       setCheckOutStatus("success")
       setErrorMessage(response.message || "Check-out thành công!")
       setHasCheckedOut(true)
@@ -267,5 +278,34 @@ export default function CheckOutPage({
         </Card>
       </motion.div>
     </div>
+  )
+}
+
+// Fallback component khi đang loading
+function CheckOutLoading() {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-white p-4">
+      <div className="w-full max-w-md">
+        <Card className="border-none shadow-xl overflow-hidden">
+          <div className="flex flex-col items-center justify-center py-16 px-6 space-y-6">
+            <div className="relative">
+              <Loader2 className="h-16 w-16 text-blue-600 animate-spin" />
+            </div>
+            <div className="text-center">
+              <CardTitle className="text-xl font-medium text-gray-800">Đang tải...</CardTitle>
+            </div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// Page component
+export default function CheckOutPage() {
+  return (
+    <Suspense fallback={<CheckOutLoading />}>
+      <CheckOutForm />
+    </Suspense>
   )
 }

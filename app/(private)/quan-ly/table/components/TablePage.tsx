@@ -87,17 +87,23 @@ export default function RestaurantTables() {
   };
 
   // Hàm tạo order từ các bàn đã chọn
-  const handleCreateOrder = () => {
-    if (selectedTables.length === 0) {
-      alert("Vui lòng chọn ít nhất một bàn để tạo order!");
-      return;
-    }
-    console.log("Tạo order cho các bàn:", selectedTables);
-    // Thêm logic để gửi yêu cầu tạo order lên API tại đây
-    // Sau khi tạo order thành công, có thể reset selectedTables
-    setSelectedTables([]);
-    router.push(`table/order`);
-  };
+  // Inside RestaurantTables component
+const handleCreateOrder = () => {
+  if (selectedTables.length === 0) {
+    alert("Vui lòng chọn ít nhất một bàn để tạo order!");
+    return;
+  }
+  console.log("Tạo order cho các bàn:", selectedTables);
+
+  // Extract table IDs from selectedTables
+  const tableIds = selectedTables.map((table) => table.id).join(",");
+  
+  // Navigate to table/order with tableIds as query parameter
+  router.push(`./table/order?tableIds=${tableIds}`);
+  
+  // Optionally reset selectedTables after navigation
+  setSelectedTables([]);
+};
 
   if (isLoading) return <p className="p-4">Loading...</p>;
   if (error) return <p className="p-4 text-red-500">Đã có lỗi xảy ra.</p>;

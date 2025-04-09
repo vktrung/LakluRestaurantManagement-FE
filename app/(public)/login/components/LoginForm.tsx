@@ -26,7 +26,6 @@ import { useLoginMutation } from '@/features/auth/authApiSlice';
 import { parseDuration } from '@/utils/dateTime';
 import { useRouter } from 'next/navigation';
 import { login } from '@/services/authService';
-import { SERVER_URL } from '@/configs/site.config';
 
 export default function LoginPage() {
   // State
@@ -42,34 +41,11 @@ export default function LoginPage() {
   /**
    * Khi user bấm "Tiếp tục" sau khi nhập username
    */
-  const handleCheckUsername = async () => {
+  const handleCheckUsername = () => {
     if (!username) {
       setErrorMessage('Vui lòng nhập username');
       return;
     }
-    
-    // Hiển thị thông tin về API URL để kiểm tra
-    console.log('API URL check:', {
-      baseUrl: process.env.NEXT_PUBLIC_SERVER_URL,
-      configUrl: SERVER_URL,
-      fullUrl: `${process.env.NEXT_PUBLIC_SERVER_URL}/api/v1/auth/login`,
-      hardcodedUrl: 'https://api.laklu.com/api/v1/auth/login'
-    });
-    
-    // Thử gọi trực tiếp API để kiểm tra
-    try {
-      const checkResponse = await fetch('https://api.laklu.com/api/v1/auth/login', {
-        method: 'HEAD',
-      });
-      console.log('Direct API check:', {
-        status: checkResponse.status,
-        ok: checkResponse.ok,
-        statusText: checkResponse.statusText
-      });
-    } catch (error) {
-      console.error('API check error:', error);
-    }
-
     setErrorMessage('');
     setShowOtpModal(true); // Mở dialog để nhập OTP
   };

@@ -1,2 +1,5 @@
-export const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
+// export const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
+// export const HEIGHT_ACTION_ON_SCROLL = 270;
+
+export const SERVER_URL = 'https://api.laklu.com';
 export const HEIGHT_ACTION_ON_SCROLL = 270;

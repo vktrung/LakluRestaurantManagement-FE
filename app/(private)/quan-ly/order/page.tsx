@@ -5,7 +5,7 @@ import OrderPage from "./components/OrderPage";
 
 
 const Order = () => {
-    const { data, error, isLoading } = useGetReservationsQuery();
+    const { data, error, isLoading } = useGetReservationsQuery({ page: 0, size: 100 });
     
       if (isLoading) {
         return <div>Đang tải dữ liệu...</div>;

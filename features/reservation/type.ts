@@ -38,8 +38,22 @@ export interface ReservationResponse {
   detail: ReservationDetail;
 }
 
+export interface PaginationResponse {
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  pagination: PaginationResponse;
+}
+
 export interface GetReservationsResponse {
-  data: ReservationResponse[];
+  data: PageResponse<ReservationResponse>;
   message: string;
   httpStatus: number;
   timestamp: string;

@@ -32,11 +32,14 @@ export const reservationApiSlice = createApi({
       invalidatesTags: ['reservation-list'],
     }),
     // Query lấy danh sách đặt chỗ
-       getReservations: builder.query<GetReservationsResponse, void>({
-      query: () => ({
-        url: `${endpoints.ReservationApi}`,
-        method: 'GET',
-      }),
+       getReservations: builder.query<GetReservationsResponse, { page?: number; size?: number }>({
+      query: (params = { page: 0, size: 10 }) => {
+        const { page = 0, size = 10 } = params;
+        return {
+          url: `${endpoints.ReservationApi}?page=${page}&size=${size}`,
+          method: 'GET',
+        };
+      },
       providesTags: ['reservation-list'],
     }),
     // Mutation sửa đặt chỗ (update)

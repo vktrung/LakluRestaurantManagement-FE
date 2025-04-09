@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, Suspense } from "react"
 import { useCheckIn } from "@/app/(private)/schedule/components/useCheckIn"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,7 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Loader2, CheckCircle2, XCircle } from "lucide-react"
 import { motion } from "framer-motion"
 
-export default function CheckInPage() {
+// Client component để sử dụng useSearchParams
+function CheckInForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const scheduleIdParam = searchParams.get('scheduleId')
@@ -277,5 +278,34 @@ export default function CheckInPage() {
         </Card>
       </motion.div>
     </div>
+  )
+}
+
+// Fallback component khi đang loading
+function CheckInLoading() {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-white p-4">
+      <div className="w-full max-w-md">
+        <Card className="border-none shadow-xl overflow-hidden">
+          <div className="flex flex-col items-center justify-center py-16 px-6 space-y-6">
+            <div className="relative">
+              <Loader2 className="h-16 w-16 text-blue-600 animate-spin" />
+            </div>
+            <div className="text-center">
+              <CardTitle className="text-xl font-medium text-gray-800">Đang tải...</CardTitle>
+            </div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// Page component
+export default function CheckInPage() {
+  return (
+    <Suspense fallback={<CheckInLoading />}>
+      <CheckInForm />
+    </Suspense>
   )
 }

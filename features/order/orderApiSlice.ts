@@ -128,7 +128,7 @@ export const orderApiSlice = createApi({
     // Create a new item for an existing order by order ID
     createNewItemByOrderId: builder.mutation<OrderItem, { orderId: number; newOrderItemRequest: AddOrderItemRequest }>({
         query: ({ orderId, newOrderItemRequest }) => ({
-          url: `${endpoints.OrderItems}${orderId}`,
+          url: `${endpoints.OrderItemApi}${orderId}`,
           method: 'POST',
           body: newOrderItemRequest
         }),
@@ -141,7 +141,7 @@ export const orderApiSlice = createApi({
     // Delete an order item by its ID
     deleteOrderItemById: builder.mutation<void, number>({
       query: (orderItemId) => ({
-        url: `${endpoints.OrderItems}${orderItemId}`, // Use the correct endpoint
+        url: `${endpoints.OrderItemApi}${orderItemId}`, // Use the correct endpoint
         method: 'DELETE'
       }),
       invalidatesTags: (result, error, orderItemId) => [

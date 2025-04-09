@@ -94,7 +94,9 @@ export default function OrderPage() {
   };
 
   const activeReservations = reservations.filter(
-    (reservation) => reservation.detail.status !== "CANCELLED"
+    (reservation) => 
+      reservation.detail.status !== "CANCELLED" && 
+      reservation.detail.status !== "COMPLETED"
   );
 
   if (isLoading) {
@@ -163,11 +165,19 @@ export default function OrderPage() {
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <p className="text-gray-600 font-medium">Khách hàng</p>
-                      <p className="text-gray-800">{reservation.detail.customerName}</p>
+                      <p className="text-gray-800">
+                        {!reservation.detail.customerName || reservation.detail.customerName === "stringstri" 
+                          ? "" 
+                          : reservation.detail.customerName}
+                      </p>
                     </div>
                     <div>
                       <p className="text-gray-600 font-medium">Số điện thoại</p>
-                      <p className="text-gray-800">{reservation.detail.customerPhone}</p>
+                      <p className="text-gray-800">
+                        {!reservation.detail.customerPhone || reservation.detail.customerPhone === "stringstri" 
+                          ? "" 
+                          : reservation.detail.customerPhone}
+                      </p>
                     </div>
                     <div>
                       <p className="text-gray-600 font-medium">Số người</p>

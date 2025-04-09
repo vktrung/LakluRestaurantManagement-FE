@@ -25,8 +25,6 @@ import {
   useGetOrderItemByIdQuery,
 } from '@/features/order-cashier/orderCashierApiSlice';
 import { useGetStaffByIdQuery } from '@/features/staff/staffApiSlice';
-import { Button } from '@/components/ui/button';
-import { skipToken } from '@reduxjs/toolkit/query';
 
 interface OrderCardProps {
   order: Order;
@@ -173,54 +171,70 @@ export default function OrderCard({
     }
   };
 
+  // Kiểm tra xem có còn món nào hiển thị không
+  const hasVisibleItems = order.orderItems.some(
+    item =>
+      item.statusLabel !== 'Đã hoàn thành' &&
+      item.statusLabel !== 'Đã hủy' &&
+      item.statusLabel !== 'Đã giao',
+  );
+
+  // Nếu không còn món nào hiển thị, không render card
+  if (!hasVisibleItems) {
+    return null;
+  }
+
   return (
     <div
       ref={cardRef}
       className="border border-gray-300 rounded-lg overflow-hidden bg-white h-full"
     >
       {/* Header của đơn */}
-      <div className="border-b border-gray-300 bg-amber-50 px-3 py-3 flex justify-between items-center">
-        <div className="font-bold">
-          <div className="text-base">Đơn #{orderNumber}</div>
-          <div className="text-gray-600 text-xs mt-1">
-            Thời gian: {formatTime(order.createdAt)}
-          </div>
-          <div className="text-gray-600 text-xs mt-1">
-            Bàn: {order.tables.map(table => table.tableNumber).join(', ')}
+      <div className="border-b border-gray-300 bg-amber-50 px-2.5 py-2">
+        <div className="flex justify-between items-center mb-1">
+          <span className="font-medium text-amber-800">Phiếu vào bếp</span>
+          <div className="text-right text-xs text-gray-600">
+            {staffData?.data?.username || 'admin'}
           </div>
         </div>
-        <div className="text-right text-xs text-gray-600">
-          Nhân viên quản lý đơn: {staffData?.data?.username || 'admin'}
+        <div className="font-medium">
+          <div className="text-gray-600 text-xs">
+            {formatTime(order.createdAt)}
+          </div>
+          <div className="text-gray-600 text-xs">
+            Bàn: {order.tables.map(table => table.tableNumber).join(', ')}
+          </div>
         </div>
       </div>
 
       {/* Tiêu đề của bảng */}
       <div className="border-b border-gray-300 grid grid-cols-12 bg-gray-50">
-        <div className="col-span-5 px-3 py-2 font-medium border-r border-gray-300 text-sm">
+        <div className="col-span-5 px-2.5 py-1.5 font-medium border-r border-gray-300 text-xs">
           Món
         </div>
-        <div className="col-span-2 px-2 py-2 font-medium border-r border-gray-300 text-center text-sm">
+        <div className="col-span-2 px-2 py-1.5 font-medium border-r border-gray-300 text-center text-xs">
           SL
         </div>
-        <div className="col-span-5 px-2 py-2 font-medium text-center text-sm">
+        <div className="col-span-5 px-2 py-1.5 font-medium text-center text-xs">
           Trạng thái
         </div>
       </div>
 
       {error && (
-        <Alert variant="destructive" className="m-2 py-2 text-sm">
-          <AlertCircle className="h-4 w-4 mr-2" />
+        <Alert variant="destructive" className="m-2 py-1.5 text-xs">
+          <AlertCircle className="h-3 w-3 mr-1.5" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       {/* Danh sách món ăn */}
-      <div className="max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
+      <div className="max-h-[280px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
         {order.orderItems.map((item: OrderItem, index: number) => {
-          // Skip rendering completely completed or canceled items
+          // Skip rendering completed, cancelled or delivered items
           if (
             item.statusLabel === 'Đã hoàn thành' ||
-            item.statusLabel === 'Đã hủy'
+            item.statusLabel === 'Đã hủy' ||
+            item.statusLabel === 'Đã giao'
           ) {
             return null;
           }
@@ -232,7 +246,7 @@ export default function OrderCard({
                 index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
               }`}
             >
-              <div className="col-span-5 px-4 py-3 border-r border-gray-200 text-sm overflow-hidden whitespace-nowrap text-ellipsis">
+              <div className="col-span-5 px-2.5 py-2 border-r border-gray-200 text-xs overflow-hidden whitespace-nowrap text-ellipsis">
                 {item.dish?.name || (
                   <OrderItemDetail
                     orderItemId={item.orderItemId}
@@ -240,15 +254,15 @@ export default function OrderCard({
                   />
                 )}
               </div>
-              <div className="col-span-2 px-2 py-3 border-r border-gray-200 text-center text-sm">
+              <div className="col-span-2 px-2 py-2 border-r border-gray-200 text-center text-xs">
                 {item.quantity}
               </div>
-              <div className="col-span-5 px-2 py-3 flex justify-between items-center">
+              <div className="col-span-5 px-2 py-2 flex justify-between items-center">
                 <Badge
                   variant="outline"
                   className={`${getStatusColor(
                     item.statusLabel,
-                  )} text-xs px-2 py-1 ml-2 whitespace-nowrap`}
+                  )} text-[10px] px-1.5 py-0.5 ml-2 whitespace-nowrap`}
                 >
                   {item.statusLabel}
                 </Badge>
@@ -259,7 +273,7 @@ export default function OrderCard({
                     <>
                       <Toggle
                         aria-label="Bắt đầu làm món"
-                        className="h-8 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
+                        className="h-6 w-6 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
                         onClick={() =>
                           handleUpdateItemStatus(
                             item.orderItemId,
@@ -269,11 +283,11 @@ export default function OrderCard({
                         }
                         disabled={isLoading}
                       >
-                        <ChefHat className="h-4 w-4" />
+                        <ChefHat className="h-3.5 w-3.5" />
                       </Toggle>
                       <Toggle
                         aria-label="Hủy món"
-                        className="h-8 text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                        className="h-6 w-6 text-gray-600 hover:text-gray-700 hover:bg-gray-50"
                         onClick={() =>
                           handleUpdateItemStatus(
                             item.orderItemId,
@@ -283,14 +297,14 @@ export default function OrderCard({
                         }
                         disabled={isLoading}
                       >
-                        <Ban className="h-4 w-4" />
+                        <Ban className="h-3.5 w-3.5" />
                       </Toggle>
                     </>
                   )}
                   {item.statusLabel === 'Đang làm' && (
                     <Toggle
                       aria-label="Hoàn thành món"
-                      className="h-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                      className="h-6 w-6 text-green-600 hover:text-green-700 hover:bg-green-50"
                       onClick={() =>
                         handleUpdateItemStatus(
                           item.orderItemId,
@@ -300,7 +314,7 @@ export default function OrderCard({
                       }
                       disabled={isLoading}
                     >
-                      <CheckCircle2 className="h-4 w-4" />
+                      <CheckCircle2 className="h-3.5 w-3.5" />
                     </Toggle>
                   )}
                 </div>

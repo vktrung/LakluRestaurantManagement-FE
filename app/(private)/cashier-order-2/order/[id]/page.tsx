@@ -1,18 +1,25 @@
 // pages/ReservationOrdersPage.tsx
 'use client'
-import { useState } from "react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { useParams } from "next/navigation"; // For dynamic routing in Next.js
-import { Button } from "@/components/ui/button";
+import { useParams, useRouter } from "next/navigation"; // Added useRouter
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useGetOrdersByReservationIdQuery } from "@/features/order/orderApiSlice";
 import { Order, OrderItem } from "@/features/order/types";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { SplitOrderDialog } from "./split-order-dialog";
+import { MergeOrdersDialog } from "./merge-orders-dialog";
+import { ArrowLeft } from "lucide-react";
 
 export default function ReservationOrdersPage() {
   const params = useParams(); // Get dynamic route params
+  const router = useRouter(); // Added router for navigation
   const reservationId = Number(params.id); // Extract reservation ID from URL
+  const [isSplitDialogOpen, setIsSplitDialogOpen] = useState(false);
+  const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const { data: ordersResponse, isLoading, isError } = useGetOrdersByReservationIdQuery(reservationId);
   const orders = ordersResponse?.data || [];
@@ -51,6 +58,23 @@ export default function ReservationOrdersPage() {
     }
   };
 
+  const handleSplitOrder = (order: Order) => {
+    setSelectedOrder(order);
+    setIsSplitDialogOpen(true);
+  };
+
+  const handleMergeOrders = () => {
+    setIsMergeDialogOpen(true);
+  };
+
+  const handlePayment = (orderId: number) => {
+    router.push(`/payment/${orderId}`);
+  };
+
+  const handleBackToOrders = () => {
+    router.push('/cashier-order-2/order');
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
@@ -69,9 +93,30 @@ export default function ReservationOrdersPage() {
 
   return (
     <div className="w-full min-h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6 tracking-tight">
-        Đơn hàng cho đặt bàn {reservationId}
-      </h1>
+      <Button
+        variant="outline"
+        className="mb-4 flex items-center gap-1"
+        onClick={handleBackToOrders}
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Quay lại danh sách đặt bàn
+      </Button>
+
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-800 tracking-tight">
+          Đơn hàng cho đặt bàn {reservationId}
+        </h1>
+
+        {orders.length > 1 && (
+          <Button
+            variant="outline"
+            className="bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100"
+            onClick={handleMergeOrders}
+          >
+            Gộp đơn hàng
+          </Button>
+        )}
+      </div>
 
       {orders.length === 0 ? (
         <div className="flex items-center justify-center h-[calc(100vh-12rem)] bg-white rounded-lg shadow-sm">
@@ -80,11 +125,11 @@ export default function ReservationOrdersPage() {
           </p>
         </div>
       ) : (
-        <div className="flex overflow-x-auto space-x-6 pb-4 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {orders.map((order: Order) => (
             <Card
               key={order.id}
-              className={`${getCardColor(order.statusLabel)} min-w-[350px] shadow-md hover:shadow-lg transition-shadow duration-200 border rounded-lg`}
+              className={`${getCardColor(order.statusLabel)} shadow-md hover:shadow-lg transition-shadow duration-200 border rounded-lg`}
             >
               <CardHeader className="pb-2 bg-opacity-50 bg-white">
                 <div className="flex justify-between items-center">
@@ -113,11 +158,47 @@ export default function ReservationOrdersPage() {
                     ))}
                   </ul>
                 </div>
+
+                <div className="flex flex-col gap-2 mt-4">
+                  {order.orderItems.length > 0 && order.statusLabel === "Đang chờ" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-orange-300 bg-orange-50 text-orange-700 hover:bg-orange-100"
+                      onClick={() => handleSplitOrder(order)}
+                    >
+                      Tách đơn hàng
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => handlePayment(order.id)}
+                  >
+                    Thanh toán
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      {selectedOrder && (
+        <SplitOrderDialog
+          isOpen={isSplitDialogOpen}
+          onClose={() => setIsSplitDialogOpen(false)}
+          order={selectedOrder}
+        />
+      )}
+
+      <MergeOrdersDialog
+        isOpen={isMergeDialogOpen}
+        onClose={() => setIsMergeDialogOpen(false)}
+        reservationId={reservationId}
+      />
     </div>
   );
 }

@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useGetOrdersQuery } from '@/features/order-cashier/orderCashierApiSlice';
+import { useGetOrdersEveningToDawnQuery } from '@/features/order-cashier/orderCashierApiSlice';
 import { useGetUserMeQuery } from '@/features/auth/authApiSlice';
 import OrderList from './OrderList';
+import BatchOrderItems from './BatchOrderItems';
 import { Loader2, ChefHat, RefreshCw } from 'lucide-react';
 import { Order } from '@/features/order-cashier/types';
 import { Button } from '@/components/ui/button';
@@ -16,9 +17,9 @@ export default function KitchenView() {
     refetch: refetchOrders,
     error: ordersError,
     isError: isOrdersError,
-  } = useGetOrdersQuery(undefined, {
+  } = useGetOrdersEveningToDawnQuery(undefined, {
     refetchOnMountOrArgChange: true,
-    pollingInterval: 10000, // Poll every 15 seconds
+    pollingInterval: 10000, // Poll every 10 seconds
   });
 
   // Lấy thông tin người dùng hiện tại
@@ -144,10 +145,6 @@ export default function KitchenView() {
       </div>
 
       <div className="mb-4 flex items-center justify-between border-b pb-3">
-        <h2 className="text-lg font-semibold text-zinc-800 flex items-center">
-          <span className="inline-block w-3 h-3 bg-amber-500 rounded-full mr-2"></span>
-          Đơn cần xử lý ({activeOrders.length})
-        </h2>
         <Button
           onClick={handleRefresh}
           disabled={isRefreshing}
@@ -162,7 +159,15 @@ export default function KitchenView() {
       </div>
 
       <div className="mt-0">
+        {ordersData?.data && (
+          <BatchOrderItems
+            orders={ordersData.data}
+            refetchOrders={refetchOrders}
+          />
+        )}
+
         {activeOrders.length > 0 ? (
+          
           <OrderList
             orders={activeOrders}
             allOrders={ordersData?.data || []}

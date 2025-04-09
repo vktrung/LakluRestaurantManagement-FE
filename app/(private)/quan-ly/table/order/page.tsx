@@ -83,14 +83,14 @@ const MenuPage = () => {
 
   // Handle adding items to the order (set default quantity as 1)
   const handleAddItem = (menuItem: MenuItem) => {
-    console.log('Adding item:', menuItem);
-    console.log('Check:', menuItem.id);
+    // console.log('Adding item:', menuItem);
+    // console.log('Check:', menuItem.id);
     setOrderItems((prevItems) => {
       const updatedItems = [...prevItems];
       const existingItemIndex = updatedItems.findIndex((item) => item.dishId === menuItem.dish.id);
 
-      console.log('Existing item index:', existingItemIndex);
-      console.log('Current items:', updatedItems);
+      // console.log('Existing item index:', existingItemIndex);
+      // console.log('Current items:', updatedItems);
 
       if (existingItemIndex !== -1) {
         updatedItems[existingItemIndex] = {
@@ -108,7 +108,7 @@ const MenuPage = () => {
         });
       }
 
-      console.log('Updated items:', updatedItems);
+      // console.log('Updated items:', updatedItems);
       return updatedItems;
     });
 

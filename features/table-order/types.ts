@@ -2,24 +2,20 @@
 
 // Request để tạo table order mới
 export interface CreateTableOrderRequest {
-  tableId: number;
-  userId: number;
-  status?: string;
+  customerName?: string;
+  customerPhone?: string;
+  tableIds: number[];
+  numberOfPeople: number;
+  orderItems: Array<{
+    menuItemId: number;
+    quantity: number;
+  }>;
   note?: string;
-  // Thêm các trường khác nếu cần
 }
 
 // Response từ API khi tạo table order
 export interface CreateTableOrderResponse {
-  data: {
-    id: number;
-    tableId: number;
-    userId: number;
-    status: string;
-    note?: string;
-    createdAt: string;
-    updatedAt: string;
-  };
+  orderId: number;
   message: string;
   httpStatus: number;
   timestamp: string;

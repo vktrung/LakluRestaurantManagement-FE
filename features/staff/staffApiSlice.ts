@@ -57,7 +57,7 @@ export const staffApiSlice = createApi({
         // Nếu không có tham số, không thêm query params
         if (!params) {
           return {
-            url: `${endpoints.getListStaff}/with-profile`,
+            url: `${endpoints.getListStaff}with-profile`,
             method: 'GET',
           };
         }

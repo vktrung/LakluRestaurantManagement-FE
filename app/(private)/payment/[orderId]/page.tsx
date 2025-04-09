@@ -353,7 +353,7 @@ export default function IntegratedPaymentPage() {
         orderId: orderIdNumber,
         paymentMethod,
         vat: vatRate,
-        voucher: voucherCode || undefined,
+        voucherCode: voucherCode || undefined,
       }).unwrap()
       
       if (result.data?.paymentId) {
@@ -383,7 +383,7 @@ export default function IntegratedPaymentPage() {
         orderId: orderIdNumber,
         paymentMethod,
         vat: vatRate,
-        voucher: voucherCode || undefined,
+        voucherCode: voucherCode || undefined,
       }).unwrap()
       
       if (result.data?.paymentId) {

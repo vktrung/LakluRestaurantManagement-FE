@@ -52,7 +52,7 @@ export interface Payment {
 export interface PaymentRequest {
     orderId: number
     paymentMethod: PaymentMethod
-    voucher?: string
+    voucherCode?: string
     vat?: number
 }
 

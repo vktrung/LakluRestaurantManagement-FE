@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useState, useRef, useEffect } from "react"
 import { useCheckIn } from "@/app/(private)/schedule/components/useCheckIn"
 import { Button } from "@/components/ui/button"
@@ -11,10 +11,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Loader2, CheckCircle2, XCircle } from "lucide-react"
 import { motion } from "framer-motion"
 
-export default function CheckInPage({
-  searchParams,
-}: { searchParams: { scheduleId: string; expiry: string; signature: string } }) {
+export default function CheckInPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const scheduleIdParam = searchParams.get('scheduleId')
+  const expiryParam = searchParams.get('expiry')
+  const signatureParam = searchParams.get('signature')
+
+  console.log("URL Params:", { scheduleIdParam, expiryParam, signatureParam })
+
   const { handleCheckInFromQR } = useCheckIn()
   const [checkInStatus, setCheckInStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -75,26 +80,26 @@ export default function CheckInPage({
     setCheckInStatus("loading")
 
     try {
-      const { scheduleId, expiry, signature } = searchParams
-
-      console.log("scheduleId", scheduleId)
-      console.log("expiry", expiry)
-      console.log("signature", signature)
-
-
-      if (!scheduleId || !expiry || !signature) {
+      if (!scheduleIdParam || !expiryParam || !signatureParam) {
         throw new Error("Thông tin không hợp lệ!")
       }
 
-      const scheduleIdNum = Number.parseInt(scheduleId, 10) // Chuyển sang number
-      const expiryNum = Number.parseInt(expiry, 10) // Chuyển sang number
+      const scheduleIdNum = Number.parseInt(scheduleIdParam, 10) // Chuyển sang number
+      const expiryNum = Number.parseInt(expiryParam, 10) // Chuyển sang number
 
       if (!username || password.length !== 4) {
         throw new Error("Vui lòng nhập username và mã PIN 4 số!")
       }
 
-      console.log("Sending check-in request:", { scheduleId: scheduleIdNum, expiry: expiryNum, signature, username, password })
-      const response = await handleCheckInFromQR(scheduleIdNum, expiryNum, signature, username, password)
+      console.log("Sending check-in request:", { 
+        scheduleId: scheduleIdNum, 
+        expiry: expiryNum, 
+        signature: signatureParam, 
+        username, 
+        password 
+      })
+      
+      const response = await handleCheckInFromQR(scheduleIdNum, expiryNum, signatureParam, username, password)
       setCheckInStatus("success")
       setErrorMessage(response.message || "Check-in thành công!")
       setHasCheckedIn(true)

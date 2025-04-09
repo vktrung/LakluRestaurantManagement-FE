@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { useGetReservationsQuery } from "@/features/reservation/reservationApiSlice";
+import { useGetReservations1Query, useGetReservationsQuery } from "@/features/reservation/reservationApiSlice";
 import { useGetOrdersByReservationIdQuery } from "@/features/order/orderApiSlice";
 import { ReservationResponse, TableInfo } from "@/features/reservation/type";
 
@@ -17,7 +17,7 @@ export default function OrderPage() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
 
-  const { data: reservationsResponse, isLoading, isError } = useGetReservationsQuery({
+  const { data: reservationsResponse, isLoading, isError } = useGetReservations1Query({
     page,
     size: pageSize
   });

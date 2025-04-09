@@ -50,6 +50,16 @@ export const reservationApiSlice = createApi({
       },
       providesTags: ['reservation-list'],
     }),
+    getReservations1: builder.query<GetReservationsResp, { page?: number; size?: number }>({
+      query: (params = { page: 0, size: 10 }) => {
+        const { page = 0, size = 10 } = params;
+        return {
+          url: `${endpoints.ReservationApi}?page=${page}&size=${size}`,
+          method: 'GET',
+        };
+      },
+      providesTags: ['reservation-list'],
+    }),
     // Mutation sửa đặt chỗ (update)
       updateReservation: builder.mutation<{ message: string }, { id: number; data: Reservation }>({
       query: ({ id, data }) => ({
@@ -175,6 +185,7 @@ export const reservationApiSlice = createApi({
 // Export các hook để sử dụng trong component
 export const {
   useGetReservationsQuery,
+  useGetReservations1Query,
   useCreateReservationMutation,
   useUpdateReservationMutation,
   useGetTablesByDateQuery,

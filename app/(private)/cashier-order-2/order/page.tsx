@@ -1,5 +1,5 @@
 "use client"
-import { useGetReservationsQuery } from "@/features/reservation/reservationApiSlice"
+import { useGetReservationsQuery,useGetReservations1Query } from "@/features/reservation/reservationApiSlice"
 import OrderPage from "./components/OrderPage"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
@@ -47,7 +47,7 @@ const Order = () => {
   const [page, setPage] = useState(0) // API sử dụng zero-based pagination
   const [pageSize, setPageSize] = useState(10)
 
-  const { data, error, isLoading } = useGetReservationsQuery({
+  const { data, error, isLoading } = useGetReservations1Query({
     page,
     size: pageSize
   })

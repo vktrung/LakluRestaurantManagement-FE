@@ -3,6 +3,7 @@ import { endpoints } from '@/configs/endpoints';
 import baseQuery from '@/features/baseQuery';
 import { createApi } from '@reduxjs/toolkit/query/react';
 import {  
+  GetReservationsResp,
   GetReservationsResponse, 
   Reservation, 
   ReservationDetail, 
@@ -39,7 +40,7 @@ export const reservationApiSlice = createApi({
       invalidatesTags: ['reservation-list'],
     }),
     // Query lấy danh sách đặt chỗ
-       getReservations: builder.query<GetReservationsResponse, { page?: number; size?: number }>({
+       getReservations: builder.query<GetReservationsResp, { page?: number; size?: number }>({
       query: (params = { page: 0, size: 10 }) => {
         const { page = 0, size = 10 } = params;
         return {

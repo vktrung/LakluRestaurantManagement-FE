@@ -73,7 +73,7 @@ export interface PageResponse<T> {
   pagination: PaginationResponse;
 }
 
-export interface GetReservationsResponse1 {
+export interface GetReservationsResp {
   data: PageResponse<ReservationResponse>;
   message: string;
   httpStatus: number;

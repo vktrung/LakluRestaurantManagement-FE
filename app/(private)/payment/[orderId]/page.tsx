@@ -105,6 +105,7 @@ export default function IntegratedPaymentPage() {
   const [vatRate, setVatRate] = useState<number>(0)
   const [voucherCode, setVoucherCode] = useState<string>("")
   const [isPaymentCreated, setIsPaymentCreated] = useState(false)
+  const [voucherError, setVoucherError] = useState<string | null>(null)
 
   // State cho payment
   const [paymentId, setPaymentId] = useState<number | null>(null)
@@ -349,6 +350,7 @@ export default function IntegratedPaymentPage() {
   // Sửa hàm xử lý tạo payment để đảm bảo kiểu dữ liệu đúng
   const handleCreatePayment = async () => {
     try {
+      setVoucherError(null)
       const result = await createPayment({
         orderId: orderIdNumber,
         paymentMethod,
@@ -371,14 +373,20 @@ export default function IntegratedPaymentPage() {
       }
     } catch (error: any) {
       const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định."
-      setErrorMessage(`Lỗi tạo thanh toán: ${message}`)
+      if (message.includes("voucher") || message.includes("Voucher") || message.includes("không tìm thấy")) {
+        setVoucherError("Mã giảm giá không hợp lệ hoặc không tồn tại")
+        setErrorMessage(null)
+      } else {
+        setErrorMessage(`Lỗi tạo thanh toán: ${message}`)
+        setVoucherError(null)
+      }
     }
   }
 
   // Thêm hàm xử lý thanh toán nhanh
   const handleQuickPayment = async () => {
-    // Trước tiên tạo payment
     try {
+      setVoucherError(null)
       const result = await createPayment({
         orderId: orderIdNumber,
         paymentMethod,
@@ -390,7 +398,7 @@ export default function IntegratedPaymentPage() {
         setPaymentId(result.data.paymentId)
         setTotalAmount(String(result.data?.amountPaid || "0"))
         setVat(String(result.data?.vat || "0"))
-      setIsPaymentCreated(true)
+        setIsPaymentCreated(true)
         
         // Sau đó xử lý thanh toán ngay
         if (paymentMethod === "CASH") {
@@ -418,7 +426,13 @@ export default function IntegratedPaymentPage() {
       }
     } catch (error: any) {
       const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định."
-      setErrorMessage(`Lỗi tạo thanh toán: ${message}`)
+      if (message.includes("voucher") || message.includes("Voucher") || message.includes("không tìm thấy")) {
+        setVoucherError("Mã giảm giá không hợp lệ hoặc không tồn tại")
+        setErrorMessage(null)
+      } else {
+        setErrorMessage(`Lỗi tạo thanh toán: ${message}`)
+        setVoucherError(null)
+      }
     }
   }
 
@@ -1303,7 +1317,14 @@ export default function IntegratedPaymentPage() {
               <PaymentMethod selectedMethod={paymentMethod} onChange={setPaymentMethod} />
               <div className="grid md:grid-cols-2 gap-4">
                 <VatInput vatRate={vatRate} vatAmount={vat} onChange={setVatRate} />
-                <VoucherInput voucherCode={voucherCode} onChange={setVoucherCode} />
+                <VoucherInput 
+                  voucherCode={voucherCode} 
+                  onChange={(code) => {
+                    setVoucherCode(code)
+                    setVoucherError(null) // Reset lỗi khi người dùng thay đổi mã
+                  }} 
+                  error={voucherError}
+                />
               </div>
                   
                   <div className="flex gap-2">

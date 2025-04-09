@@ -50,7 +50,7 @@ jobs:
             npm install --legacy-peer-deps
             
             # Thiết lập biến môi trường
-            echo "NEXT_PUBLIC_SERVER_URL=${{ secrets.NEXT_PUBLIC_API_URL }}" > .env
+            echo "NEXT_PUBLIC_SERVER_URL=https://api.laklu.com" > .env
             
             # Build project
             export NODE_OPTIONS=--openssl-legacy-provider

@@ -20,7 +20,7 @@ export default function PaymentManagementPage() {
     const { payments, totalItems, totalPages } = paginatedResponse;
 
     const handlePageChange = (page: number) => {
-        setCurrentPage(page);
+     //   setCurrentPage(page);
     };
 
     return (

@@ -23,7 +23,8 @@ interface LoginResponse {
 export const login = async (username: string, password: string) => {
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SERVER_URL}/api/v1/auth/login`,
+      //`${process.env.NEXT_PUBLIC_SERVER_URL}/api/v1/auth/login`,
+      `https://api.laklu.com/api/v1/auth/login`,
       {
         method: 'POST',
         headers: {
@@ -61,7 +62,8 @@ export const getCurrentUser = async (
   token: string,
 ): Promise<UserData | null> => {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+    //const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+      const response = await fetch(`https://api.laklu.com/api/v1/auth/me`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

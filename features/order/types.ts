@@ -74,3 +74,10 @@ export interface MergeOrderRequest {
   orderIds: number[];
   reservationId: number;
 }
+
+export interface AddOrderItemRequest {
+  menuItemId: number;
+  quantity: number;
+}
+
+

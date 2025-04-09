@@ -8,7 +8,8 @@ import {
   OrderItem,
   CreateOrderItemRequest,
   OrderSplitRequest,
-  MergeOrderRequest
+  MergeOrderRequest,
+  AddOrderItemRequest
 } from './types';
 import baseQuery from '../baseQuery';
 import { endpoints } from '@/configs/endpoints';
@@ -122,7 +123,35 @@ export const orderApiSlice = createApi({
         body: request
       }),
       invalidatesTags: ['Order', 'ReservationOrder']
-    })
+    }),
+
+    // Create a new item for an existing order by order ID
+    createNewItemByOrderId: builder.mutation<OrderItem, { orderId: number; newOrderItemRequest: AddOrderItemRequest }>({
+        query: ({ orderId, newOrderItemRequest }) => ({
+          url: `${endpoints.OrderItems}${orderId}`,
+          method: 'POST',
+          body: newOrderItemRequest
+        }),
+        invalidatesTags: (result, error, { orderId }) => [
+          { type: 'Order', id: orderId },
+          'ReservationOrder'
+        ]
+      }),
+
+    // Delete an order item by its ID
+    deleteOrderItemById: builder.mutation<void, number>({
+      query: (orderItemId) => ({
+        url: `${endpoints.OrderItems}${orderItemId}`, // Use the correct endpoint
+        method: 'DELETE'
+      }),
+      invalidatesTags: (result, error, orderItemId) => [
+        // Invalidating specific order might be tricky without orderId
+        // Invalidate the whole 'Order' list or potentially a specific tag if available
+        'Order',
+        'ReservationOrder' 
+      ]
+    }),
+    
   })
 });
 
@@ -138,5 +167,7 @@ export const {
   useDeleteOrderItemMutation,
   useDeleteOrderMutation,
   useSplitOrderMutation,
-  useMergeOrdersMutation
+  useMergeOrdersMutation,
+  useCreateNewItemByOrderIdMutation,
+  useDeleteOrderItemByIdMutation
 } = orderApiSlice;

@@ -9,7 +9,8 @@ module.exports = {
     max_memory_restart: '1G',
     env: {
       NODE_ENV: 'production',
-      PORT: 3015
+      PORT: 3015,
+      NEXT_PUBLIC_SERVER_URL: 'https://api.laklu.com'
     }
   }]
 } 

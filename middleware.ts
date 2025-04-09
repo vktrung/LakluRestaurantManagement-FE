@@ -73,8 +73,7 @@ export async function middleware(request: NextRequest) {
     if (token) {
       try {
         const userDataResponse = await fetch(
-          //`${process.env.NEXT_PUBLIC_SERVER_URL}${endpoints.authMe}`,
-          `https://api.laklu.com${endpoints.authMe}`,
+          `${process.env.NEXT_PUBLIC_SERVER_URL}${endpoints.authMe}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -107,8 +106,7 @@ export async function middleware(request: NextRequest) {
   try {
     // Thực hiện request để lấy thông tin người dùng
     const userDataResponse = await fetch(
-      //`${process.env.NEXT_PUBLIC_SERVER_URL}/api/v1/auth/me`,
-      `https://api.laklu.com/api/v1/auth/me`,
+      `${process.env.NEXT_PUBLIC_SERVER_URL}/api/v1/auth/me`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

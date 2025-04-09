@@ -1,7 +1,7 @@
 'use client';
-import { useGetMeQuery } from '@/features/user/userApiSlice';
+import { useGetMyProfileQuery } from '@/features/profile/profileApiSlice';
 
 export const ProfilePage = () => {
-  const { data: dataProfile, error, isLoading } = useGetMeQuery();
+  const { data: dataProfile, error, isLoading } = useGetMyProfileQuery();
   return <div>Profile Page</div>;
 };

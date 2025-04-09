@@ -9,9 +9,14 @@ const ScrollToTop = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [scrollRate, setScrollRate] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [portalElement, setPortalElement] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
+
+    // Ensure the portal element is available after mounting
+    setPortalElement(document.getElementById('scroll-to-top-portal'));
+
     return () => setMounted(false);
   }, []);
 
@@ -41,23 +46,19 @@ const ScrollToTop = () => {
     });
   };
 
-  if (!mounted) return null;
+  // Prevent rendering if not mounted or portal is missing
+  if (!mounted || !portalElement) return null;
 
-  return (
-    <>
-      {isVisible &&
-        createPortal(
-          <button
-            onClick={scrollToTop}
-            className={`${styles.scrollToTop}`}
-            style={{ '--scroll-rate': `${scrollRate}%` } as React.CSSProperties}
-            aria-label="Scroll to top"
-          >
-            <FaArrowUp />
-          </button>,
-          document.getElementById('scroll-to-top-portal')!,
-        )}
-    </>
+  return createPortal(
+    <button
+      onClick={scrollToTop}
+      className={styles.scrollToTop}
+      style={{ '--scroll-rate': `${scrollRate}%` } as React.CSSProperties}
+      aria-label="Scroll to top"
+    >
+      <FaArrowUp />
+    </button>,
+    portalElement
   );
 };
 

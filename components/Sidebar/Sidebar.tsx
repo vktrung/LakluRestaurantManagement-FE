@@ -1,9 +1,10 @@
+// File: components/Sidebar/Sidebar.tsx
 'use client';
 
 import * as React from 'react';
-import { useState } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { useSidebar } from './SidebarContext';
 
 // shadcn-ui
 import {
@@ -14,112 +15,271 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 
-// lucide-react icons (ví dụ)
+// Dropdown imports
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuGroup,
+} from '@/components/ui/dropdown-menu';
+
+// lucide-react icons
 import {
   Menu,
   BarChart,
   FileText,
   Users,
-  Settings,
+  Settings as SettingsIcon,
   PieChart,
   DollarSign,
   Soup,
   Briefcase,
   BookOpen,
+  Receipt,
+  Ticket,
+  CalendarDays,
 } from 'lucide-react';
 import { IoFastFood } from 'react-icons/io5';
+import { useGetUserMeQuery } from '@/features/auth/authApiSlice';
 
-// Dữ liệu accordion (cha + con), có icon cho cả con
-const mainAccordionItems = [
-  {
-    label: 'Quản lý',
-    value: 'quan-ly',
-    icon: <BarChart className="h-4 w-4" />,
-    children: [
-      {
-        label: 'Tổng quát',
-        href: '/quan-ly/tong-quat',
-        icon: <PieChart className="h-4 w-4" />,
-      },
-      {
-        label: 'Giao dịch',
-        href: '/quan-ly/giao-dich',
-        icon: <DollarSign className="h-4 w-4" />,
-      },
-      {
-        label: 'Món ăn',
-        href: '/quan-ly/mon-an',
-        icon: <Soup className="h-4 w-4" />,
-      },
-      {
-        label: 'Lương',
-        href: '/quan-ly/luong',
-        icon: <Briefcase className="h-4 w-4" />,
-      },
-    ],
-  },
-  {
-    label: 'Menu',
-    value: 'menu',
-    icon: <FileText className="h-4 w-4" />,
-    children: [
-      {
-        label: 'Danh mục',
-        href: '/menu/danh-muc',
-        icon: <BookOpen className="h-4 w-4" />,
-      },
-      {
-        label: 'Món ăn',
-        href: '/menu/mon-an',
-        icon: <IoFastFood className="h-4 w-4" />,
-      },
-    ],
-  },
-  {
-    label: 'Nhân viên',
-    value: 'staff',
-    icon: <Users className="h-4 w-4" />,
-    children: [
-      {
-        label: 'Danh sách',
-        href: '/staff',
-        icon: <Users className="h-4 w-4" />,
-      },
-      // ...
-    ],
-  },
-  {
-    label: 'Cài đặt',
-    value: 'cai-dat',
-    icon: <Settings className="h-4 w-4" />,
-    children: [
-      {
-        label: 'Vai trò',
-        href: '/cai-dat/vai-tro',
-        icon: <Users className="h-4 w-4" />,
-      },
-      {
-        label: 'Quyền',
-        href: '/cai-dat/quyen',
-        icon: <Settings className="h-4 w-4" />,
-      },
-    ],
-  },
-];
+// Define menu items for each role
+const roleBasedMenuItems = {
+  'Quản trị viên hệ thống': [
+    // Admin has access to all menu items
+    {
+      label: 'Quản lý',
+      value: 'quan-ly',
+      icon: <BarChart className="h-4 w-4" />,
+      children: [
+        {
+          label: 'Tổng quát',
+          href: '/quan-ly/tong-quat',
+          icon: <PieChart className="h-4 w-4" />,
+        },
+        {
+          label: 'Giao dịch',
+          href: '/payment',
+          icon: <DollarSign className="h-4 w-4" />,
+        },
+        {
+          label: 'Món ăn',
+          href: '/quan-ly/mon-an',
+          icon: <Soup className="h-4 w-4" />,
+        },
+        {
+          label: 'Lương',
+          href: '/quan-ly/luong',
+          icon: <Briefcase className="h-4 w-4" />,
+        },
+        {
+          label: 'Bàn ăn',
+          href: '/quan-ly/table',
+          icon: <PieChart className="h-4 w-4" />,
+        },
+        {
+          label: 'Đặt bàn',
+          href: '/quan-ly/reservation',
+          icon: <PieChart className="h-4 w-4" />,
+        },
+        {
+          label: 'Gọi món',
+          href: '/quan-ly/order',
+          icon: <PieChart className="h-4 w-4" />,
+        },
+        {
+          label: 'Mã giảm giá',
+          href: '/voucher',
+          icon: <Ticket className="h-4 w-4" />,
+        },
+      ],
+    },
+    {
+      label: 'Menu',
+      value: 'menu',
+      icon: <FileText className="h-4 w-4" />,
+      children: [
+        {
+          label: 'Danh mục',
+          href: '/menu/category',
+          icon: <BookOpen className="h-4 w-4" />,
+        },
+        {
+          label: 'Thực đơn',
+          href: '/menu/menu-info',
+          icon: <IoFastFood className="h-4 w-4" />,
+        },
+        {
+          label: 'Món ăn',
+          href: '/menu/dish',
+          icon: <IoFastFood className="h-4 w-4" />,
+        },
+        {
+          label: 'Bàn ăn',
+          href: '/table',
+          icon: <PieChart className="h-4 w-4" />,
+        },
+      ],
+    },
+    {
+      label: 'Nhân viên',
+      value: 'staff',
+      icon: <Users className="h-4 w-4" />,
+      children: [
+        {
+          label: 'Danh sách',
+          href: '/staff',
+          icon: <Users className="h-4 w-4" />,
+        },
+        {
+          label: 'Mức Lương',
+          href: '/salary',
+          icon: <DollarSign className="h-4 w-4" />,
+        },
+        {
+          label: 'Bảng Lương',
+          href: '/payroll',
+          icon: <Receipt className="h-4 w-4" />,
+        },
+        {
+          label: 'Lịch làm việc',
+          href: '/schedule',
+          icon: <CalendarDays className="h-4 w-4" />,
+        },
+      ],
+    },
+    {
+      label: 'Cài đặt',
+      value: 'cai-dat',
+      icon: <SettingsIcon className="h-4 w-4" />,
+      children: [
+        {
+          label: 'Vai trò',
+          href: '/role',
+          icon: <Users className="h-4 w-4" />,
+        },
+        {
+          label: 'Quyền',
+          href: '/permission',
+          icon: <SettingsIcon className="h-4 w-4" />,
+        },
+        {
+          label: 'Lịch sử hoạt động',
+          href: '/activitylog',
+          icon: <FileText className="h-4 w-4" />,
+        },
+      ],
+    },
+  ],
+  'Phục vụ': [
+    {
+      label: 'Phục vụ',
+      value: 'phuc-vu',
+      icon: <Users className="h-4 w-4" />,
+      children: [
+        {
+          label: 'Bàn ăn',
+          href: '/quan-ly/table',
+          icon: <PieChart className="h-4 w-4" />,
+        },
+        {
+          label: 'Gọi món',
+          href: '/quan-ly/order',
+          icon: <IoFastFood className="h-4 w-4" />,
+        },
+        {
+          label: 'Lịch làm việc',
+          href: '/schedule',
+          icon: <CalendarDays className="h-4 w-4" />,
+        },
+      ],
+    },
+  ],
+  'Bếp': [
+    {
+      label: 'Bếp',
+      value: 'bep',
+      icon: <IoFastFood className="h-4 w-4" />,
+      children: [
+        {
+          label: 'Bếp',
+          href: '/kitchen',
+          icon: <IoFastFood className="h-4 w-4" />,
+        },
+        {
+          label: 'Lịch làm việc',
+          href: '/schedule',
+          icon: <CalendarDays className="h-4 w-4" />,
+        },
+      ],
+    },
+  ],
+  'Thu ngân': [
+    {
+      label: 'Thu ngân',
+      value: 'thu-ngan',
+      icon: <DollarSign className="h-4 w-4" />,
+      children: [
+        {
+          label: 'Máy POS',
+          href: '/cashier-order',
+          icon: <FileText className="h-4 w-4" />,
+        },
+        {
+          label: 'Lịch làm việc',
+          href: '/schedule',
+          icon: <CalendarDays className="h-4 w-4" />,
+        },
+      ],
+    },
+  ],
+};
 
-// Mục “Nhà hàng” (không accordion) cũng có icon
-const singleSection = {
-  sectionLabel: 'Nhà hàng',
-  links: [
+// Define quick links for roles
+const roleBasedQuickLinks = {
+  'Quản trị viên hệ thống': [
     {
       label: 'Máy POS',
-      href: '/nha-hang/may-pos',
+      href: '/cashier-order',
       icon: <FileText className="h-4 w-4" />,
     },
     {
-      label: 'Chọn món',
-      href: '/nha-hang/chon-mon',
+      label: 'Bếp',
+      href: '/kitchen',
       icon: <IoFastFood className="h-4 w-4" />,
+    },
+    {
+      label: 'Máy POS 2',
+      href: '/cashier-order-2/order',
+      icon: <FileText className="h-4 w-4" />,
+    },
+  ],
+  'Phục vụ': [
+    {
+      label: 'Bàn ăn',
+      href: '/table',
+      icon: <PieChart className="h-4 w-4" />,
+    },
+    {
+      label: 'Gọi món',
+      href: '/quan-ly/order',
+      icon: <IoFastFood className="h-4 w-4" />,
+    },
+  ],
+  'Bếp': [
+    {
+      label: 'Bếp',
+      href: '/kitchen',
+      icon: <IoFastFood className="h-4 w-4" />,
+    },
+  ],
+  'Thu ngân': [
+    {
+      label: 'Máy POS',
+      href: '/cashier-order',
+      icon: <FileText className="h-4 w-4" />,
     },
   ],
 };
@@ -127,19 +287,48 @@ const singleSection = {
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function Sidebar({ className, ...props }: SidebarProps) {
-  // State đóng/mở toàn sidebar
-  const [collapsed, setCollapsed] = useState(false);
+  const { collapsed, toggleCollapsed } = useSidebar();
+  const { data } = useGetUserMeQuery();
+  
+  // Determine which menu items to show based on user role
+  const userRoles = data?.data?.roleNames || [];
+  const menuItems = React.useMemo(() => {
+    if (userRoles.includes('Quản trị viên hệ thống')) {
+      return roleBasedMenuItems['Quản trị viên hệ thống'];
+    } else if (userRoles.includes('Phục vụ')) {
+      return roleBasedMenuItems['Phục vụ'];
+    } else if (userRoles.includes('Bếp')) {
+      return roleBasedMenuItems['Bếp'];
+    } else if (userRoles.includes('Thu ngân')) {
+      return roleBasedMenuItems['Thu ngân'];
+    }
+    return [];
+  }, [userRoles]);
+
+  // Determine which quick links to show
+  const quickLinks = React.useMemo(() => {
+    if (userRoles.includes('Quản trị viên hệ thống')) {
+      return roleBasedQuickLinks['Quản trị viên hệ thống'];
+    } else if (userRoles.includes('Phục vụ')) {
+      return roleBasedQuickLinks['Phục vụ'];
+    } else if (userRoles.includes('Bếp')) {
+      return roleBasedQuickLinks['Bếp'];
+    } else if (userRoles.includes('Thu ngân')) {
+      return roleBasedQuickLinks['Thu ngân'];
+    }
+    return [];
+  }, [userRoles]);
 
   return (
     <aside
       className={cn(
-        'flex flex-col border-r dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 h-screen',
+        'fixed top-0 left-0 flex flex-col border-r dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 h-screen overflow-y-auto z-40',
         collapsed ? 'w-16' : 'w-64',
         className,
       )}
       {...props}
     >
-      {/* Header: logo, nút toggle */}
+      {/* Header */}
       <div className="p-4 border-b dark:border-slate-800 flex items-center justify-between">
         {!collapsed && (
           <div>
@@ -148,39 +337,29 @@ export function Sidebar({ className, ...props }: SidebarProps) {
           </div>
         )}
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setCollapsed(!collapsed)}
-        >
+        <Button variant="ghost" size="icon" onClick={toggleCollapsed}>
           <Menu className="h-4 w-4" />
         </Button>
       </div>
 
       {/* Accordion Menu */}
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         <Accordion type="single" collapsible>
-          {mainAccordionItems.map(item => (
+          {menuItems.map(item => (
             <AccordionItem value={item.value} key={item.value}>
-              {/* AccordionTrigger */}
               <AccordionTrigger className="flex items-center gap-2">
-                {/* Icon cha hiển thị luôn */}
                 {item.icon}
-                {/* Thu nhỏ => ẩn text cha */}
                 {!collapsed && <span>{item.label}</span>}
               </AccordionTrigger>
 
               <AccordionContent className={!collapsed ? 'pl-6' : ''}>
-                {/* Sub items */}
                 {item.children.map(child => (
                   <Link
                     key={child.href}
                     href={child.href}
                     className="flex items-center gap-2 py-1 text-sm hover:underline"
                   >
-                    {/* Icon con */}
                     {child.icon}
-                    {/* Thu nhỏ => ẩn text con */}
                     {!collapsed && <span>{child.label}</span>}
                   </Link>
                 ))}
@@ -189,40 +368,61 @@ export function Sidebar({ className, ...props }: SidebarProps) {
           ))}
         </Accordion>
 
-        {/* Single Section: “Nhà hàng” */}
-        <div className="mt-4">
-          {!collapsed && (
-            <h3 className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-              {singleSection.sectionLabel}
-            </h3>
-          )}
-          {singleSection.links.map(link => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="flex items-center gap-2 py-1 text-sm hover:underline"
-            >
-              {link.icon}
-              {/* Thu nhỏ => ẩn text */}
-              {!collapsed && <span>{link.label}</span>}
-            </Link>
-          ))}
-        </div>
+        {/* Quick Links Section */}
+        {quickLinks.length > 0 && (
+          <div className="mt-4">
+            {!collapsed && (
+              <h3 className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                Truy cập nhanh
+              </h3>
+            )}
+            {quickLinks.map(link => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="flex items-center gap-2 py-1 text-sm hover:underline"
+              >
+                {link.icon}
+                {!collapsed && <span>{link.label}</span>}
+              </Link>
+            ))}
+          </div>
+        )}
       </nav>
 
-      {/* Footer user info */}
+      {/* Footer with dropdown */}
       <div className="p-4 border-t dark:border-slate-800 flex items-center justify-between">
-        {!collapsed && (
+        {!collapsed && data?.data && (
           <div className="text-sm">
-            <div className="font-medium">shadcn</div>
+            <div className="font-medium">{data.data.username}</div>
             <div className="text-gray-500 dark:text-gray-400">
-              m@example.com
+              {data.data.email}
             </div>
           </div>
         )}
-        <Button variant="ghost" size="icon">
-          <Settings className="h-4 w-4" />
-        </Button>
+
+        {/* Dropdown Menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <SettingsIcon className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Tài khoản của tôi</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem asChild>
+                <Link href="/profile">Hồ sơ</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings">Cài đặt</Link>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Đăng xuất</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </aside>
   );

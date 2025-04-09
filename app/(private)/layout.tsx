@@ -1,5 +1,7 @@
-import { MobileSidebar } from '@/components/Sidebar/MobileSidebar';
+// File: app/layout.tsx
+import { ClientWrapper } from '@/components/ClientWrapper/ClientWrapper';
 import { Sidebar } from '@/components/Sidebar/Sidebar';
+import { SidebarProvider } from '@/components/Sidebar/SidebarContext';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -13,18 +15,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-
     <html lang="en">
       <body>
-        <div className="flex">
-          <Sidebar />
-
-          <main className=" p-4">{children}</main>
-        </div>
+        <SidebarProvider>
+          <div className="flex">
+            <Sidebar />
+            <ClientWrapper>{children}</ClientWrapper>
+          </div>
+        </SidebarProvider>
       </body>
     </html>
-
-  
-
   );
 }

@@ -1,9 +1,9 @@
-export const getTokenFromCookie = (type = 'auth-token') => {
+export const getTokenFromCookie = (type = 'auth_token') => {
   if (typeof document === 'undefined') return ''; // Kiểm tra trên client
   const cookies = document.cookie.split('; ');
   let tokenCookie = null;
-  if (type === 'auth-token') {
-    tokenCookie = cookies.find(row => row.startsWith('auth-token='));
+  if (type === 'auth_token') {
+    tokenCookie = cookies.find(row => row.startsWith('auth_token='));
   } else {
     tokenCookie = cookies.find(row => row.startsWith('auth-refresh-token='));
   }

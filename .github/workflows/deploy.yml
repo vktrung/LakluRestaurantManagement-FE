@@ -1,0 +1,83 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deploy to VPS and Build
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            # Cài đặt NVM nếu chưa có
+            if [ ! -d "$HOME/.nvm" ]; then
+              echo "Cài đặt NVM..."
+              curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+              export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            else
+              echo "NVM đã được cài đặt"
+              export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            fi
+            
+            # Cài đặt Node.js 18
+            echo "Cài đặt Node.js 18..."
+            nvm install 18
+            nvm use 18
+            
+            # Kiểm tra phiên bản Node.js
+            node -v
+            npm -v
+            
+            # Tạo thư mục tạm để build
+            rm -rf /var/www/cmslaklu-temp || true
+            mkdir -p /var/www/cmslaklu-temp
+            cd /var/www/cmslaklu-temp
+            
+            # Clone repository
+            git clone https://oauth2:${{ secrets.GH_TOKEN }}@github.com/${{ secrets.GH_USERNAME }}/${{ secrets.GH_REPO }}.git .
+            
+            # Cài đặt dependencies
+            npm install --legacy-peer-deps
+            
+            # Thiết lập biến môi trường
+            echo "NEXT_PUBLIC_SERVER_URL=https://api.laklu.com" > .env
+            
+            # Build project
+            export NODE_OPTIONS=--openssl-legacy-provider
+            npm run build --no-lint
+            
+            # Nếu build thành công
+            if [ $? -eq 0 ]; then
+              # Backup thư mục cũ nếu có
+              if [ -d "/var/www/cmslaklu" ]; then
+                rm -rf /var/www/cmslaklu-backup || true
+                mv /var/www/cmslaklu /var/www/cmslaklu-backup
+              fi
+              
+              # Di chuyển thư mục mới
+              mv /var/www/cmslaklu-temp /var/www/cmslaklu
+              
+              # Cài đặt PM2 nếu chưa có
+              if ! command -v pm2 &> /dev/null; then
+                npm install -g pm2
+              fi
+              
+              # Khởi động ứng dụng
+              cd /var/www/cmslaklu
+              pm2 restart cmslaklu || pm2 start ecosystem.config.js
+              
+              echo "Deployment successful!"
+            else
+              echo "Build failed, deployment aborted!"
+              exit 1
+            fi 

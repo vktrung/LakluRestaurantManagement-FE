@@ -29,31 +29,38 @@ export interface CashRegisterHistory {
 
 export interface PaymentHistory {
   id: number;
-  orderId: number;
-  orderCode: string;
+  paymentId: number;
+  paymentType: "IN" | "OUT";
+  transferType: "CASH" | "BANKING";
+  transactionDate: string;
   amount: number;
-  paymentMethod: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  cashierId: number;
-  cashierName: string;
+}
+
+export interface Pagination {
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+}
+
+export interface Pageable {
+  pageNumber: number;
+  pageSize: number;
+  sort: {
+    sorted: boolean;
+    empty: boolean;
+    unsorted: boolean;
+  };
+  offset: number;
+  paged: boolean;
+  unpaged: boolean;
 }
 
 export interface PageableResponse<T> {
   content: T[];
-  pageable: {
-    pageNumber: number;
-    pageSize: number;
-    sort: {
-      sorted: boolean;
-      empty: boolean;
-      unsorted: boolean;
-    };
-    offset: number;
-    paged: boolean;
-    unpaged: boolean;
-  };
+  pageable: Pageable;
   last: boolean;
   totalElements: number;
   totalPages: number;
@@ -69,6 +76,11 @@ export interface PageableResponse<T> {
   empty: boolean;
 }
 
+export interface PaymentHistoryPageResponse {
+  content: PaymentHistory[];
+  pagination: Pagination;
+}
+
 export interface ApiResponse<T> {
   data: T;
   message: string;
@@ -78,7 +90,7 @@ export interface ApiResponse<T> {
 }
 
 export interface CashRegisterResponse {
-  data: CashRegisterHistory;
+  data: CashRegisterHistory[];
   message: string;
   httpStatus: number;
   timestamp: string;
@@ -86,4 +98,4 @@ export interface CashRegisterResponse {
 }
 
 export type CashRegisterHistoryResponse = ApiResponse<PageableResponse<CashRegisterHistory>>;
-export type PaymentHistoryResponse = ApiResponse<PageableResponse<PaymentHistory>>;
+export type PaymentHistoryResponse = ApiResponse<PaymentHistoryPageResponse>;

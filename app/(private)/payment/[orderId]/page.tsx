@@ -113,6 +113,7 @@ export default function IntegratedPaymentPage() {
   const [vat, setVat] = useState<string>("0")
   const [totalAmount, setTotalAmount] = useState<string>("0")
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
+  const [voucherValue, setVoucherValue] = useState<string | number | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(null)
   const [paymentCompleted, setPaymentCompleted] = useState(false)
@@ -366,6 +367,7 @@ export default function IntegratedPaymentPage() {
       // Lấy thông tin từ backend và chuyển đổi sang string nếu cần
       setTotalAmount(String(result.data?.amountPaid || "0"))
       setVat(String(result.data?.vat || "0"))
+      setVoucherValue(result.data?.voucherValue || null)
       setIsPaymentCreated(true)
       
       // Nếu chọn in hóa đơn tự động và thanh toán ngay
@@ -399,6 +401,7 @@ export default function IntegratedPaymentPage() {
         setPaymentId(result.data.paymentId)
         setTotalAmount(String(result.data?.amountPaid || "0"))
         setVat(String(result.data?.vat || "0"))
+        setVoucherValue(result.data?.voucherValue || null)
         setIsPaymentCreated(true)
         
         // Sau đó xử lý thanh toán ngay
@@ -1387,7 +1390,8 @@ export default function IntegratedPaymentPage() {
                 <OrderSummary
                   total={Number(totalAmount).toLocaleString("vi-VN", { style: "currency", currency: "VND" })}
                   vat={vat}
-                      orderItems={orderItems}
+                  orderItems={orderItems}
+                  voucherValue={voucherValue}
                 />
               </div>
 

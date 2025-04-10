@@ -20,6 +20,7 @@ import {
 import { useCreateNewItemByOrderIdMutation, useDeleteOrderItemByIdMutation } from '@/features/order/orderApiSlice'
 import { formatPrice } from "@/lib/utils"
 import { getTokenFromCookie } from "@/utils/token"
+import { PaymentStatus } from "@/features/payment/types"
 
 import { PaymentMethod } from "../components/PaymentMethod"
 import { VatInput } from "../components/VatInput"
@@ -113,7 +114,7 @@ export default function IntegratedPaymentPage() {
   const [totalAmount, setTotalAmount] = useState<string>("0")
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "PAID" | "FAILED" | null>(null)
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(null)
   const [paymentCompleted, setPaymentCompleted] = useState(false)
 
   // Tạo một phiên bản tùy chỉnh của router để chặn navigation
@@ -1062,7 +1063,7 @@ export default function IntegratedPaymentPage() {
     try {
       await cancelPayment(paymentId).unwrap();
       setErrorMessage("Đã hủy thanh toán thành công");
-      setPaymentStatus("FAILED");
+      // Không cần set paymentStatus ở đây, backend sẽ trả về trạng thái mới
       setPaymentCompleted(false);
       // Chuyển hướng về trang danh sách đơn hàng sau 2 giây
       setTimeout(() => {
@@ -1070,7 +1071,7 @@ export default function IntegratedPaymentPage() {
       }, 2000);
     } catch (error: any) {
       const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định.";
-      setErrorMessage(`Lỗi hủ hủy thanh toán: ${message}`);
+      setErrorMessage(`Lỗi hủy thanh toán: ${message}`);
     }
   };
 

@@ -51,7 +51,7 @@ export function VoucherInput({ voucherCode, onChange, error }: VoucherInputProps
                 )}
                 
                 <div className="text-xs text-muted-foreground">
-                    <p>Nhập mã giảm giá nếu có để được giảm giá cho đơn hàng</p>
+                    <p>Nhập mã giảm giá để được giảm giá cho đơn hàng</p>
                 </div>
             </div>
         </div>

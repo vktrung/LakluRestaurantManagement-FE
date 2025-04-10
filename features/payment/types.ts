@@ -1,6 +1,6 @@
 //features/payment/types.ts
 export type PaymentMethod = "CASH" | "TRANSFER"
-export type PaymentStatus = "PENDING" | "PAID" | "FAILED"
+export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "CANCELLED"
 export type DiscountType = "PERCENTAGE" | "FIXEDAMOUNT";
 export type VoucherStatus = "ACTIVE" | "INACTIVE";
 
@@ -65,6 +65,7 @@ export interface PaymentResponse {
     paymentStatus: PaymentStatus
     paymentDate: string
     vat: string | number
+    voucherValue: string | number | null
     orderItems: OrderItem[]
 }
 

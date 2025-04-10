@@ -183,7 +183,7 @@ export default function ActivityDashboard() {
             <Card className="col-span-3">
               <CardHeader>
                 <CardTitle>Thống kê hoạt động</CardTitle>
-                <CardDescription>Phân bố hoạt động theo loại</CardDescription>
+                <CardDescription>Phân bố hoạt động theo loại hành động</CardDescription>
               </CardHeader>
               <CardContent>
                 {activityLogs?.content && <ActivityStats data={activityLogs.content} />}
@@ -203,17 +203,6 @@ export default function ActivityDashboard() {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2">
                     <DateRangePicker date={date} onDateChange={setDate} />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      placeholder="Tìm kiếm..."
-                      className="max-w-[200px]"
-                      value={filter.search}
-                      onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-                    />
-                    <Button size="sm" variant="ghost">
-                      <Search className="h-4 w-4" />
-                    </Button>
                   </div>
                 </div>
 

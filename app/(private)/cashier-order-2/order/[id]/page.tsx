@@ -11,7 +11,15 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { SplitOrderDialog } from "./split-order-dialog";
 import { MergeOrdersDialog } from "./merge-orders-dialog";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, X, AlertTriangle } from "lucide-react";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
 
 export default function ReservationOrdersPage() {
   const params = useParams(); // Get dynamic route params
@@ -20,6 +28,10 @@ export default function ReservationOrdersPage() {
   const [isSplitDialogOpen, setIsSplitDialogOpen] = useState(false);
   const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  
+  // State cho modal cảnh báo
+  const [showWarningModal, setShowWarningModal] = useState(false);
+  const [warningMessage, setWarningMessage] = useState("");
 
   const { data: ordersResponse, isLoading, isError } = useGetOrdersByReservationIdQuery(reservationId);
   const orders = ordersResponse?.data || [];
@@ -36,6 +48,12 @@ export default function ReservationOrdersPage() {
         return (
           <Badge className="bg-green-200 text-green-900 hover:bg-green-300">
             Đã hoàn thành
+          </Badge>
+        );
+      case "Đã giao":
+        return (
+          <Badge className="bg-green-200 text-green-900 hover:bg-green-300">
+            Đã giao
           </Badge>
         );
       default:
@@ -67,8 +85,19 @@ export default function ReservationOrdersPage() {
     setIsMergeDialogOpen(true);
   };
 
-  const handlePayment = (orderId: number) => {
-    router.push(`/payment/${orderId}`);
+  const handlePayment = (order: Order) => {
+    // Kiểm tra xem tất cả các món ăn trong đơn hàng đã được giao hay chưa
+    const allItemsDelivered = order.orderItems?.every(item => item.statusLabel === "Đã giao");
+    
+    if (!allItemsDelivered) {
+      // Hiển thị modal cảnh báo thay vì alert
+      setWarningMessage("Một số món ăn chưa được giao. Vui lòng đảm bảo tất cả món ăn đã được giao trước khi thanh toán.");
+      setShowWarningModal(true);
+      return;
+    }
+    
+    // Nếu tất cả món đã giao, chuyển đến trang thanh toán
+    router.push(`/payment/${order.id}`);
   };
 
   const handleBackToOrders = () => {
@@ -93,6 +122,30 @@ export default function ReservationOrdersPage() {
 
   return (
     <div className="w-full min-h-screen bg-gray-100 p-6">
+      {/* Modal cảnh báo món ăn chưa giao */}
+      <Dialog open={showWarningModal} onOpenChange={setShowWarningModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-700">
+              <AlertTriangle className="h-5 w-5" />
+              Không thể thanh toán
+            </DialogTitle>
+            <DialogDescription className="text-gray-700">
+              {warningMessage}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button 
+              variant="default" 
+              onClick={() => setShowWarningModal(false)}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              Đã hiểu
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Button
         variant="outline"
         className="mb-4 flex items-center gap-1"
@@ -175,7 +228,7 @@ export default function ReservationOrdersPage() {
                     variant="default"
                     size="sm"
                     className="w-full bg-green-600 hover:bg-green-700 text-white"
-                    onClick={() => handlePayment(order.id)}
+                    onClick={() => handlePayment(order)}
                   >
                     Thanh toán
                   </Button>

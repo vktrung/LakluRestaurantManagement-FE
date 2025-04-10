@@ -357,26 +357,9 @@ export default function IntegratedPaymentPage() {
     );
   }
 
-  // Thêm hàm kiểm tra trạng thái món ăn
-  const checkAllItemsDelivered = (items: any[] | null | undefined): boolean => {
-    if (!items || items.length === 0) return false;
-    // Kiểm tra xem mỗi món ăn đã ở trạng thái "Đã giao" chưa
-    return items.every(item => item.statusLabel === "Đã giao");
-  }
-
-  // Thêm biến để lưu lỗi trạng thái món ăn
-  const [orderStatusError, setOrderStatusError] = useState<boolean>(false);
-
   // Cập nhật hàm handleCreatePayment
   const handleCreatePayment = async () => {
     try {
-      // Kiểm tra xem tất cả các món ăn đã được giao hay chưa
-      if (!checkAllItemsDelivered(existingOrderItemsData?.data)) {
-        setErrorMessage("Không thể thanh toán! Một số món ăn chưa được giao.");
-        setOrderStatusError(true);
-        return;
-      }
-
       setVoucherError(null)
       const result = await createPayment({
         orderId: orderIdNumber,
@@ -411,32 +394,9 @@ export default function IntegratedPaymentPage() {
     }
   }
 
-  // Hàm kiểm tra trạng thái món ăn trước khi tạo thanh toán
-  const handleCreatePaymentWithCheck = () => {
-    // Kiểm tra xem tất cả các món ăn có trạng thái 'Đã giao' chưa
-    const allItemsDelivered = existingOrderItemsData?.data?.every((item: any) => item.statusLabel === "Đã giao");
-    
-    if (!allItemsDelivered) {
-      setErrorMessage("Không thể thanh toán! Một số món ăn chưa được giao.");
-      setOrderStatusError(true);
-      return;
-    }
-    
-    // Nếu mọi thứ OK, xóa lỗi và tiếp tục thanh toán
-    setOrderStatusError(false);
-    handleCreatePayment();
-  };
-
   // Thêm hàm xử lý thanh toán nhanh
   const handleQuickPayment = async () => {
     try {
-      // Kiểm tra xem tất cả các món ăn đã được giao hay chưa
-      if (!checkAllItemsDelivered(existingOrderItemsData?.data)) {
-        setErrorMessage("Không thể thanh toán! Một số món ăn chưa được giao.");
-        setOrderStatusError(true);
-        return;
-      }
-
       setVoucherError(null)
       const result = await createPayment({
         orderId: orderIdNumber,
@@ -487,22 +447,6 @@ export default function IntegratedPaymentPage() {
       }
     }
   }
-
-  // Hàm kiểm tra trạng thái món ăn trước khi thanh toán nhanh
-  const handleQuickPaymentWithCheck = () => {
-    // Kiểm tra xem tất cả các món ăn có trạng thái 'Đã giao' chưa
-    const allItemsDelivered = existingOrderItemsData?.data?.every((item: any) => item.statusLabel === "Đã giao");
-    
-    if (!allItemsDelivered) {
-      setErrorMessage("Không thể thanh toán! Một số món ăn chưa được giao.");
-      setOrderStatusError(true);
-      return;
-    }
-    
-    // Nếu mọi thứ OK, xóa lỗi và tiếp tục thanh toán nhanh
-    setOrderStatusError(false);
-    handleQuickPayment();
-  };
 
   // Xử lý thanh toán tiền mặt
   const [receivedAmount, setReceivedAmount] = useState<string>("")
@@ -1422,8 +1366,8 @@ export default function IntegratedPaymentPage() {
                     </Button>
                     
                     <Button
-                      onClick={handleQuickPaymentWithCheck}
-                      disabled={isCreating || (existingOrderItemsData?.data?.length ?? 0) === 0 || orderStatusError}
+                      onClick={handleQuickPayment}
+                      disabled={isCreating || (existingOrderItemsData?.data?.length ?? 0) === 0}
                       className="flex-1 bg-primary"
                     >
                       {isCreating ? "Đang xử lý..." : "Thanh toán và in"}
@@ -1431,8 +1375,8 @@ export default function IntegratedPaymentPage() {
                   </div>
                   
                   <Button
-                    onClick={handleCreatePaymentWithCheck}
-                    disabled={isCreating || (existingOrderItemsData?.data?.length ?? 0) === 0 || orderStatusError}
+                    onClick={handleCreatePayment}
+                    disabled={isCreating || (existingOrderItemsData?.data?.length ?? 0) === 0}
                     className="w-full py-6 text-lg"
                   >
                     {isCreating ? "Đang tạo thanh toán..." : "Tạo thanh toán"}

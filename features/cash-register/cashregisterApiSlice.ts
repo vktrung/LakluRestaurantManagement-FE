@@ -6,7 +6,8 @@ import {
   CashRegisterStartAmountRequest, 
   CashRegisterEndAmountRequest,
   CashRegisterWithdrawRequest,
-  TransactionHistoryResponse
+  CashRegisterHistoryResponse,
+  PaymentHistoryResponse
 } from "./type";
 
 export const cashRegisterApi = createApi({
@@ -21,9 +22,16 @@ export const cashRegisterApi = createApi({
       }),
       providesTags: ['cash-register'],
     }),
-    getTransactionHistory: builder.query<TransactionHistoryResponse, { startDate: string; endDate: string; page: number; size: number }>({
+    getTransactionHistory: builder.query<PaymentHistoryResponse, { startDate: string; endDate: string; page: number; size: number }>({
       query: (params) => ({
         url: `/api/v1/payment-history/page`,
+        method: "GET",
+        params: params,
+      }),
+    }),
+    getCashRegisterHistory: builder.query<CashRegisterHistoryResponse, { startDate: string; endDate: string; page: number; size: number }>({
+      query: (params) => ({
+        url: `${endpoints.CashRegisterApi}search`,
         method: "GET",
         params: params,
       }),
@@ -58,6 +66,7 @@ export const cashRegisterApi = createApi({
 export const { 
   useGetTodayCashRegisterQuery,
   useGetTransactionHistoryQuery,
+  useGetCashRegisterHistoryQuery,
   useStartCashRegisterMutation,
   useEndCashRegisterMutation,
   useWithdrawCashRegisterMutation

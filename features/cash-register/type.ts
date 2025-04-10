@@ -10,13 +10,13 @@ export interface CashRegisterEndAmountRequest {
 
 export interface CashRegisterWithdrawRequest {
   amount: number;
-  notes: string;
+  notes?: string;
 }
 
-export interface CashRegisterInfo {
+export interface CashRegisterHistory {
   id: number;
   userId: number;
-  userName: string;
+  userFullName: string;
   scheduleId: number;
   initialAmount: number;
   currentAmount: number;
@@ -27,48 +27,63 @@ export interface CashRegisterInfo {
   updatedAt: string;
 }
 
-export interface Pagination {
-  pageNumber: number;
-  pageSize: number;
+export interface PaymentHistory {
+  id: number;
+  orderId: number;
+  orderCode: string;
+  amount: number;
+  paymentMethod: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  cashierId: number;
+  cashierName: string;
+}
+
+export interface PageableResponse<T> {
+  content: T[];
+  pageable: {
+    pageNumber: number;
+    pageSize: number;
+    sort: {
+      sorted: boolean;
+      empty: boolean;
+      unsorted: boolean;
+    };
+    offset: number;
+    paged: boolean;
+    unpaged: boolean;
+  };
+  last: boolean;
   totalElements: number;
   totalPages: number;
   first: boolean;
-  last: boolean;
-}
-
-export interface TransactionHistory {
-  id: number;
-  paymentId: number;
-  paymentType: "IN" | "OUT";
-  transferType: "CASH" | "BANKING";
-  transactionDate: string;
-  amount: number;
-}
-
-export interface TransactionHistoryResponse {
-  data: {
-    content: TransactionHistory[];
-    pagination: Pagination;
+  size: number;
+  number: number;
+  sort: {
+    sorted: boolean;
+    empty: boolean;
+    unsorted: boolean;
   };
+  numberOfElements: number;
+  empty: boolean;
+}
+
+export interface ApiResponse<T> {
+  data: T;
   message: string;
   httpStatus: number;
   timestamp: string;
-  error: any;
+  error: string | null;
 }
 
 export interface CashRegisterResponse {
-  data: CashRegisterInfo[];
+  data: CashRegisterHistory;
   message: string;
   httpStatus: number;
   timestamp: string;
-  error: any;
+  error: string | null;
 }
 
-export interface Transaction {
-  id: number;
-  date: Date;
-  type: "opening" | "closing" | "withdrawal";
-  amount: number;
-  balance: number;
-  description?: string;
-}
+export type CashRegisterHistoryResponse = ApiResponse<PageableResponse<CashRegisterHistory>>;
+export type PaymentHistoryResponse = ApiResponse<PageableResponse<PaymentHistory>>;

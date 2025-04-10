@@ -251,7 +251,7 @@ export default function SafeManagementPage() {
   return (
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Quản Lý Két Sắt</h1>
+        <h1 className="text-3xl font-bold">Quản Lý Két</h1>
         <Link href="/cash-register/history">
           <Button variant="outline" className="flex items-center">
             <HistoryIcon className="mr-2 h-4 w-4" />
@@ -401,7 +401,7 @@ export default function SafeManagementPage() {
                           <User className="mr-2 h-4 w-4" />
                           <span>Người quản lý:</span>
                         </div>
-                        <span className="font-medium">{currentRegister.userName}</span>
+                        <span className="font-medium">{currentRegister.userFullName}</span>
                       </div>
                       
                       <div className="flex justify-between items-center text-sm">

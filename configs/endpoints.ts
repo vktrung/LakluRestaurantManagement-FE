@@ -32,5 +32,6 @@ export const endpoints = {
   UploadAvatar: '/api/v1/profiles/me/upload-avatar',
   ActivityLogs: '/api/v1/activity-logs',
   Table_Order :'/api/v1/table-order/',
+  CashRegisterApi: '/api/v1/cash-register/',
 }
 

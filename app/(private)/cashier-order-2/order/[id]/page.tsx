@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useGetOrdersByReservationIdQuery } from "@/features/order/orderApiSlice";
 import { Order, OrderItem } from "@/features/order/types";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SplitOrderDialog } from "./split-order-dialog";
 import { MergeOrdersDialog } from "./merge-orders-dialog";
 import { ArrowLeft, X, AlertTriangle, Trash } from "lucide-react";
@@ -22,7 +22,8 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { toast } from "@/components/ui/use-toast";
+import { Toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 export default function ReservationOrdersPage() {
   const params = useParams(); // Get dynamic route params
@@ -41,8 +42,30 @@ export default function ReservationOrdersPage() {
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [warningMessage, setWarningMessage] = useState("");
 
-  const { data: ordersResponse, isLoading, isError, refetch } = useGetOrdersByReservationIdQuery(reservationId);
+  // Sử dụng skip: false để luôn fetch dữ liệu, và refetchOnMountOrArgChange: true để fetch lại mỗi khi component được mount
+  const { data: ordersResponse, isLoading, isError, refetch } = useGetOrdersByReservationIdQuery(reservationId, {
+    skip: false,
+    refetchOnMountOrArgChange: true
+  });
+  
   const orders = ordersResponse?.data || [];
+
+  // Thêm useEffect để fetch lại dữ liệu mỗi khi truy cập trang
+  useEffect(() => {
+    // Fetch lại dữ liệu khi component được mount
+    refetch();
+    
+    // Thêm event listener cho focus để fetch lại dữ liệu khi tab được focus lại
+    const handleFocus = () => {
+      refetch();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [refetch, reservationId]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -124,19 +147,15 @@ export default function ReservationOrdersPage() {
     
     try {
       await deleteOrderItem(selectedItemId).unwrap();
-      toast({
-        title: "Xóa món thành công",
+      toast.success("Xóa món thành công", {
         description: "Món ăn đã được xóa khỏi đơn hàng",
-        variant: "default",
       });
       // Đóng dialog và fetch lại dữ liệu
       setIsDeleteDialogOpen(false);
       refetch();
     } catch (error: any) {
-      toast({
-        title: "Lỗi xóa món",
+      toast.error("Lỗi xóa món", {
         description: error?.data?.message || "Không thể xóa món ăn. Vui lòng thử lại sau.",
-        variant: "destructive",
       });
     }
   };

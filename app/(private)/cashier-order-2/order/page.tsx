@@ -3,7 +3,7 @@ import { useGetReservationsQuery,useGetReservations1Query } from "@/features/res
 import OrderPage from "./components/OrderPage"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 // Định nghĩa kiểu dữ liệu phân trang
 interface PaginationData {
@@ -47,10 +47,30 @@ const Order = () => {
   const [page, setPage] = useState(0) // API sử dụng zero-based pagination
   const [pageSize, setPageSize] = useState(10)
 
-  const { data, error, isLoading } = useGetReservations1Query({
+  // Thêm refetchOnMountOrArgChange để fetch lại khi mount
+  const { data, error, isLoading, refetch } = useGetReservations1Query({
     page,
     size: pageSize
+  }, {
+    refetchOnMountOrArgChange: true
   })
+
+  // Thêm useEffect để fetch lại dữ liệu mỗi khi truy cập trang
+  useEffect(() => {
+    // Fetch lại dữ liệu khi component được mount
+    refetch();
+    
+    // Thêm event listener cho focus để fetch lại dữ liệu khi tab được focus lại
+    const handleFocus = () => {
+      refetch();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [refetch]); // Chỉ cần refetch trong dependencies
 
   // Xử lý chuyển trang
   const handlePreviousPage = () => {

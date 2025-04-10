@@ -15,25 +15,35 @@ export function ActivityStats({ data }: ActivityStatsProps) {
   }, {} as Record<string, number>)
 
   const totalActions = data.length
-  const actionStats = Object.entries(actionCounts).map(([action, count]) => ({
-    action,
-    count,
-    percentage: Math.round((count / totalActions) * 100)
-  })).sort((a, b) => b.count - a.count)
-
-  // Tính toán thống kê theo đối tượng
-  const targetCounts = data.reduce((acc, log) => {
-    acc[log.target] = (acc[log.target] || 0) + 1
-    return acc
-  }, {} as Record<string, number>)
-
-  const targetStats = Object.entries(targetCounts)
-    .map(([target, count]) => ({
-      target,
+  const actionStats = Object.entries(actionCounts).map(([action, count]) => {
+    // Chuyển đổi tên hành động sang tiếng Việt
+    const actionInVietnamese = getActionText(action);
+    return {
+      action: actionInVietnamese,
       count,
       percentage: Math.round((count / totalActions) * 100)
-    }))
-    .sort((a, b) => b.count - a.count)
+    };
+  }).sort((a, b) => b.count - a.count)
+
+  // Hàm chuyển đổi tên hành động sang tiếng Việt
+  function getActionText(action: string): string {
+    switch (action) {
+      case "CREATE":
+        return "Tạo mới";
+      case "UPDATE":
+        return "Cập nhật";
+      case "DELETE":
+        return "Xóa";
+      case "CANCEL":
+        return "Hủy";
+      case "PROCESS":
+        return "Xử lý";
+      case "REFUND":
+        return "Hoàn tiền";
+      default:
+        return action;
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -50,26 +60,6 @@ export function ActivityStats({ data }: ActivityStatsProps) {
               </div>
               <div className="w-12 text-right text-sm">{stat.percentage}%</div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <h4 className="mb-2 text-sm font-medium">Theo đối tượng</h4>
-        <div className="grid grid-cols-2 gap-2">
-          {targetStats.map((stat) => (
-            <Card key={stat.target} className="overflow-hidden">
-              <CardContent className="p-2">
-                <div className="text-xs font-medium">{stat.target}</div>
-                <div className="mt-1 flex items-center justify-between">
-                  <span className="text-sm font-bold">{stat.count}</span>
-                  <span className="text-xs text-muted-foreground">{stat.percentage}%</span>
-                </div>
-                <div className="mt-1 h-1 w-full rounded-full bg-secondary">
-                  <div className="h-1 rounded-full bg-primary" style={{ width: `${stat.percentage}%` }} />
-                </div>
-              </CardContent>
-            </Card>
           ))}
         </div>
       </div>

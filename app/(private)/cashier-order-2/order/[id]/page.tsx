@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { SplitOrderDialog } from "./split-order-dialog";
 import { MergeOrdersDialog } from "./merge-orders-dialog";
-import { ArrowLeft, X, AlertTriangle } from "lucide-react";
+import { ArrowLeft, X, AlertTriangle, Trash } from "lucide-react";
+import { useDeleteOrderItemByIdMutation } from "@/features/order/orderApiSlice";
 import { 
   Dialog,
   DialogContent,
@@ -20,6 +21,8 @@ import {
   DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { toast } from "@/components/ui/use-toast";
 
 export default function ReservationOrdersPage() {
   const params = useParams(); // Get dynamic route params
@@ -28,12 +31,17 @@ export default function ReservationOrdersPage() {
   const [isSplitDialogOpen, setIsSplitDialogOpen] = useState(false);
   const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  
+  // API mutation để xóa món ăn
+  const [deleteOrderItem, { isLoading: isDeleting }] = useDeleteOrderItemByIdMutation();
   
   // State cho modal cảnh báo
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [warningMessage, setWarningMessage] = useState("");
 
-  const { data: ordersResponse, isLoading, isError } = useGetOrdersByReservationIdQuery(reservationId);
+  const { data: ordersResponse, isLoading, isError, refetch } = useGetOrdersByReservationIdQuery(reservationId);
   const orders = ordersResponse?.data || [];
 
   const getStatusBadge = (status: string) => {
@@ -104,6 +112,35 @@ export default function ReservationOrdersPage() {
     router.push('/cashier-order-2/order');
   };
 
+  // Xử lý mở dialog xóa món ăn
+  const openDeleteDialog = (itemId: number) => {
+    setSelectedItemId(itemId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Xử lý xóa món ăn
+  const handleDeleteOrderItem = async () => {
+    if (!selectedItemId) return;
+    
+    try {
+      await deleteOrderItem(selectedItemId).unwrap();
+      toast({
+        title: "Xóa món thành công",
+        description: "Món ăn đã được xóa khỏi đơn hàng",
+        variant: "default",
+      });
+      // Đóng dialog và fetch lại dữ liệu
+      setIsDeleteDialogOpen(false);
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: "Lỗi xóa món",
+        description: error?.data?.message || "Không thể xóa món ăn. Vui lòng thử lại sau.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
@@ -145,6 +182,28 @@ export default function ReservationOrdersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog xác nhận xóa món ăn */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận xóa món ăn</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn xóa món ăn này khỏi đơn hàng không? Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteOrderItem}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Đang xóa..." : "Xóa món"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Button
         variant="outline"
@@ -202,11 +261,23 @@ export default function ReservationOrdersPage() {
                   <p className="text-gray-600 font-medium mb-1">Món ăn:</p>
                   <ul className="space-y-2">
                     {order.orderItems.map((item: OrderItem) => (
-                      <li key={item.orderItemId} className="flex justify-between items-center text-sm">
-                        <span className="text-gray-800">
-                          {item.dish.name} (x{item.quantity})
-                        </span>
-                        {getStatusBadge(item.statusLabel)}
+                      <li key={item.orderItemId} className="flex items-center justify-between text-sm">
+                        <div className="flex-1 flex items-center justify-between pr-2">
+                          <span className="text-gray-800">
+                            {item.dish.name} (x{item.quantity})
+                          </span>
+                          {getStatusBadge(item.statusLabel)}
+                        </div>
+                        
+                        {/* Nút xóa món ăn */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => openDeleteDialog(item.orderItemId)}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
                       </li>
                     ))}
                   </ul>

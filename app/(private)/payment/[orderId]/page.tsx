@@ -539,9 +539,6 @@ export default function IntegratedPaymentPage() {
           .grid > div > div {
             display: table-cell;
             padding: 1mm 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
           }
           
           .font-mono {
@@ -554,6 +551,17 @@ export default function IntegratedPaymentPage() {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+          }
+          
+          .wrap-text {
+            white-space: normal !important;
+            word-break: normal !important;
+            overflow-wrap: break-word !important;
+            hyphens: none !important;
+            overflow: visible !important;
+            text-overflow: initial !important;
+            max-width: 100px !important;
+            display: table-cell !important;
           }
           
           .border-t {
@@ -609,7 +617,7 @@ export default function IntegratedPaymentPage() {
           <div class="grid gap-1 mb-3">
             <div>
               <div style="width: 50%;">
-                <p class="text-xs">BÀN: ${tempBillData.tableNumber || "—"}</p>
+                <p class="text-xs">HÓA ĐƠN: ${tempBillData.tableNumber || "—"}</p>
               </div>
               <div style="width: 50%; text-align: right;">
                 <p class="text-xs">NGÀY: ${new Date(tempBillData.date).toLocaleDateString()}</p>
@@ -636,7 +644,7 @@ export default function IntegratedPaymentPage() {
           <div class="grid mb-1">
             <div>
               <div class="col-span-1 text-xs">${index + 1}</div>
-              <div class="col-span-4 text-xs truncate">${item.dishName}</div>
+              <div class="col-span-4 text-xs wrap-text" style="white-space: normal; word-break: normal; overflow-wrap: break-word;">${item.dishName}</div>
               <div class="col-span-1 text-xs text-center">${item.quantity}</div>
               <div class="col-span-3 text-xs text-right font-mono">${formatPrice(Number(item.price), { currency: false, minLength: 8 })}</div>
               <div class="col-span-3 text-xs text-right font-mono">${formatPrice(Number(item.price) * item.quantity, { currency: false, minLength: 8 })}</div>
@@ -812,9 +820,6 @@ export default function IntegratedPaymentPage() {
               .grid > div > div {
                 display: table-cell;
                 padding: 1mm 0;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
               }
               
               .font-mono {
@@ -827,6 +832,17 @@ export default function IntegratedPaymentPage() {
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+              }
+              
+              .wrap-text {
+                white-space: normal !important;
+                word-break: normal !important;
+                overflow-wrap: break-word !important;
+                hyphens: none !important;
+                overflow: visible !important;
+                text-overflow: initial !important;
+                max-width: 100px !important;
+                display: table-cell !important;
               }
               
               .border-t {
@@ -911,7 +927,7 @@ export default function IntegratedPaymentPage() {
               <div class="grid mb-1">
                 <div>
                   <div class="col-span-1 text-xs">${index + 1}</div>
-                  <div class="col-span-4 text-xs truncate">${item.dishName}</div>
+                  <div class="col-span-4 text-xs wrap-text" style="white-space: normal; word-break: normal; overflow-wrap: break-word;">${item.dishName}</div>
                   <div class="col-span-1 text-xs text-center">${item.quantity}</div>
                   <div class="col-span-3 text-xs text-right font-mono">${formatPrice(item.price, { currency: false, minLength: 8 })}</div>
                   <div class="col-span-3 text-xs text-right font-mono">${formatPrice(item.price * item.quantity, { currency: false, minLength: 8 })}</div>

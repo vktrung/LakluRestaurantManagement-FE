@@ -147,6 +147,13 @@ export default function BillPage() {
             text-overflow: ellipsis;
           }
           
+          .grid > div > div.wrap-text {
+            white-space: normal;
+            word-break: break-word;
+            overflow: visible;
+            hyphens: auto;
+          }
+          
           .font-mono {
             font-family: monospace;
             font-size: 11px;
@@ -157,6 +164,12 @@ export default function BillPage() {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+          }
+          
+          .wrap-text {
+            white-space: normal;
+            word-break: break-word;
+            hyphens: auto;
           }
           
           .border-t {
@@ -241,7 +254,7 @@ export default function BillPage() {
           <div class="grid mb-1">
             <div>
               <div class="col-span-1 text-xs">${index + 1}</div>
-              <div class="col-span-4 text-xs truncate">${item.dishName}</div>
+              <div class="col-span-4 text-xs wrap-text">${item.dishName}</div>
               <div class="col-span-1 text-xs text-center">${item.quantity}</div>
               <div class="col-span-3 text-xs text-right font-mono">${formatPrice(item.price, { currency: false, minLength: 8 })}</div>
               <div class="col-span-3 text-xs text-right font-mono">${formatPrice(item.price * item.quantity, { currency: false, minLength: 8 })}</div>
@@ -255,7 +268,8 @@ export default function BillPage() {
           <!-- Payment Summary -->
           <div class="text-right space-y-1 mb-2">
             <p class="text-xs">Thành tiền: <span class="font-mono ml-2">${formatPrice(bill.totalAmount)}</span></p>
-            <p class="text-xs font-bold">Tổng tiền TT: <span class="font-mono ml-2">${formatPrice(bill.totalAmount)}</span></p>
+            ${bill.voucherValue > 0 ? `<p class="text-xs">Giảm giá voucher: <span class="font-mono ml-2" style="color: red">-${formatPrice(bill.voucherValue)}</span></p>` : ''}
+            <p class="text-xs font-bold">Tổng tiền TT: <span class="font-mono ml-2">${formatPrice(bill.totalAmount - (bill.voucherValue || 0))}</span></p>
             <p class="text-xs">Tiền khách đưa: <span class="font-mono ml-2">${formatPrice(bill.receivedAmount)}</span></p>
             <p class="text-xs">Tiền trả lại: <span class="font-mono ml-2">${formatPrice(bill.change)}</span></p>
           </div>
@@ -376,6 +390,13 @@ export default function BillPage() {
       text-overflow: ellipsis;
     }
     
+    .grid > div > div.wrap-text {
+      white-space: normal;
+      word-break: break-word;
+      overflow: visible;
+      hyphens: auto;
+    }
+    
     .font-mono {
       font-family: monospace;
       font-size: 11px;
@@ -386,6 +407,12 @@ export default function BillPage() {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+    
+    .wrap-text {
+      white-space: normal;
+      word-break: break-word;
+      hyphens: auto;
     }
     
     .border-t {
@@ -470,7 +497,7 @@ export default function BillPage() {
     <div class="grid mb-1">
       <div>
         <div class="col-span-1 text-xs">${index + 1}</div>
-        <div class="col-span-4 text-xs truncate">${item.dishName}</div>
+        <div class="col-span-4 text-xs wrap-text">${item.dishName}</div>
         <div class="col-span-1 text-xs text-center">${item.quantity}</div>
         <div class="col-span-3 text-xs text-right font-mono">${formatPrice(item.price, { currency: false, minLength: 8 })}</div>
         <div class="col-span-3 text-xs text-right font-mono">${formatPrice(item.price * item.quantity, { currency: false, minLength: 8 })}</div>
@@ -484,7 +511,8 @@ export default function BillPage() {
     <!-- Payment Summary -->
     <div class="text-right space-y-1 mb-2">
       <p class="text-xs">Thành tiền: <span class="font-mono ml-2">${formatPrice(bill.totalAmount)}</span></p>
-      <p class="text-xs font-bold">Tổng tiền TT: <span class="font-mono ml-2">${formatPrice(bill.totalAmount)}</span></p>
+      ${bill.voucherValue > 0 ? `<p class="text-xs">Giảm giá voucher: <span class="font-mono ml-2" style="color: red">-${formatPrice(bill.voucherValue)}</span></p>` : ''}
+      <p class="text-xs font-bold">Tổng tiền TT: <span class="font-mono ml-2">${formatPrice(bill.totalAmount - (bill.voucherValue || 0))}</span></p>
       <p class="text-xs">Tiền khách đưa: <span class="font-mono ml-2">${formatPrice(bill.receivedAmount)}</span></p>
       <p class="text-xs">Tiền trả lại: <span class="font-mono ml-2">${formatPrice(bill.change)}</span></p>
     </div>
@@ -582,7 +610,7 @@ export default function BillPage() {
       {bill.orderItems.map((item, index) => (
         <div key={item.id} className="grid grid-cols-12 gap-1 mb-1 text-xs">
           <div className="col-span-1">{index + 1}</div>
-          <div className="col-span-4 truncate">{item.dishName}</div>
+          <div className="col-span-4 wrap-text">{item.dishName}</div>
           <div className="col-span-1 text-center">{item.quantity}</div>
           <div className="col-span-3 text-right font-mono text-xs">{formatPrice(item.price, { currency: false, minLength: 8 })}</div>
           <div className="col-span-3 text-right font-mono text-xs">{formatPrice(item.price * item.quantity, { currency: false, minLength: 8 })}</div>
@@ -595,7 +623,10 @@ export default function BillPage() {
       {/* Payment Summary */}
       <div className="text-right space-y-1 mb-2">
         <p className="text-xs">Thành tiền: <span className="font-mono ml-2">{formatPrice(bill.totalAmount)}</span></p>
-        <p className="font-bold text-xs">Tổng tiền TT: <span className="font-mono ml-2">{formatPrice(bill.totalAmount)}</span></p>
+        {bill.voucherValue > 0 && (
+          <p className="text-xs">Giảm giá voucher: <span className="font-mono ml-2 text-red-600">-{formatPrice(bill.voucherValue)}</span></p>
+        )}
+        <p className="text-xs font-bold">Tổng tiền TT: <span className="font-mono ml-2">{formatPrice(bill.totalAmount - (bill.voucherValue || 0))}</span></p>
         <p className="text-xs">Tiền khách đưa: <span className="font-mono ml-2">{formatPrice(bill.receivedAmount)}</span></p>
         <p className="text-xs">Tiền trả lại: <span className="font-mono ml-2">{formatPrice(bill.change)}</span></p>
       </div>
@@ -743,6 +774,16 @@ export default function BillPage() {
             font-size: 12px !important;
             margin: 1mm 0 !important;
             display: block !important;
+          }
+          
+          /* Make sure dish names can wrap */
+          .print-bill .wrap-text {
+            white-space: normal !important;
+            word-break: break-word !important;
+            overflow: visible !important;
+            display: table-cell !important;
+            max-width: 32% !important;
+            padding-right: 2mm !important;
           }
 
           .print-bill .font-mono {

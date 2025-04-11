@@ -32,6 +32,7 @@ export interface BillResponse {
     orderItems: OrderItemsResponse[]
     totalAmount: number
     receivedAmount: number
+    voucherValue: number
     change: number
 }
 

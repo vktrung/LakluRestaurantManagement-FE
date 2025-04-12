@@ -47,7 +47,7 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
     menuId: menuId || 0,
     categoryId: 0,
     price: 0,
-    status: 'enable',
+    isActive: true,
   });
   const [inputValue, setInputValue] = useState('');
   const [apiError, setApiError] = useState<string | null>(null);
@@ -92,13 +92,30 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
     setIsClient(true);
 
     if (selectedItem && menuItemData && menuItemData.data) {
-      const newFormData = {
+      console.group('Menu Item Data Loading');
+      console.log('Raw API data:', menuItemData);
+      console.log('API isActive:', menuItemData.data.isActive);
+      console.log('API status:', menuItemData.data.status);
+
+      // Use isActive directly from API response if available, otherwise map from status
+      const isActive =
+        typeof menuItemData.data.isActive === 'boolean'
+          ? menuItemData.data.isActive
+          : menuItemData.data.status === 'enable';
+
+      console.log('Determined isActive value:', isActive);
+
+      const newFormData: MenuItemRequest = {
         dishId: menuItemData.data.dishId ?? 0,
         menuId: menuItemData.data.menuId ?? 0,
         categoryId: menuItemData.data.categoryId ?? 0,
         price: menuItemData.data.price ?? 0,
-        status: menuItemData.data.status ?? 'enable',
+        isActive: isActive,
       };
+
+      console.log('New form data:', newFormData);
+      console.groupEnd();
+
       setFormData(newFormData);
       const dishName =
         dishes?.data.find(dish => dish.id === newFormData.dishId)?.name || '';
@@ -109,7 +126,7 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
         menuId: menuId || 0,
         categoryId: 0,
         price: 0,
-        status: 'enable',
+        isActive: true,
       });
       setInputValue('');
     }
@@ -177,6 +194,11 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
 
     if (!validateForm()) return;
 
+    console.group('Submitting Menu Item');
+    console.log('Form data being submitted:', formData);
+    console.log('isActive value:', formData.isActive);
+    console.groupEnd();
+
     try {
       let response;
       if (selectedItem) {
@@ -184,9 +206,11 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
           id: selectedItem,
           body: formData,
         }).unwrap();
+        console.log('Update response:', response);
         onSuccess(response.data[0]);
       } else {
         response = await createMenuItem(formData).unwrap();
+        console.log('Create response:', response);
         onSuccess(response.data[0]);
       }
       onClose();
@@ -415,37 +439,35 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
             </div>
           </div>
 
-          {/* Status Radio Buttons */}
-          <div className="space-x-4">
-            <label className="text-sm font-medium text-gray-700">
+          {/* Status Checkbox */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Trạng thái
             </label>
+            {/* Note: API uses isActive boolean primitive type, UI shows as active/inactive status */}
             <div className="flex items-center">
-              <label className="mr-4">
-                <input
-                  type="radio"
-                  value="enable"
-                  checked={formData.status === 'enable'}
-                  onChange={() =>
-                    setFormData({ ...formData, status: 'enable' })
-                  }
-                  className="mr-2"
-                  disabled={isLoading}
-                />
-                Hoạt động
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  value="disable"
-                  checked={formData.status === 'disable'}
-                  onChange={() =>
-                    setFormData({ ...formData, status: 'disable' })
-                  }
-                  className="mr-2"
-                  disabled={isLoading}
-                />
-                Vô hiệu hóa
+              <input
+                type="checkbox"
+                checked={formData.isActive}
+                onChange={() => {
+                  const newValue = !formData.isActive;
+                  console.log(
+                    'Changing isActive from',
+                    formData.isActive,
+                    'to',
+                    newValue,
+                  );
+                  setFormData({ ...formData, isActive: newValue });
+                }}
+                className="mr-2 h-4 w-4"
+                disabled={isLoading}
+                id="status-checkbox"
+              />
+              <label
+                htmlFor="status-checkbox"
+                className="text-sm text-gray-700"
+              >
+                {formData.isActive ? 'Hoạt động' : 'Vô hiệu hóa'}
               </label>
             </div>
           </div>

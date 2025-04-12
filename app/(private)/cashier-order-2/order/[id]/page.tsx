@@ -5,7 +5,7 @@ import { vi } from "date-fns/locale";
 import { useParams, useRouter } from "next/navigation"; // Added useRouter
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useGetOrdersByReservationIdQuery } from "@/features/order/orderApiSlice";
+import { useGetOrdersByReservationIdQuery, useDeleteOrderMutation } from "@/features/order/orderApiSlice";
 import { Order, OrderItem } from "@/features/order/types";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -34,9 +34,12 @@ export default function ReservationOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [isDeleteOrderDialogOpen, setIsDeleteOrderDialogOpen] = useState(false);
   
   // API mutation để xóa món ăn
   const [deleteOrderItem, { isLoading: isDeleting }] = useDeleteOrderItemByIdMutation();
+  const [deleteOrder, { isLoading: isOrderDeleting }] = useDeleteOrderMutation();
   
   // State cho modal cảnh báo
   const [showWarningModal, setShowWarningModal] = useState(false);
@@ -163,6 +166,38 @@ export default function ReservationOrdersPage() {
     }
   };
 
+  // Xử lý mở dialog xóa order
+  const openDeleteOrderDialog = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setIsDeleteOrderDialogOpen(true);
+  };
+
+  // Xử lý xóa order
+  const handleDeleteOrder = async () => {
+    if (!selectedOrderId) return;
+    
+    try {
+      await deleteOrder(selectedOrderId).unwrap();
+      toast.success("Xóa đơn hàng thành công", {
+        description: "Đơn hàng đã được xóa",
+      });
+      setIsDeleteOrderDialogOpen(false);
+      
+      // Chuyển về trang danh sách đặt bàn và đảm bảo dữ liệu được cập nhật
+      router.push('/cashier-order-2/order');
+      // Đợi một chút để đảm bảo navigation đã hoàn tất
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    } catch (error: any) {
+      const errorMessage = error?.data?.message || "Không thể xóa đơn hàng. Vui lòng thử lại sau.";
+      toast.error("Không thể xóa đơn hàng", {
+        description: errorMessage,
+      });
+      setIsDeleteOrderDialogOpen(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
@@ -222,6 +257,28 @@ export default function ReservationOrdersPage() {
               disabled={isDeleting}
             >
               {isDeleting ? "Đang xóa..." : "Xóa món"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog xác nhận xóa đơn hàng */}
+      <AlertDialog open={isDeleteOrderDialogOpen} onOpenChange={setIsDeleteOrderDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận xóa đơn hàng</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn xóa đơn hàng này không? Chỉ có thể xóa đơn hàng khi tất cả các món trong đơn đều ở trạng thái đang chờ hoặc đã hủy.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteOrder}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={isOrderDeleting}
+            >
+              {isOrderDeleting ? "Đang xóa..." : "Xóa đơn hàng"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -327,6 +384,20 @@ export default function ReservationOrdersPage() {
                   >
                     Thanh toán
                   </Button>
+
+                  {/* Nút xóa đơn - Chỉ hiển thị khi tất cả món trong đơn đang ở trạng thái đang chờ hoặc đã hủy */}
+                  {order.orderItems.every(item => 
+                    item.statusLabel === "Đang chờ" || item.statusLabel === "Đã hủy"
+                  ) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-red-300 bg-red-50 text-red-700 hover:bg-red-100"
+                      onClick={() => openDeleteOrderDialog(order.id)}
+                    >
+                      Xóa đơn hàng
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

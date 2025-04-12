@@ -9,7 +9,8 @@ import {
   CreateOrderItemRequest,
   OrderSplitRequest,
   MergeOrderRequest,
-  AddOrderItemRequest
+  AddOrderItemRequest,
+  DeleteOrderResponse
 } from './types';
 import baseQuery from '../baseQuery';
 import { endpoints } from '@/configs/endpoints';
@@ -97,7 +98,7 @@ export const orderApiSlice = createApi({
     }),
 
     // Delete an order
-    deleteOrder: builder.mutation<void, number>({
+    deleteOrder: builder.mutation<DeleteOrderResponse, number>({
       query: (id) => ({
         url: `${endpoints.Order}${id}`,
         method: 'DELETE'

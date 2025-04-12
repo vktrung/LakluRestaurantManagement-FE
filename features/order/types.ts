@@ -85,4 +85,12 @@ export interface AddOrderItemRequest {
   quantity: number;
 }
 
+export interface DeleteOrderResponse {
+  data: Order;
+  message: string;
+  httpStatus: number;
+  timestamp: string;
+  error: null | string;
+}
+
 

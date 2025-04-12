@@ -4,8 +4,9 @@ import { TimeRangeType } from "@/features/reservation/type"
 import OrderPage from "./components/OrderPage"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { toast } from "sonner"
+import { useRouter, usePathname } from "next/navigation"
 
 // Định nghĩa kiểu dữ liệu phân trang
 interface PaginationData {
@@ -46,15 +47,20 @@ interface Reservation {
 }
 
 const Order = () => {
+  const router = useRouter();
+  const pathname = usePathname();
+  
   // Phân trang
   const [currentPage, setCurrentPage] = useState(0)
   const [pageSize] = useState(12)
+  const [shouldRefetch, setShouldRefetch] = useState(false)
 
   // Sử dụng API hook để lấy dữ liệu đặt bàn
   const { 
     data: timeRangeResponse, 
     error: timeRangeError, 
     isLoading: isTimeRangeLoading,
+    refetch
   } = useGetReservationsByTimeRangeQuery({
     timeRange: "today",
     page: currentPage,
@@ -62,6 +68,40 @@ const Order = () => {
   }, { 
     refetchOnMountOrArgChange: true 
   })
+
+  // Fetch lại dữ liệu khi component được mount hoặc focus
+  useEffect(() => {
+    const fetchData = async () => {
+      await refetch();
+      setShouldRefetch(false);
+    };
+
+    // Fetch khi component mount hoặc shouldRefetch thay đổi
+    if (shouldRefetch) {
+      fetchData();
+    }
+
+    // Fetch khi focus lại tab
+    const handleFocus = () => {
+      setShouldRefetch(true);
+    };
+
+    // Fetch khi route thay đổi (quay lại từ trang chi tiết)
+    const handleRouteChange = () => {
+      setShouldRefetch(true);
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('popstate', handleRouteChange);
+
+    // Kích hoạt fetch ngay khi mount
+    setShouldRefetch(true);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('popstate', handleRouteChange);
+    };
+  }, [refetch, pathname]);
 
   // Lấy dữ liệu đặt bàn phân trang
   const pagedData = timeRangeResponse?.data

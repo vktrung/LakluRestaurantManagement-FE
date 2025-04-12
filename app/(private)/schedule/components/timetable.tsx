@@ -27,6 +27,7 @@ export default function Timetable() {
   );
   const [hasQrCodePermission, setHasQrCodePermission] =
     useState<boolean>(false);
+  const [formError, setFormError] = useState<any>(null);
 
   const goToPreviousWeek = () => setCurrentDate(prev => subWeeks(prev, 1));
   const goToNextWeek = () => setCurrentDate(prev => addWeeks(prev, 1));
@@ -73,7 +74,24 @@ export default function Timetable() {
     formData: AddShiftRequest | UpdateShiftRequest,
   ): Promise<void> => {
     console.log('Selected Shift ID in Timetable:', selectedShiftId);
-    await handleSubmit(formData, selectedShiftId);
+    try {
+      await handleSubmit(formData, selectedShiftId);
+
+      // Chỉ đóng form khi không có lỗi
+      if (isDialogOpen) setIsDialogOpen(false);
+      if (isUpdateDialogOpen) setIsUpdateDialogOpen(false);
+
+      // Xóa lỗi nếu có
+      setFormError(null);
+    } catch (error: any) {
+      console.error('Lỗi khi lưu ca làm:', error);
+
+      // Lưu lỗi để truyền vào EventForm
+      setFormError(error);
+
+      // Không đóng form, để hiển thị lỗi
+      throw error;
+    }
   };
 
   // Hiển thị trạng thái tải hoặc lỗi khi lấy thông tin người dùng
@@ -160,6 +178,7 @@ export default function Timetable() {
           onClose={() => setIsDialogOpen(false)}
           currentDate={currentDate}
           handleSubmit={wrappedHandleSubmit}
+          formError={formError}
         />
       )}
 
@@ -169,6 +188,7 @@ export default function Timetable() {
           onClose={() => setIsUpdateDialogOpen(false)}
           currentDate={currentDate}
           handleSubmit={wrappedHandleSubmit}
+          formError={formError}
         />
       )}
     </div>

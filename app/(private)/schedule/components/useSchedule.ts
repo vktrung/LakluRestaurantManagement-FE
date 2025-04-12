@@ -220,10 +220,16 @@ export function useSchedule(currentDate: Date) {
   const handleSubmit = async (formData: AddShiftRequest | UpdateShiftRequest, shiftId?: number): Promise<void> => {
     const id = shiftId ?? selectedShiftId; 
   
-    if (id !== null && id !== undefined) { 
-      await updateShift({ id, body: formData });
-    } else {
-      await createShift(formData);
+    try {
+      if (id !== null && id !== undefined) { 
+        await updateShift({ id, body: formData }).unwrap();
+      } else {
+        await createShift(formData).unwrap();
+      }
+    } catch (error) {
+      console.error("Lỗi khi xử lý ca làm:", error);
+      // Ném lại lỗi để component cha có thể xử lý
+      throw error;
     }
   };
 

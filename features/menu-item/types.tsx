@@ -54,3 +54,10 @@ export interface MenuItemRequest {
   price: number;
   isActive: boolean;
 }
+export interface UpdateMenuItemStatusResponse{
+  data: string;
+  message: string;
+  httpStatus: number;
+  timestamp: string;
+  error: null | string;
+}

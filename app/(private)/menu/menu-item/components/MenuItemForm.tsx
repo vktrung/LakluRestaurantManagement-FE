@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   useCreateMenuItemMutation,
   useUpdateMenuItemMutation,
+  useUpdateMenuItemStatusMutation,
 } from '@/features/menu-item/menuItemApiSlice';
 import { useGetAllDishesQuery } from '@/features/dish/dishApiSlice';
 import { useGetCategoriesQuery } from '@/features/category/categoryApiSlice';
@@ -11,11 +12,17 @@ import { useGetMenusQuery } from '@/features/menu/menuApiSlice';
 import { useGetMenuItemByIdQuery } from '@/features/menu-item/menuItemApiSlice';
 import { MenuItemRequest } from '@/features/menu-item/types';
 import { Button } from '@/components/ui/button';
-import { PlusIcon, AlertCircle } from 'lucide-react';
+import { PlusIcon, AlertCircle, AlertTriangle } from 'lucide-react';
 import DishFormAddOnly from './DishFormAddOnly';
 import { useGetDishByIdQuery } from '@/features/dish/dishApiSlice';
 import { MenuItem } from '@/features/menu/types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface MenuItemFormProps {
   selectedItem: number | null;
@@ -42,6 +49,8 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
     useCreateMenuItemMutation();
   const [updateMenuItem, { isLoading: isUpdating }] =
     useUpdateMenuItemMutation();
+  const [updateMenuItemStatus, { isLoading: isUpdatingStatus }] =
+    useUpdateMenuItemStatusMutation();
   const [formData, setFormData] = useState<MenuItemRequest>({
     dishId: 0,
     menuId: menuId || 0,
@@ -258,6 +267,40 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
     setShowOptions(false);
   };
 
+  const handleToggleStatus = async () => {
+    if (!selectedItem) return;
+
+    try {
+      const response = await updateMenuItemStatus({
+        id: selectedItem,
+      }).unwrap();
+
+      console.log('Status toggle response:', response);
+
+      // Update the local state to reflect the change
+      setFormData(prev => ({
+        ...prev,
+        isActive: !prev.isActive,
+      }));
+
+      // If onSuccess callback is provided, call it with the updated item
+      if (response && response.data) {
+        // Here we might need to refetch the item data since the response might be just a message
+        if (menuItemData?.data) {
+          const updatedItem = {
+            ...menuItemData.data,
+            isActive: !formData.isActive,
+            status: !formData.isActive ? 'enable' : 'disable',
+          };
+          onSuccess(updatedItem);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling status:', error);
+      setApiError('Không thể thay đổi trạng thái. Vui lòng thử lại sau.');
+    }
+  };
+
   if (
     dishesLoading ||
     categoriesLoading ||
@@ -439,36 +482,61 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
             </div>
           </div>
 
-          {/* Status Checkbox */}
+          {/* Status Checkbox with Toggle Status Button */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Trạng thái
             </label>
-            {/* Note: API uses isActive boolean primitive type, UI shows as active/inactive status */}
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.isActive}
-                onChange={() => {
-                  const newValue = !formData.isActive;
-                  console.log(
-                    'Changing isActive from',
-                    formData.isActive,
-                    'to',
-                    newValue,
-                  );
-                  setFormData({ ...formData, isActive: newValue });
-                }}
-                className="mr-2 h-4 w-4"
-                disabled={isLoading}
-                id="status-checkbox"
-              />
-              <label
-                htmlFor="status-checkbox"
-                className="text-sm text-gray-700"
-              >
-                {formData.isActive ? 'Hoạt động' : 'Vô hiệu hóa'}
-              </label>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.isActive}
+                  onChange={() => {
+                    const newValue = !formData.isActive;
+                    console.log(
+                      'Changing isActive from',
+                      formData.isActive,
+                      'to',
+                      newValue,
+                    );
+                    setFormData({ ...formData, isActive: newValue });
+                  }}
+                  className="mr-2 h-4 w-4"
+                  disabled={isLoading}
+                  id="status-checkbox"
+                />
+                <label
+                  htmlFor="status-checkbox"
+                  className="text-sm text-gray-700"
+                >
+                  {formData.isActive ? 'Hoạt động' : 'Vô hiệu hóa'}
+                </label>
+              </div>
+
+              {selectedItem && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={handleToggleStatus}
+                        disabled={isLoading || isUpdatingStatus}
+                        className={`ml-2 p-1.5 rounded-full ${
+                          formData.isActive
+                            ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        <AlertTriangle className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Hết đồ chuẩn bị - Cập nhật nhanh trạng thái</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
           </div>
 

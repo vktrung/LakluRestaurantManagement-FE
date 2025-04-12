@@ -46,6 +46,7 @@ interface Props {
   handleSubmit: (
     formData: AddShiftRequest | UpdateShiftRequest,
   ) => Promise<void>;
+  formError?: any;
 }
 
 // Helper function để hiển thị gợi ý về định dạng thời gian
@@ -68,6 +69,7 @@ export default function EventForm({
   onClose,
   currentDate,
   handleSubmit,
+  formError,
 }: Props) {
   const { data: staffData, isLoading: isLoadingStaff } = useGetStaffQuery();
 
@@ -158,6 +160,47 @@ export default function EventForm({
       }
     }
   }, [startDate]);
+
+  useEffect(() => {
+    if (formError) {
+      console.log('Form error received:', formError);
+
+      // Hiển thị thông báo lỗi
+      if (formError.error && typeof formError.error === 'object') {
+        // Ưu tiên lỗi manager
+        if (formError.error.manager) {
+          setApiError(formError.error.manager);
+        }
+        // Tiếp theo ưu tiên lỗi shiftType
+        else if (formError.error.shiftType) {
+          setApiError(formError.error.shiftType);
+        }
+        // Lấy lỗi đầu tiên nếu không có các lỗi ưu tiên
+        else {
+          const firstErrorKey = Object.keys(formError.error)[0];
+          if (firstErrorKey && formError.error[firstErrorKey]) {
+            setApiError(formError.error[firstErrorKey]);
+          } else {
+            setApiError(
+              'Dữ liệu không hợp lệ. Vui lòng kiểm tra thông tin nhập vào.',
+            );
+          }
+        }
+      }
+      // Nếu error là string
+      else if (formError.error && typeof formError.error === 'string') {
+        setApiError(formError.error);
+      }
+      // Nếu có message
+      else if (formError.message) {
+        setApiError(formError.message);
+      }
+      // Mặc định
+      else {
+        setApiError('Đã xảy ra lỗi khi lưu ca làm. Vui lòng thử lại sau.');
+      }
+    }
+  }, [formError]);
 
   const updateTimeByShiftType = (shiftType: string) => {
     const today = new Date();
@@ -302,7 +345,6 @@ export default function EventForm({
       onClose();
     } catch (error: any) {
       console.error('Lỗi khi thêm/cập nhật ca làm:', error);
-      console.log('Chi tiết lỗi:', JSON.stringify(error));
 
       // Reset form errors
       setFormErrors({
@@ -311,117 +353,42 @@ export default function EventForm({
         staffs: '',
       });
 
-      // Handle API error response
-      if (error?.data) {
-        const {
-          message,
-          httpStatus,
-          error: errorCode,
-          shiftStart,
-        } = error.data;
-
-        // Log complete error object for debugging
-        console.log('Full error object:', error);
-
-        // Trường hợp lỗi ngày tháng từ API
-        if (message && message.includes('Thời gian bắt đầu ca làm việc')) {
-          setFormErrors(prev => ({
-            ...prev,
-            shiftStart: message,
-          }));
-          return;
-        }
-
-        // Handle validation errors (422)
-        if (httpStatus === 422) {
-          if (message) {
-            if (message.includes('Thời gian bắt đầu')) {
-              setFormErrors(prev => ({
-                ...prev,
-                shiftStart: message,
-              }));
-            } else if (message.includes('Thời gian kết thúc')) {
-              setFormErrors(prev => ({
-                ...prev,
-                shiftEnd: message,
-              }));
+      // Xử lý lỗi từ API - đặc biệt chú ý đến error.error
+      if (error && error.error) {
+        // Nếu error.error là object (ví dụ: { manager: "Phải có duy nhất một..." })
+        if (typeof error.error === 'object') {
+          // Ưu tiên lỗi manager
+          if (error.error.manager) {
+            setApiError(error.error.manager);
+          }
+          // Tiếp theo là lỗi shiftType
+          else if (error.error.shiftType) {
+            setApiError(error.error.shiftType);
+          }
+          // Nếu không, lấy thông báo lỗi đầu tiên trong object error
+          else {
+            const firstKey = Object.keys(error.error)[0];
+            if (firstKey && error.error[firstKey]) {
+              setApiError(error.error[firstKey]);
             } else {
-              setApiError(message);
+              setApiError(
+                'Dữ liệu không hợp lệ. Vui lòng kiểm tra thông tin nhập vào.',
+              );
             }
-          } else {
-            setApiError('Dữ liệu không hợp lệ.');
           }
         }
-        // Handle bad request errors (400)
-        else if (httpStatus === 400) {
-          if (message) {
-            if (message.includes('Thời gian bắt đầu')) {
-              setFormErrors(prev => ({
-                ...prev,
-                shiftStart: message,
-              }));
-            } else {
-              setApiError(message);
-            }
-          } else if (shiftStart) {
-            setFormErrors(prev => ({
-              ...prev,
-              shiftStart: shiftStart,
-            }));
-          } else {
-            setApiError(
-              'Dữ liệu không hợp lệ. Vui lòng kiểm tra thông tin nhập vào.',
-            );
-          }
-        }
-        // Handle conflict errors (409)
-        else if (httpStatus === 409) {
-          setApiError(
-            'Ca làm này đã tồn tại trong khoảng thời gian này. Vui lòng chọn thời gian khác.',
-          );
-        }
-        // Handle other errors with message
-        else if (message) {
-          setApiError(message);
-        }
-        // Fallback error
-        else {
-          setApiError('Đã xảy ra lỗi khi lưu ca làm. Vui lòng thử lại sau.');
+        // Nếu error.error là string
+        else if (typeof error.error === 'string') {
+          setApiError(error.error);
         }
       }
-      // Check if error is in a different format
-      else if (error.status === 422) {
-        if (error.data?.error) {
-          // Try to extract specific field errors
-          const errorData = error.data.error;
-          if (
-            typeof errorData === 'string' &&
-            errorData.includes('Thời gian bắt đầu ca làm việc')
-          ) {
-            setFormErrors(prev => ({
-              ...prev,
-              shiftStart: errorData,
-            }));
-          } else {
-            setApiError(errorData || 'Dữ liệu không hợp lệ.');
-          }
-        } else if (error.data?.message) {
-          const message = error.data.message;
-          if (message.includes('Thời gian bắt đầu')) {
-            setFormErrors(prev => ({
-              ...prev,
-              shiftStart: message,
-            }));
-          } else {
-            setApiError(message);
-          }
-        }
+      // Nếu có error.message
+      else if (error && error.message) {
+        setApiError(error.message);
       }
-      // Network or other unexpected errors
+      // Mặc định
       else {
-        setApiError(
-          'Đã xảy ra lỗi khi kết nối đến máy chủ. Vui lòng thử lại sau.',
-        );
+        setApiError('Đã xảy ra lỗi khi lưu ca làm. Vui lòng thử lại sau.');
       }
     } finally {
       setIsSubmitting(false);
@@ -430,13 +397,6 @@ export default function EventForm({
 
   // Lấy danh sách các staffId đã được chọn
   const selectedStaffIds = staffs.map(staff => staff.staffId);
-
-  // Debug staff data to understand structure
-  useEffect(() => {
-    if (staffData?.data?.users?.length) {
-      console.log('Staff data structure sample:', staffData.data.users[0]);
-    }
-  }, [staffData]);
 
   // Filter out resigned staff and admin users
   const filteredStaff =

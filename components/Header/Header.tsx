@@ -28,20 +28,20 @@ const pathMap: Record<string, string> = {
   'tong-quat': 'Tổng quát',
   'giao-dich': 'Giao dịch',
   'mon-an': 'Món ăn',
-  'salary': 'Lương',
-  'menu': 'Menu',
-  'category': 'Danh mục',
-  'staff': 'Nhân viên',
+  salary: 'Lương',
+  menu: 'Menu',
+  category: 'Danh mục',
+  staff: 'Nhân viên',
   // 'salary': 'Mức Lương',
-  'order': 'Gọi món',
-  'role': 'Vai trò',
-  'permission': 'Quyền',
+  order: 'Gọi món',
+  role: 'Vai trò',
+  permission: 'Quyền',
   'nha-hang': 'Nhà hàng',
   'may-pos': 'Máy POS',
   'chon-mon': 'Chọn món',
-  'table': 'Bàn Ăn',
-  'kitchen': 'Bếp',
-  'schedule':'Lịch làm việc'
+  table: 'Bàn Ăn',
+  kitchen: 'Bếp',
+  schedule: 'Lịch làm việc',
 };
 
 export function Header({ className }: { className?: string }) {
@@ -71,8 +71,9 @@ export function Header({ className }: { className?: string }) {
   // Handle logout function
   const handleLogout = () => {
     // Delete auth_token cookie by setting its expiration date to the past
-    document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    
+    document.cookie =
+      'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+
     // Redirect to login page
     router.push('/login');
   };
@@ -138,7 +139,9 @@ export function Header({ className }: { className?: string }) {
               <DropdownMenuItem>Hồ sơ</DropdownMenuItem>
               <DropdownMenuItem>Cài đặt</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>Đăng xuất</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>
+                Đăng xuất
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

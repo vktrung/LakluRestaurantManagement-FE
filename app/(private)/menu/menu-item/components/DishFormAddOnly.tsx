@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/card';
 import { Upload, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface DishFormAddOnlyProps {
   onClose?: () => void; // Only for Add mode
@@ -27,6 +28,8 @@ const DishFormAddOnly: React.FC<DishFormAddOnlyProps> = ({ onClose }) => {
   const [price, setPrice] = useState<number>(0);
   const [description, setDescription] = useState('');
   const [imageIds, setImageIds] = useState<number[]>([]);
+  const [requiresPreparation, setRequiresPreparation] =
+    useState<boolean>(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState({
     name: '',
@@ -93,7 +96,13 @@ const DishFormAddOnly: React.FC<DishFormAddOnlyProps> = ({ onClose }) => {
 
     if (!validateForm()) return;
 
-    const dishData: DishRequest = { name, description, imageIds, price };
+    const dishData: DishRequest = {
+      name,
+      description,
+      imageIds,
+      price,
+      requiresPreparation,
+    };
 
     try {
       await createDish(dishData).unwrap();
@@ -101,6 +110,7 @@ const DishFormAddOnly: React.FC<DishFormAddOnlyProps> = ({ onClose }) => {
       setDescription('');
       setPrice(0);
       setImageIds([]);
+      setRequiresPreparation(false);
       if (onClose) onClose();
     } catch (error: any) {
       console.error('Failed to save dish:', error);
@@ -205,6 +215,22 @@ const DishFormAddOnly: React.FC<DishFormAddOnlyProps> = ({ onClose }) => {
             {formErrors.price && (
               <p className="text-red-500 text-xs mt-1">{formErrors.price}</p>
             )}
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="requiresPreparation"
+              checked={requiresPreparation}
+              onCheckedChange={checked =>
+                setRequiresPreparation(checked === true)
+              }
+              disabled={isLoading}
+            />
+            <Label
+              htmlFor="requiresPreparation"
+              className="text-sm font-semibold text-gray-700 cursor-pointer"
+            >
+             Cần chuẩn bị
+            </Label>
           </div>
           <div className="space-y-2">
             <Label

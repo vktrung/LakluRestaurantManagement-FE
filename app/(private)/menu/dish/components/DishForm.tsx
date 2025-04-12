@@ -247,7 +247,7 @@ const DishForm: React.FC<DishFormProps> = ({
 
           <div className="space-y-2">
             <Label className="text-sm font-semibold text-gray-700">
-              Cần chuẩn bị 
+              Trạng thái món ăn
             </Label>
             <div className="flex items-center">
               <input
@@ -257,9 +257,7 @@ const DishForm: React.FC<DishFormProps> = ({
                 className="h-4 w-4 text-gray-600 border-gray-300 rounded focus:ring-gray-500"
                 disabled={isLoading}
               />
-              <span className="ml-2 text-sm text-gray-700">
-                Trạng thái món ăn
-              </span>
+              <span className="ml-2 text-sm text-gray-700">Cần chuẩn bị</span>
             </div>
           </div>
 

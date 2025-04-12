@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   useCreateMenuItemMutation,
   useUpdateMenuItemMutation,
@@ -24,14 +24,24 @@ interface MenuItemFormProps {
   menuId: number;
 }
 
+// Add a CSS module for the custom dropdown styles
+const customDropdownStyles = {
+  dropdown: `absolute z-50 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-y-auto`,
+  option: `px-3 py-2 cursor-pointer hover:bg-gray-100`,
+  selected: `bg-gray-100`,
+  empty: `px-3 py-2 text-gray-500 italic`,
+};
+
 export const MenuItemForm: React.FC<MenuItemFormProps> = ({
   selectedItem,
   onClose,
   onSuccess,
   menuId,
 }) => {
-  const [createMenuItem, { isLoading: isCreating }] = useCreateMenuItemMutation();
-  const [updateMenuItem, { isLoading: isUpdating }] = useUpdateMenuItemMutation();
+  const [createMenuItem, { isLoading: isCreating }] =
+    useCreateMenuItemMutation();
+  const [updateMenuItem, { isLoading: isUpdating }] =
+    useUpdateMenuItemMutation();
   const [formData, setFormData] = useState<MenuItemRequest>({
     dishId: 0,
     menuId: menuId || 0,
@@ -52,12 +62,11 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
     isLoading: dishesLoading,
     refetch: refetchDishes,
   } = useGetAllDishesQuery();
-  const { data: categories, isLoading: categoriesLoading } = useGetCategoriesQuery();
+  const { data: categories, isLoading: categoriesLoading } =
+    useGetCategoriesQuery();
   const { data: menus, isLoading: menusLoading } = useGetMenusQuery();
-  const { data: menuItemData, isLoading: menuItemLoading } = useGetMenuItemByIdQuery(
-    selectedItem!,
-    { skip: !selectedItem },
-  );
+  const { data: menuItemData, isLoading: menuItemLoading } =
+    useGetMenuItemByIdQuery(selectedItem!, { skip: !selectedItem });
   const { data: selectedDishData } = useGetDishByIdQuery(formData.dishId, {
     skip: formData.dishId === 0,
   });
@@ -65,6 +74,11 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
   const originalPrice = selectedDishData?.data?.price || 0;
   const [isDishFormOpen, setIsDishFormOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
+
+  const [showOptions, setShowOptions] = useState(false);
+  const [filteredDishes, setFilteredDishes] = useState<any[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const isLoading =
     isCreating ||
@@ -86,7 +100,8 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
         status: menuItemData.data.status ?? 'enable',
       };
       setFormData(newFormData);
-      const dishName = dishes?.data.find(dish => dish.id === newFormData.dishId)?.name || '';
+      const dishName =
+        dishes?.data.find(dish => dish.id === newFormData.dishId)?.name || '';
       setInputValue(dishName);
     } else {
       setFormData({
@@ -99,6 +114,35 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
       setInputValue('');
     }
   }, [menuItemData, selectedItem, menuId, dishes]);
+
+  // Add new useEffect for filtering dishes based on input
+  useEffect(() => {
+    if (dishes?.data) {
+      const filtered = dishes.data.filter(dish =>
+        dish.name.toLowerCase().includes(inputValue.toLowerCase()),
+      );
+      setFilteredDishes(filtered);
+    }
+  }, [inputValue, dishes]);
+
+  // Add click outside handler
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        setShowOptions(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const validateForm = () => {
     const errors = {
@@ -156,17 +200,25 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
           if (message) {
             setApiError(message);
           } else {
-            setApiError('Dữ liệu không hợp lệ. Vui lòng kiểm tra thông tin nhập vào.');
+            setApiError(
+              'Dữ liệu không hợp lệ. Vui lòng kiểm tra thông tin nhập vào.',
+            );
           }
         } else if (httpStatus === 409) {
-          setApiError('Món ăn này đã tồn tại trong thực đơn. Vui lòng chọn món ăn khác.');
+          setApiError(
+            'Món ăn này đã tồn tại trong thực đơn. Vui lòng chọn món ăn khác.',
+          );
         } else if (message) {
           setApiError(message);
         } else {
-          setApiError('Đã xảy ra lỗi khi lưu món ăn thực đơn. Vui lòng thử lại sau.');
+          setApiError(
+            'Đã xảy ra lỗi khi lưu món ăn thực đơn. Vui lòng thử lại sau.',
+          );
         }
       } else {
-        setApiError('Đã xảy ra lỗi khi kết nối đến máy chủ. Vui lòng thử lại sau.');
+        setApiError(
+          'Đã xảy ra lỗi khi kết nối đến máy chủ. Vui lòng thử lại sau.',
+        );
       }
     }
   };
@@ -174,6 +226,12 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
   const handleDishFormClose = () => {
     setIsDishFormOpen(false);
     refetchDishes();
+  };
+
+  const handleDishSelect = (dish: any) => {
+    setInputValue(dish.name);
+    setFormData({ ...formData, dishId: dish.id });
+    setShowOptions(false);
   };
 
   if (
@@ -200,7 +258,7 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
             </Alert>
           )}
 
-          {/* Dish Input with Datalist and Plus Button */}
+          {/* Dish Input with Custom Dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Món ăn <span className="text-red-500">*</span>
@@ -208,37 +266,50 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <input
+                  ref={inputRef}
                   type="text"
                   value={inputValue}
                   onChange={e => {
                     const value = e.target.value;
                     setInputValue(value);
-
-                    const selectedDish = dishes?.data.find(dish => dish.name === value);
-                    if (selectedDish) {
-                      setFormData({ ...formData, dishId: selectedDish.id });
-                    } else {
-                      setFormData({ ...formData, dishId: 0 });
-                    }
+                    setShowOptions(true);
                   }}
-                  list="dishes-list"
+                  onFocus={() => setShowOptions(true)}
                   placeholder="Nhập hoặc chọn món ăn"
                   className="block w-full p-2 border border-gray-300 rounded-md"
                   disabled={isLoading}
                 />
-                <datalist id="dishes-list">
-                  {isLoading ? (
-                    <option value="" disabled>
-                      Đang tải...
-                    </option>
-                  ) : (
-                    dishes?.data.map(dish => (
-                      <option key={dish.id} value={dish.name}>
-                        {dish.name}
-                      </option>
-                    ))
-                  )}
-                </datalist>
+
+                {showOptions && (
+                  <div
+                    ref={dropdownRef}
+                    className={customDropdownStyles.dropdown}
+                  >
+                    {filteredDishes.length > 0 ? (
+                      filteredDishes.map(dish => (
+                        <div
+                          key={dish.id}
+                          className={`${customDropdownStyles.option} ${
+                            formData.dishId === dish.id
+                              ? customDropdownStyles.selected
+                              : ''
+                          }`}
+                          onClick={() => handleDishSelect(dish)}
+                        >
+                          <div className="font-medium">{dish.name}</div>
+                          <div className="text-xs text-gray-500">
+                            Giá: {dish.price.toLocaleString('vi-VN')} VND
+                            {dish.requiresPreparation && ' • Cần chuẩn bị'}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className={customDropdownStyles.empty}>
+                        Không tìm thấy món ăn
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <Button
                 type="button"
@@ -280,7 +351,9 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
               ))}
             </select>
             {formErrors.categoryId && (
-              <p className="text-red-500 text-xs mt-1">{formErrors.categoryId}</p>
+              <p className="text-red-500 text-xs mt-1">
+                {formErrors.categoryId}
+              </p>
             )}
           </div>
 
@@ -344,14 +417,18 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
 
           {/* Status Radio Buttons */}
           <div className="space-x-4">
-            <label className="text-sm font-medium text-gray-700">Trạng thái</label>
+            <label className="text-sm font-medium text-gray-700">
+              Trạng thái
+            </label>
             <div className="flex items-center">
               <label className="mr-4">
                 <input
                   type="radio"
                   value="enable"
                   checked={formData.status === 'enable'}
-                  onChange={() => setFormData({ ...formData, status: 'enable' })}
+                  onChange={() =>
+                    setFormData({ ...formData, status: 'enable' })
+                  }
                   className="mr-2"
                   disabled={isLoading}
                 />
@@ -362,7 +439,9 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
                   type="radio"
                   value="disable"
                   checked={formData.status === 'disable'}
-                  onChange={() => setFormData({ ...formData, status: 'disable' })}
+                  onChange={() =>
+                    setFormData({ ...formData, status: 'disable' })
+                  }
                   className="mr-2"
                   disabled={isLoading}
                 />
@@ -378,7 +457,11 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
               className="w-full py-3 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors"
               disabled={isLoading}
             >
-              {isLoading ? 'Đang xử lý...' : selectedItem ? 'Cập nhật' : 'Tạo mới'}
+              {isLoading
+                ? 'Đang xử lý...'
+                : selectedItem
+                ? 'Cập nhật'
+                : 'Tạo mới'}
             </Button>
           </div>
         </form>

@@ -154,9 +154,12 @@ export default function ReservationOrdersPage() {
       setIsDeleteDialogOpen(false);
       refetch();
     } catch (error: any) {
-      toast.error("Lỗi xóa món", {
-        description: error?.data?.message || "Không thể xóa món ăn. Vui lòng thử lại sau.",
+      // Kiểm tra nếu có message từ backend
+      const errorMessage = error?.data?.message || "Không thể xóa món ăn. Vui lòng thử lại sau.";
+      toast.error("Không thể xóa món", {
+        description: errorMessage,
       });
+      setIsDeleteDialogOpen(false);
     }
   };
 
@@ -288,15 +291,17 @@ export default function ReservationOrdersPage() {
                           {getStatusBadge(item.statusLabel)}
                         </div>
                         
-                        {/* Nút xóa món ăn */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => openDeleteDialog(item.orderItemId)}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
+                        {/* Nút xóa món ăn - Chỉ hiển thị cho món ở trạng thái đang chờ hoặc đã hủy */}
+                        {(item.statusLabel === "Đang chờ" || item.statusLabel === "Đã hủy") && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => openDeleteDialog(item.orderItemId)}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        )}
                       </li>
                     ))}
                   </ul>

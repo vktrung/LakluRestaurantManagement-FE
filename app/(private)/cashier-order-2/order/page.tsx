@@ -1,9 +1,11 @@
 "use client"
-import { useGetReservationsQuery,useGetReservations1Query } from "@/features/reservation/reservationApiSlice"
+import { useGetReservationsByTimeRangeQuery } from "@/features/reservation/reservationApiSlice"
+import { TimeRangeType } from "@/features/reservation/type"
 import OrderPage from "./components/OrderPage"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { toast } from "sonner"
 
 // Định nghĩa kiểu dữ liệu phân trang
 interface PaginationData {
@@ -44,49 +46,39 @@ interface Reservation {
 }
 
 const Order = () => {
-  const [page, setPage] = useState(0) // API sử dụng zero-based pagination
-  const [pageSize, setPageSize] = useState(10)
+  // Phân trang
+  const [currentPage, setCurrentPage] = useState(0)
+  const [pageSize] = useState(12)
 
-  // Thêm refetchOnMountOrArgChange để fetch lại khi mount
-  const { data, error, isLoading, refetch } = useGetReservations1Query({
-    page,
+  // Sử dụng API hook để lấy dữ liệu đặt bàn
+  const { 
+    data: timeRangeResponse, 
+    error: timeRangeError, 
+    isLoading: isTimeRangeLoading,
+  } = useGetReservationsByTimeRangeQuery({
+    timeRange: "today",
+    page: currentPage,
     size: pageSize
-  }, {
-    refetchOnMountOrArgChange: true
+  }, { 
+    refetchOnMountOrArgChange: true 
   })
 
-  // Thêm useEffect để fetch lại dữ liệu mỗi khi truy cập trang
-  useEffect(() => {
-    // Fetch lại dữ liệu khi component được mount
-    refetch();
-    
-    // Thêm event listener cho focus để fetch lại dữ liệu khi tab được focus lại
-    const handleFocus = () => {
-      refetch();
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [refetch]); // Chỉ cần refetch trong dependencies
+  // Lấy dữ liệu đặt bàn phân trang
+  const pagedData = timeRangeResponse?.data
+  const reservations = pagedData?.content || []
+  const pagination = pagedData?.pagination
+
+  // Hiển thị thông báo lỗi nếu có
+  if (timeRangeError) {
+    toast.error("Không thể tải danh sách đặt bàn. Vui lòng thử lại sau.")
+  }
 
   // Xử lý chuyển trang
-  const handlePreviousPage = () => {
-    if (page > 0) {
-      setPage(page - 1)
-    }
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage)
   }
 
-  const handleNextPage = () => {
-    const pagination = data?.data?.pagination
-    if (pagination && page < pagination.totalPages - 1) {
-      setPage(page + 1)
-    }
-  }
-
-  if (isLoading) {
+  if (isTimeRangeLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-b from-gray-50 to-gray-100">
         <div className="flex flex-col items-center gap-2">
@@ -97,69 +89,45 @@ const Order = () => {
     )
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
-          <h3 className="text-red-700 font-semibold text-lg mb-2">Lỗi</h3>
-          <p className="text-red-600">Có lỗi xảy ra khi tải dữ liệu</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Dữ liệu trả về từ API đã thay đổi cấu trúc
-  const reservations = data?.data?.content || [];
-  const pagination = data?.data?.pagination || {
-    pageNumber: 1,
-    pageSize: 10,
-    totalElements: 0,
-    totalPages: 1,
-    first: true,
-    last: true
-  };
-  
-  console.log(
-    "Reservation details:",
-    reservations.map((r) => ({
-      id: r.id,
-      customerName: r.detail.customerName,
-      customerPhone: r.detail.customerPhone,
-    })),
-  )
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-      <OrderPage />
-      
-      {/* Pagination Controls */}
-      {pagination.totalPages > 1 && (
-        <div className="flex justify-center items-center gap-4 py-6">
-          <Button 
-            variant="outline" 
-            onClick={handlePreviousPage}
-            disabled={page === 0}
-            className="flex items-center gap-1"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Trang trước
-          </Button>
-          
-          <span className="text-sm font-medium">
-            Trang {pagination.pageNumber} / {pagination.totalPages}
-          </span>
-          
-          <Button 
-            variant="outline" 
-            onClick={handleNextPage}
-            disabled={page >= pagination.totalPages - 1}
-            className="flex items-center gap-1"
-          >
-            Trang sau
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-800">Quản lý đặt bàn</h1>
         </div>
-      )}
+
+        <div className="mb-6">
+          <OrderPage reservations={reservations} />
+        </div>
+
+        {pagination && pagination.totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 py-6">
+            <Button 
+              variant="outline" 
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 0}
+              className="flex items-center gap-1"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Trang trước
+            </Button>
+            
+            <span className="text-sm font-medium">
+              Trang {currentPage + 1} / {pagination.totalPages}
+            </span>
+            
+            <Button 
+              variant="outline" 
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= pagination.totalPages - 1}
+              className="flex items-center gap-1"
+            >
+              Trang sau
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -16,20 +16,25 @@ export default function OrderList({
   status,
   refetchOrders,
 }: OrderListProps) {
-  // Lọc các đơn có ít nhất một món chưa hoàn thành
-  const activeOrders = orders.filter(order =>
-    order.orderItems.some(
+  // Lọc các đơn có ít nhất một món chưa hoàn thành và có requiresPreparation = true
+  const activeOrders = orders.filter(order => {
+    const filteredItems = order.orderItems.filter(
+      item => item.dish?.requiresPreparation === true
+    );
+    return filteredItems.some(
       item =>
         item.statusLabel !== 'Đã hoàn thành' &&
         item.statusLabel !== 'Đã hủy' &&
-        item.statusLabel !== 'Đã giao',
-    ),
-  );
+        item.statusLabel !== 'Đã giao'
+    );
+  });
 
   // Sắp xếp đơn theo thời gian tạo, đơn mới nhất lên đầu
   const sortedOrders = [...activeOrders].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
+
+  console.log('Sorted orders:', sortedOrders); // Debug
 
   if (!sortedOrders || sortedOrders.length === 0) {
     return (

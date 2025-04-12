@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table" // [^1]
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -38,12 +38,10 @@ import {
   useGetTodayCashRegisterQuery,
   useGetTransactionHistoryQuery
 } from "@/features/cash-register/cashregisterApiSlice"
-import { Transaction, TransactionHistory } from "@/features/cash-register/type"
 import { toast } from "sonner"
 import Link from "next/link"
 
 export default function SafeManagementPage() {
-  const [transactions, setTransactions] = useState<Transaction[]>([])
   const [openingAmount, setOpeningAmount] = useState("")
   const [openingNotes, setOpeningNotes] = useState("")
   const [closingAmount, setClosingAmount] = useState("")
@@ -109,16 +107,6 @@ export default function SafeManagementPage() {
       }
 
       const data = response.data
-      const newTransaction: Transaction = {
-        id: transactions.length + 1,
-        date: new Date(),
-        type: "opening",
-        amount: amount,
-        balance: amount,
-        description: openingNotes || undefined
-      }
-
-      setTransactions([...transactions, newTransaction])
       setOpeningAmount("")
       setOpeningNotes("")
       toast.success(data.message || "Đã cập nhật số tiền đầu ngày thành công", {
@@ -152,16 +140,6 @@ export default function SafeManagementPage() {
       }
 
       const data = response.data
-      const newTransaction: Transaction = {
-        id: transactions.length + 1,
-        date: new Date(),
-        type: "closing",
-        amount: amount,
-        balance: amount,
-        description: closingNotes || undefined
-      }
-
-      setTransactions([...transactions, newTransaction])
       setClosingAmount("")
       setClosingNotes("")
       toast.success(data.message || "Đã cập nhật số tiền cuối ngày thành công", {
@@ -195,19 +173,6 @@ export default function SafeManagementPage() {
       }
 
       const data = response.data
-      const lastTransaction = transactions[transactions.length - 1]
-      const newBalance = lastTransaction ? lastTransaction.balance - amount : -amount
-
-      const newTransaction: Transaction = {
-        id: transactions.length + 1,
-        date: new Date(),
-        type: "withdrawal",
-        amount: -amount,
-        balance: newBalance,
-        description: withdrawalDescription
-      }
-
-      setTransactions([...transactions, newTransaction])
       setWithdrawalAmount("")
       setWithdrawalDescription("")
       setIsWithdrawalDialogOpen(false)

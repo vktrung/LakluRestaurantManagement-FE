@@ -617,7 +617,7 @@ export default function EventForm({
                               s.id !== staff.staffId
                             }
                           >
-                            {s.username}
+                            {s.profile.fullName}
                           </SelectItem>
                         ))
                       ) : (

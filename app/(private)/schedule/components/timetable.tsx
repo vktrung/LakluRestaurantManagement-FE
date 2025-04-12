@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ScheduleHeader from './ScheduleHeader';
 import ScheduleNavigation from './ScheduleNavigation';
 import ScheduleActions from './ScheduleActions';
@@ -25,6 +25,8 @@ export default function Timetable() {
   const [selectedShiftId, setSelectedShiftId] = useState<number | undefined>(
     undefined,
   );
+  const [hasQrCodePermission, setHasQrCodePermission] =
+    useState<boolean>(false);
 
   const goToPreviousWeek = () => setCurrentDate(prev => subWeeks(prev, 1));
   const goToNextWeek = () => setCurrentDate(prev => addWeeks(prev, 1));
@@ -43,11 +45,24 @@ export default function Timetable() {
     handleSubmit,
     handleGetQrCode,
     handleGetQrCodeCheckout,
-    selectedStaffId, // Lấy staffId hiện tại
-    setSelectedStaffId, // Dùng để thay đổi staffId nếu cần
+    userMeData, // Dùng để thay đổi staffId nếu cần
     isLoadingUserMe, // Trạng thái tải thông tin người dùng
     userMeError, // Lỗi nếu có
   } = useSchedule(currentDate);
+
+  // Check if user has required permission when user data loads
+  useEffect(() => {
+    if (userMeData && userMeData.data) {
+      const hasPermission = userMeData.data.permissions.includes(
+        'schedules:create_check_in_qr_code',
+      );
+      setHasQrCodePermission(hasPermission);
+      // If user doesn't have permission, force to list view
+      if (!hasPermission && viewMode === 'week') {
+        setViewMode('list');
+      }
+    }
+  }, [userMeData, viewMode]);
 
   const handleOpenUpdateDialogWithId = (shift: Shift) => {
     setSelectedShiftId(shift.id);
@@ -63,13 +78,18 @@ export default function Timetable() {
 
   // Hiển thị trạng thái tải hoặc lỗi khi lấy thông tin người dùng
   if (isLoadingUserMe) {
-    return <div className="text-center py-10">Đang tải thông tin người dùng...</div>;
+    return (
+      <div className="text-center py-10">Đang tải thông tin người dùng...</div>
+    );
   }
 
   if (userMeError) {
-    return <div className="text-center py-10 text-red-600">
-      Lỗi khi lấy thông tin người dùng: {(userMeError as any)?.data?.message || 'Không xác định'}
-    </div>;
+    return (
+      <div className="text-center py-10 text-red-600">
+        Lỗi khi lấy thông tin người dùng:{' '}
+        {(userMeError as any)?.data?.message || 'Không xác định'}
+      </div>
+    );
   }
 
   return (
@@ -85,42 +105,57 @@ export default function Timetable() {
         goToNextWeek={goToNextWeek}
       />
 
-      <ScheduleActions
-        handleOpenAddDialog={handleOpenAddDialog}
-  
-      />
+      {hasQrCodePermission && (
+        <ScheduleActions handleOpenAddDialog={handleOpenAddDialog} />
+      )}
 
       <Tabs
         value={viewMode}
-        onValueChange={val => setViewMode(val as 'week' | 'list')}
+        onValueChange={val => {
+          // Only allow changing to week view if user has permission
+          if (val === 'week' && !hasQrCodePermission) {
+            return;
+          }
+          setViewMode(val as 'week' | 'list');
+        }}
         className="w-full"
       >
         <TabsList className="mb-4">
-          <TabsTrigger value="week">Tuần</TabsTrigger>
-          <TabsTrigger value="list">Danh sách</TabsTrigger>
+          {hasQrCodePermission ? (
+            <>
+              <TabsTrigger value="week">Tuần</TabsTrigger>
+              <TabsTrigger value="list">Danh sách</TabsTrigger>
+            </>
+          ) : (
+            <TabsTrigger value="list">Danh sách</TabsTrigger>
+          )}
         </TabsList>
 
-        <TabsContent value="week">
-          <ScheduleWeekView
-            handleGetQrCode={handleGetQrCode}
-            handleGetQrCodeCheckout={handleGetQrCodeCheckout}
-            formattedSchedule={formattedSchedule}
-            handleOpenDialog={handleOpenUpdateDialogWithId}
-            handleDelete={handleDelete}
-          />
-        </TabsContent>
+        {hasQrCodePermission && (
+          <TabsContent value="week">
+            <ScheduleWeekView
+              handleGetQrCode={handleGetQrCode}
+              handleGetQrCodeCheckout={handleGetQrCodeCheckout}
+              formattedSchedule={formattedSchedule}
+              handleOpenDialog={handleOpenUpdateDialogWithId}
+              handleDelete={handleDelete}
+            />
+          </TabsContent>
+        )}
 
         <TabsContent value="list">
           <ScheduleListView
-            formattedStaffSchedule={formattedStaffSchedule} 
-            handleOpenDialog={handleOpenUpdateDialogWithId}
-            handleDelete={handleDelete}
+            formattedStaffSchedule={formattedStaffSchedule}
+            handleOpenDialog={
+              hasQrCodePermission ? handleOpenUpdateDialogWithId : () => {}
+            }
+            handleDelete={hasQrCodePermission ? handleDelete : () => {}}
           />
         </TabsContent>
       </Tabs>
 
       {/* Dialog for Add Shift */}
-      {isDialogOpen && (
+      {isDialogOpen && hasQrCodePermission && (
         <EventForm
           onClose={() => setIsDialogOpen(false)}
           currentDate={currentDate}
@@ -128,7 +163,7 @@ export default function Timetable() {
         />
       )}
 
-      {isUpdateDialogOpen && selectedShiftResponse && (
+      {isUpdateDialogOpen && selectedShiftResponse && hasQrCodePermission && (
         <EventForm
           shiftbyidResp={selectedShiftResponse}
           onClose={() => setIsUpdateDialogOpen(false)}

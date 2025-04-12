@@ -15,8 +15,16 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import {
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useGetUserMeQuery } from '@/features/auth/authApiSlice';
 
 // Client component để sử dụng useSearchParams
 function CheckInForm() {
@@ -30,12 +38,21 @@ function CheckInForm() {
 
   const { handleCheckInFromQR } = useCheckIn();
   const [checkInStatus, setCheckInStatus] = useState<
-    'idle' | 'loading' | 'success' | 'error'
+    'idle' | 'loading' | 'success' | 'error' | 'not_logged_in'
   >('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
+  const [showPin, setShowPin] = useState<boolean>(false);
+
+  // Fetch user data
+  const {
+    data: userData,
+    isLoading: isLoadingUser,
+    isError: isUserError,
+    error: userError,
+  } = useGetUserMeQuery();
 
   // References for PIN input fields
   const pinRefs = [
@@ -44,6 +61,16 @@ function CheckInForm() {
     useRef<HTMLInputElement>(null),
     useRef<HTMLInputElement>(null),
   ];
+
+  // Set username from user data when it loads
+  useEffect(() => {
+    if (userData && userData.data && userData.data.username) {
+      setUsername(userData.data.username);
+    } else if (!isLoadingUser && (isUserError || !userData)) {
+      setCheckInStatus('not_logged_in');
+      setErrorMessage('Hãy đăng nhập trước khi quét mã QR để check in');
+    }
+  }, [userData, isLoadingUser, isUserError]);
 
   // Handle PIN input
   const handlePinChange = (index: number, value: string) => {
@@ -88,7 +115,7 @@ function CheckInForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (hasCheckedIn) return;
+    if (hasCheckedIn || checkInStatus === 'not_logged_in') return;
 
     setCheckInStatus('loading');
 
@@ -101,7 +128,7 @@ function CheckInForm() {
       const expiryNum = Number.parseInt(expiryParam, 10);
 
       if (!username || password.length !== 4) {
-        throw new Error('Vui lòng nhập username và mã PIN 4 số!');
+        throw new Error('Vui lòng nhập mã PIN 4 số!');
       }
 
       console.log('Sending check-in request:', {
@@ -132,7 +159,7 @@ function CheckInForm() {
       console.error('Check-in error:', error);
 
       if (error.status === 500 && error.data?.message === 'Bad credentials') {
-        setErrorMessage('Người dùng nhập sai username hoặc password');
+        setErrorMessage('Người dùng nhập sai password');
       } else if (
         error.status === 400 &&
         error.data?.error === 'Yêu cầu không hợp lệ'
@@ -144,6 +171,28 @@ function CheckInForm() {
     }
   };
 
+  if (isLoadingUser) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md sm:max-w-lg"
+        >
+          <Card className="border border-gray-200 shadow-lg overflow-hidden">
+            <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-4 sm:px-6 space-y-6">
+              <Loader2 className="h-12 w-12 sm:h-16 sm:w-16 text-gray-600 animate-spin" />
+              <CardTitle className="text-lg sm:text-xl font-medium text-gray-800">
+                Đang tải thông tin người dùng...
+              </CardTitle>
+            </div>
+          </Card>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
       <motion.div
@@ -153,6 +202,32 @@ function CheckInForm() {
         className="w-full max-w-md sm:max-w-lg"
       >
         <Card className="border border-gray-200 shadow-lg overflow-hidden">
+          {checkInStatus === 'not_logged_in' && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center py-12 sm:py-16 px-4 sm:px-6 space-y-6"
+            >
+              <div className="relative">
+                <AlertCircle className="h-12 w-12 sm:h-16 sm:w-16 text-amber-500" />
+              </div>
+              <div className="text-center space-y-3">
+                <CardTitle className="text-lg sm:text-xl font-medium text-gray-800">
+                  Bạn chưa đăng nhập
+                </CardTitle>
+                <p className="text-gray-600 text-sm sm:text-base">
+                  {errorMessage}
+                </p>
+                <Button
+                  onClick={() => router.push('/auth/login')}
+                  className="mt-4 bg-gray-800 hover:bg-gray-900 text-white"
+                >
+                  Đăng nhập
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
           {(checkInStatus === 'idle' ||
             (checkInStatus === 'error' && !hasCheckedIn)) && (
             <form onSubmit={handleSubmit}>
@@ -161,7 +236,7 @@ function CheckInForm() {
                   Check-in
                 </CardTitle>
                 <CardDescription className="text-center text-gray-600">
-                  Nhập thông tin của bạn để check-in
+                  Nhập mã PIN của bạn để check-in
                 </CardDescription>
               </CardHeader>
 
@@ -178,9 +253,8 @@ function CheckInForm() {
                       id="username"
                       type="text"
                       value={username}
-                      onChange={e => setUsername(e.target.value)}
-                      placeholder="Nhập username"
-                      className="pl-10 h-11 rounded-md border-gray-300 focus:border-gray-500 focus:ring focus:ring-gray-200 focus:ring-opacity-50 transition-all"
+                      disabled={true}
+                      className="pl-10 h-11 rounded-md border-gray-300 bg-gray-100 focus:border-gray-500 focus:ring focus:ring-gray-200 focus:ring-opacity-50 transition-all"
                       required
                     />
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -203,18 +277,33 @@ function CheckInForm() {
                 </div>
 
                 <div className="space-y-3">
-                  <Label
-                    htmlFor="pin"
-                    className="text-sm font-medium text-gray-700"
-                  >
-                    Mã PIN (4 số)
-                  </Label>
+                  <div className="flex justify-between items-center">
+                    <Label
+                      htmlFor="pin"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Mã PIN (4 số)
+                    </Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-gray-500"
+                      onClick={() => setShowPin(!showPin)}
+                    >
+                      {showPin ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                   <div className="flex justify-center gap-2 sm:gap-3">
                     {[0, 1, 2, 3].map(index => (
                       <Input
                         key={index}
                         ref={pinRefs[index]}
-                        type="text"
+                        type={showPin ? 'text' : 'password'}
                         inputMode="numeric"
                         maxLength={1}
                         onChange={e => handlePinChange(index, e.target.value)}

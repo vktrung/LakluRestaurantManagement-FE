@@ -431,16 +431,35 @@ export default function EventForm({
   // Lấy danh sách các staffId đã được chọn
   const selectedStaffIds = staffs.map(staff => staff.staffId);
 
+  // Debug staff data to understand structure
+  useEffect(() => {
+    if (staffData?.data?.users?.length) {
+      console.log('Staff data structure sample:', staffData.data.users[0]);
+    }
+  }, [staffData]);
+
+  // Filter out resigned staff and admin users
+  const filteredStaff =
+    staffData?.data?.users?.filter(user => {
+      const isWorking = user.profile?.employmentStatus === 'WORKING';
+      const isNotAdmin = !user.username?.toLowerCase().includes('admin');
+
+      return isWorking && isNotAdmin;
+    }) || [];
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold">
             {shiftbyidResp ? 'Chỉnh sửa ca làm' : 'Thêm ca làm'}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        <form
+          onSubmit={onSubmit}
+          className="flex flex-col gap-4 overflow-y-auto pr-1 max-h-[calc(90vh-120px)] custom-scrollbar"
+        >
           {apiError && (
             <Alert variant="destructive" className="mb-2">
               <AlertCircle className="h-4 w-4" />
@@ -607,8 +626,8 @@ export default function EventForm({
                         <SelectItem value="loading" disabled>
                           Đang tải...
                         </SelectItem>
-                      ) : staffData?.data?.users?.length ? (
-                        staffData.data.users.map(s => (
+                      ) : filteredStaff.length ? (
+                        filteredStaff.map(s => (
                           <SelectItem
                             key={s.id}
                             value={s.id.toString()}
@@ -622,7 +641,7 @@ export default function EventForm({
                         ))
                       ) : (
                         <SelectItem value="no-data" disabled>
-                          Không có nhân viên
+                          Không có nhân viên phù hợp
                         </SelectItem>
                       )}
                     </SelectContent>

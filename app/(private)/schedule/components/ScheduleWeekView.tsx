@@ -310,6 +310,13 @@ export default function ScheduleWeekView({
     return isSameDayOrOvernight && isBeforeEndTime;
   };
 
+  // Kiểm tra xem ca đã qua thời gian checkout chưa
+  const isShiftPastCheckoutTime = (shift: Shift) => {
+    const currentTime = currentDate;
+    const timeOut = parseISO(shift.timeOut);
+    return isAfter(currentTime, timeOut);
+  };
+
   return (
     <div className="p-4 bg-white rounded-lg">
       <div className="overflow-x-auto">
@@ -385,14 +392,16 @@ export default function ScheduleWeekView({
                                   )}
                                 </div>
                                 <div className="flex gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7 text-gray-500 hover:text-blue-600"
-                                    onClick={() => handleOpenDialog(shift)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
+                                  {!isShiftPastCheckoutTime(shift) && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-gray-500 hover:text-blue-600"
+                                      onClick={() => handleOpenDialog(shift)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  )}
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -677,7 +686,7 @@ export default function ScheduleWeekView({
                                 className={`text-xs px-2 py-1 rounded-full ${
                                   selectedShift.detail
                                     .userAttendancesByFullName[fullName]
-                                    ?  'bg-green-100 text-green-800'
+                                    ? 'bg-green-100 text-green-800'
                                     : 'bg-red-100 text-red-800'
                                 }`}
                               >
@@ -721,15 +730,17 @@ export default function ScheduleWeekView({
               >
                 Đóng
               </Button>
-              <Button
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => {
-                  setSelectedShift(null);
-                  handleOpenDialog(selectedShift);
-                }}
-              >
-                <Edit className="h-4 w-4 mr-2" /> Chỉnh sửa
-              </Button>
+              {!isShiftPastCheckoutTime(selectedShift) && (
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => {
+                    setSelectedShift(null);
+                    handleOpenDialog(selectedShift);
+                  }}
+                >
+                  <Edit className="h-4 w-4 mr-2" /> Chỉnh sửa
+                </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>

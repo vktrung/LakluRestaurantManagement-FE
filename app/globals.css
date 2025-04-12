@@ -45,6 +45,26 @@ body {
   border: 1px solid #ffffff00;
 }
 
+/* Custom scrollbar for dialogs and forms */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #c5c5c5;
+  border-radius: 8px;
+  border: 1px solid #f1f1f1;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #a0a0a0;
+}
+
 .show {
   opacity: 1 !important;
   visibility: visible !important;
@@ -130,8 +150,6 @@ body {
     @apply bg-background text-foreground;
   }
 }
-
-
 
 @layer base {
   * {

@@ -74,6 +74,7 @@ export interface DishRequest {
   description: string;
   imageIds: number[];
   price: number;
+  requiresPreparation?: boolean;
 }
 
 export interface DishesParams {

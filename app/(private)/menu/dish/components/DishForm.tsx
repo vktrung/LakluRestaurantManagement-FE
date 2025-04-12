@@ -1,4 +1,3 @@
-// app/(private)/menu/dish/components/DishForm.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -37,6 +36,8 @@ const DishForm: React.FC<DishFormProps> = ({
   const [price, setPrice] = useState<number>(0);
   const [description, setDescription] = useState('');
   const [imageIds, setImageIds] = useState<number[]>([]);
+  const [requiresPreparation, setRequiresPreparation] =
+    useState<boolean>(false); // Thêm state cho requiresPreparation
   const [apiError, setApiError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState({
     name: '',
@@ -56,11 +57,14 @@ const DishForm: React.FC<DishFormProps> = ({
       setName(existingDish.name || '');
       setDescription(existingDish.description || '');
       setPrice(existingDish.price || 0);
+      setImageIds(existingDish.imageIds || []);
+      setRequiresPreparation(existingDish.requiresPreparation ?? false); // Cập nhật giá trị requiresPreparation
     } else {
       setName('');
       setDescription('');
       setPrice(0);
       setImageIds([]);
+      setRequiresPreparation(false); // Mặc định là false khi tạo mới
     }
   }, [existingDish, dishId]);
 
@@ -115,10 +119,16 @@ const DishForm: React.FC<DishFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setApiError(null);
-    
+
     if (!validateForm()) return;
 
-    const dishData: DishRequest = { name, description, imageIds, price };
+    const dishData: DishRequest = {
+      name,
+      description,
+      imageIds,
+      price,
+      requiresPreparation, // Thêm requiresPreparation vào dữ liệu gửi đi
+    };
 
     console.log('Submitting dish data:', dishData);
 
@@ -132,19 +142,21 @@ const DishForm: React.FC<DishFormProps> = ({
       setDescription('');
       setPrice(0);
       setImageIds([]);
+      setRequiresPreparation(false); // Reset về false sau khi submit
       if (onClose) onClose();
     } catch (error: any) {
       console.error('Failed to save dish:', error);
-      
-      // Handle API error response
+
       if (error?.data) {
         const { message, httpStatus, error: errorCode } = error.data;
-        
+
         if (httpStatus === 400) {
           if (message) {
             setApiError(message);
           } else {
-            setApiError('Dữ liệu không hợp lệ. Vui lòng kiểm tra thông tin món ăn.');
+            setApiError(
+              'Dữ liệu không hợp lệ. Vui lòng kiểm tra thông tin món ăn.',
+            );
           }
         } else if (httpStatus === 409) {
           setApiError('Món ăn này đã tồn tại. Vui lòng sử dụng tên khác.');
@@ -154,7 +166,9 @@ const DishForm: React.FC<DishFormProps> = ({
           setApiError('Đã xảy ra lỗi khi lưu món ăn. Vui lòng thử lại sau.');
         }
       } else {
-        setApiError('Đã xảy ra lỗi khi kết nối đến máy chủ. Vui lòng thử lại sau.');
+        setApiError(
+          'Đã xảy ra lỗi khi kết nối đến máy chủ. Vui lòng thử lại sau.',
+        );
       }
     }
   };
@@ -169,7 +183,7 @@ const DishForm: React.FC<DishFormProps> = ({
               <AlertDescription>{apiError}</AlertDescription>
             </Alert>
           )}
-          
+
           <div className="space-y-2">
             <Label
               htmlFor="name"
@@ -191,6 +205,7 @@ const DishForm: React.FC<DishFormProps> = ({
               <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>
             )}
           </div>
+
           <div className="space-y-2">
             <Label
               htmlFor="description"
@@ -207,6 +222,7 @@ const DishForm: React.FC<DishFormProps> = ({
               disabled={isLoading}
             />
           </div>
+
           <div className="space-y-2">
             <Label
               htmlFor="price"
@@ -228,6 +244,25 @@ const DishForm: React.FC<DishFormProps> = ({
               <p className="text-red-500 text-xs mt-1">{formErrors.price}</p>
             )}
           </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-gray-700">
+              Cần chuẩn bị 
+            </Label>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                checked={requiresPreparation}
+                onChange={e => setRequiresPreparation(e.target.checked)}
+                className="h-4 w-4 text-gray-600 border-gray-300 rounded focus:ring-gray-500"
+                disabled={isLoading}
+              />
+              <span className="ml-2 text-sm text-gray-700">
+                Trạng thái món ăn
+              </span>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label
               htmlFor="image"
@@ -283,12 +318,11 @@ const DishForm: React.FC<DishFormProps> = ({
             className="rounded-lg bg-gray-900 text-white hover:bg-gray-800 transition-colors"
             disabled={isLoading}
           >
-            {isLoading 
-              ? 'Đang xử lý...' 
-              : dishId && dishId > 0 
-                ? 'Cập Nhật' 
-                : 'Tạo Mới'
-            }
+            {isLoading
+              ? 'Đang xử lý...'
+              : dishId && dishId > 0
+              ? 'Cập Nhật'
+              : 'Tạo Mới'}
           </Button>
         </CardFooter>
       </form>

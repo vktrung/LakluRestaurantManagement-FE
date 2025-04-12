@@ -36,8 +36,6 @@ interface ScheduleListViewProps {
 
 export default function ScheduleListView({
   formattedStaffSchedule,
-  handleOpenDialog,
-  handleDelete,
 }: ScheduleListViewProps) {
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
 
@@ -143,7 +141,8 @@ export default function ScheduleListView({
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-500" />
                   <h3 className="font-medium text-sm text-gray-800">
-                    {shift.date} ({shift.dayOfWeek})
+                    {format(parseISO(shift.timeIn), 'dd/MM/yyyy')} (
+                    {format(parseISO(shift.timeIn), 'EEEE', { locale: vi })})
                   </h3>
                   {isOvernight && (
                     <Badge className="ml-2 bg-violet-100 text-violet-800 border-violet-200 gap-1">
@@ -182,7 +181,6 @@ export default function ScheduleListView({
                     </span>
                   </div>
 
-               
                   <Separator className="my-1" />
 
                   <div className="grid grid-cols-2 gap-3">
@@ -190,7 +188,7 @@ export default function ScheduleListView({
                       <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
                       <span className="text-gray-600">Quản lý:</span>
                       <span className="font-medium truncate text-gray-800">
-                        {shift.detail.manager || 'Không có'}
+                        {shift.detail.managerFullName || 'Không có'}
                       </span>
                     </div>
 
@@ -224,7 +222,7 @@ export default function ScheduleListView({
       {/* Dialog chi tiết (View Only) */}
       {selectedShift && (
         <Dialog open={true} onOpenChange={() => setSelectedShift(null)}>
-          <DialogContent className="sm:max-w-md rounded-xl shadow-xl">
+          <DialogContent className="sm:max-w-md rounded-xl shadow-xl max-h-[85vh]">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-xl text-slate-800">
                 <Info className="h-5 w-5 text-sky-600" />
@@ -239,13 +237,13 @@ export default function ScheduleListView({
                 )}
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="space-y-3 overflow-y-auto pr-1 max-h-[60vh] custom-scrollbar">
               <Card className="border-gray-200 shadow-sm">
-                <CardContent className="p-4">
+                <CardContent className="p-3">
                   <div className="flex items-start gap-2 text-slate-700">
                     <Clock className="h-5 w-5 text-sky-600 mt-1" />
                     <div>
-                      <p className="font-semibold">Thời gian</p>
+                      <p className="font-semibold text-sm">Thời gian</p>
                       {isOvernightShift(
                         selectedShift.timeIn,
                         selectedShift.timeOut,
@@ -258,7 +256,9 @@ export default function ScheduleListView({
                             {formatDate(selectedShift.timeOut)})
                           </p>
                           <p className="text-xs text-gray-500">
-                            {selectedShift.dayOfWeek}
+                            {format(parseISO(selectedShift.timeIn), 'EEEE', {
+                              locale: vi,
+                            })}
                           </p>
                         </div>
                       ) : (
@@ -272,16 +272,14 @@ export default function ScheduleListView({
                 </CardContent>
               </Card>
 
-            
-
               <Card className="border-gray-200 shadow-sm">
-                <CardContent className="p-4">
+                <CardContent className="p-3">
                   <div className="flex items-center gap-2 text-slate-700">
                     <User className="h-5 w-5 text-sky-600" />
                     <div>
-                      <p className="font-semibold">Quản lý</p>
+                      <p className="font-semibold text-sm">Quản lý</p>
                       <p className="text-sm text-slate-600">
-                        {selectedShift.detail.manager || 'Không có'}
+                        {selectedShift.detail.managerFullName || 'Không có'}
                       </p>
                     </div>
                   </div>
@@ -289,36 +287,29 @@ export default function ScheduleListView({
               </Card>
 
               <Card className="border-gray-200 shadow-sm">
-                <CardContent className="p-4">
+                <CardContent className="p-3">
                   <div className="flex items-center gap-2 text-slate-700">
                     <User className="h-5 w-5 text-sky-600" />
-                    <div>
-                      <p className="font-semibold">Số nhân viên</p>
+                    <div className="w-full">
+                      <p className="font-semibold text-sm">Số nhân viên</p>
                       <p className="text-sm text-slate-600">
                         {selectedShift.detail.numberOfStaff} nhân viên
                       </p>
                     </div>
                   </div>
                 </CardContent>
-                <CardContent className="p-4">
+                <CardContent className="p-3 pt-0 border-t border-gray-100">
                   <div className="flex items-start gap-2 text-slate-700">
                     <User className="h-5 w-5 text-sky-600" />
-                    <div>
-                      <p className="font-semibold">Danh sách nhân viên</p>
-                      {selectedShift.detail.usernames &&
-                      selectedShift.detail.usernames.length > 0 ? (
-                        <ul className="text-sm text-slate-600 list-disc list-inside">
-                          {selectedShift.detail.usernames.map(
-                            (username, index) => (
-                              <li key={index}>{username}</li>
-                            ),
-                          )}
-                        </ul>
-                      ) : selectedShift.detail.usernames &&
-                        selectedShift.detail.usernames.length > 0 ? (
-                        <ul className="text-sm text-slate-600 list-disc list-inside">
-                          {selectedShift.detail.usernames.map(
-                            (username, index) => (
+                    <div className="w-full">
+                      <p className="font-semibold text-sm">
+                        Danh sách nhân viên
+                      </p>
+                      {selectedShift.detail.userFullNames &&
+                      selectedShift.detail.userFullNames.length > 0 ? (
+                        <ul className="text-sm text-slate-600 list-disc list-inside max-h-[15vh] overflow-y-auto pr-1">
+                          {selectedShift.detail.userFullNames.map(
+                            (username: string, index: number) => (
                               <li key={index}>{username}</li>
                             ),
                           )}
@@ -334,11 +325,11 @@ export default function ScheduleListView({
               </Card>
 
               <Card className="border-gray-200 shadow-sm">
-                <CardContent className="p-4">
+                <CardContent className="p-3">
                   <div className="flex items-center gap-2 text-slate-700">
                     <Info className="h-5 w-5 text-sky-600" />
                     <div>
-                      <p className="font-semibold">Ghi chú</p>
+                      <p className="font-semibold text-sm">Ghi chú</p>
                       <p className="text-sm text-slate-600 italic">
                         {selectedShift.detail.note || 'Không có ghi chú'}
                       </p>
@@ -348,11 +339,11 @@ export default function ScheduleListView({
               </Card>
 
               <Card className="border-gray-200 shadow-sm">
-                <CardContent className="p-4">
+                <CardContent className="p-3">
                   <div className="flex items-center gap-2 text-slate-700">
                     <Info className="h-5 w-5 text-sky-600" />
                     <div>
-                      <p className="font-semibold">Trạng thái</p>
+                      <p className="font-semibold text-sm">Trạng thái</p>
                       <p className="text-sm text-slate-600">
                         {getAttendanceStatus(selectedShift.detail.attended) ===
                         'Present'
@@ -368,7 +359,7 @@ export default function ScheduleListView({
                 </CardContent>
               </Card>
             </div>
-            <DialogFooter className="mt-4">
+            <DialogFooter className="mt-2">
               <Button
                 variant="outline"
                 className="bg-white hover:bg-gray-100 text-slate-700"

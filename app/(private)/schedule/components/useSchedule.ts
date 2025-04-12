@@ -253,5 +253,6 @@ export function useSchedule(currentDate: Date) {
     setSelectedStaffId, 
     isLoadingUserMe, 
     userMeError, 
+    userMeData,
   };
 }

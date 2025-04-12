@@ -1,16 +1,17 @@
 export type Shift = {
   id: number;
-  date: string;
-  dayOfWeek: string;
   timeIn: string;
   timeOut: string;
   detail: {
     id: number;
-    attended: boolean;
-    manager: string | null;  
-    numberOfStaff: number;   
-    usernames: string[];    
-    note: string;           
+    managerFullName: string;
+    numberOfStaff: number;
+    userFullNames: string[];
+    note: string;
+    timeIn: string;
+    timeOut: string;
+    attended: string; 
+    userAttendancesByFullName: { [key: string]: boolean };
   };
 };
 export type GetShiftsByDateRangeRequest = {

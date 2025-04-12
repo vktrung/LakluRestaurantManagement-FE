@@ -58,7 +58,7 @@ const DishList: React.FC<DishListProps> = ({
 }) => {
   const [isMounted, setIsMounted] = useState(false);
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(10);
+  const [size, setSize] = useState(6);
   const [sortBy, setSortBy] = useState('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
@@ -282,8 +282,8 @@ const DishList: React.FC<DishListProps> = ({
                     }`}
                   >
                     {dish.requiresPreparation
-                      ? 'Cần chuẩn bị trước'
-                      : 'Chuẩn bị nhanh'}
+                      ? 'Cần chuẩn bị '
+                      : 'Có Sẵn'}
                   </Badge>
                 )}
               </div>

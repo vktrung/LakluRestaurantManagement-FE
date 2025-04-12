@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { EmployeeSalaryRequest } from '@/features/salary/types';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useGetSalaryRatesQuery } from '@/features/salary/salaryApiSlice';
 
 interface SalaryFormProps {
   initialData?: EmployeeSalaryRequest;
@@ -21,6 +24,10 @@ export default function SalaryForm({
     },
   );
 
+  // Lấy danh sách mức lương hiện có từ API
+  const { data: salaryRatesData, isLoading } = useGetSalaryRatesQuery();
+  const salaryRates = salaryRatesData?.data || [];
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
@@ -35,7 +42,7 @@ export default function SalaryForm({
     } else {
       setFormData(prev => ({
         ...prev,
-        [target.name]: target.value,
+        [target.name]: target.name === 'amount' ? Number(target.value) : target.value,
       }));
     }
   };
@@ -46,10 +53,12 @@ export default function SalaryForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 bg-white rounded shadow">
-      <div className="mb-4">
-        <label className="block mb-1">Tên Cấp Bậc</label>
-        <input
+    <form onSubmit={handleSubmit} className="p-4 bg-white rounded shadow space-y-4">
+      <div>
+        <label className="block mb-1 text-sm font-medium text-gray-700">
+          Tên Cấp Bậc
+        </label>
+        <Input
           type="text"
           name="levelName"
           value={formData.levelName}
@@ -58,19 +67,39 @@ export default function SalaryForm({
           required
         />
       </div>
-      <div className="mb-4">
-        <label className="block mb-1">Lương</label>
-        <input
+
+      <div>
+        <label className="block mb-1 text-sm font-medium text-gray-700">
+          Lương
+        </label>
+        <Input
           type="number"
           name="amount"
-          value={formData.amount}
+          value={formData.amount === 0 ? '' : formData.amount}
           onChange={handleChange}
+          list="salary-amounts"
           className="w-full p-2 border rounded"
           required
         />
+        <datalist id="salary-amounts">
+          {isLoading ? (
+            <option value="" disabled>
+              Đang tải...
+            </option>
+          ) : (
+            salaryRates.map(salary => (
+              <option key={salary.id} value={salary.amount}>
+                {salary.amount} ({salary.levelName})
+              </option>
+            ))
+          )}
+        </datalist>
       </div>
-      <div className="mb-4">
-        <label className="block mb-1">Loại</label>
+
+      <div>
+        <label className="block mb-1 text-sm font-medium text-gray-700">
+          Loại
+        </label>
         <select
           name="type"
           value={formData.type}
@@ -82,21 +111,22 @@ export default function SalaryForm({
           <option value="SHIFTLY">Theo Ca</option>
         </select>
       </div>
-   
+
+
       <div className="flex justify-end gap-2">
-        <button
+        <Button
           type="button"
           onClick={onCancel}
-          className="bg-red-500 text-white px-4 py-2 rounded"
+          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
         >
           Hủy
-        </button>
-        <button
+        </Button>
+        <Button
           type="submit"
-          className="bg-gray-500 text-white px-4 py-2 rounded"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded"
         >
-          Lưu
-        </button>
+          {initialData ? 'Cập Nhật' : 'Thêm'} {/* Thay đổi nhãn nút dựa trên mode */}
+        </Button>
       </div>
     </form>
   );

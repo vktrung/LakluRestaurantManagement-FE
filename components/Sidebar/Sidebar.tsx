@@ -288,11 +288,26 @@ interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function Sidebar({ className, ...props }: SidebarProps) {
   const { collapsed, toggleCollapsed } = useSidebar();
-  const { data } = useGetUserMeQuery();
+  const { data, isLoading, error, refetch } = useGetUserMeQuery(undefined, {
+    // Luôn làm mới khi component được mount
+    refetchOnMountOrArgChange: true
+  });
+  
+  // Force refetch khi component được mount
+  React.useEffect(() => {
+    refetch();
+  }, [refetch]);
   
   // Determine which menu items to show based on user role
   const userRoles = data?.data?.roleNames || [];
+  
+  // Reset menu items khi dữ liệu đang tải hoặc có lỗi
   const menuItems = React.useMemo(() => {
+    // Nếu đang tải hoặc có lỗi, hiển thị menu trống
+    if (isLoading || error) {
+      return [];
+    }
+    
     if (userRoles.includes('Quản trị viên hệ thống')) {
       return roleBasedMenuItems['Quản trị viên hệ thống'];
     } else if (userRoles.includes('Phục vụ')) {
@@ -303,10 +318,15 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       return roleBasedMenuItems['Thu ngân'];
     }
     return [];
-  }, [userRoles]);
+  }, [userRoles, isLoading, error]);
 
   // Determine which quick links to show
   const quickLinks = React.useMemo(() => {
+    // Nếu đang tải hoặc có lỗi, hiển thị menu trống
+    if (isLoading || error) {
+      return [];
+    }
+    
     if (userRoles.includes('Quản trị viên hệ thống')) {
       return roleBasedQuickLinks['Quản trị viên hệ thống'];
     } else if (userRoles.includes('Phục vụ')) {
@@ -317,113 +337,139 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       return roleBasedQuickLinks['Thu ngân'];
     }
     return [];
-  }, [userRoles]);
+  }, [userRoles, isLoading, error]);
 
   return (
-    <aside
-      className={cn(
-        'fixed top-0 left-0 flex flex-col border-r dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 h-screen overflow-y-auto z-40',
-        collapsed ? 'w-16' : 'w-64',
-        className,
-      )}
-      {...props}
+    <div className={cn(
+      'fixed top-0 left-0 flex flex-col border-r dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 h-screen overflow-y-auto z-40',
+      collapsed ? 'w-16' : 'w-64',
+      className,
+    )}
+    {...props}
     >
-      {/* Header */}
-      <div className="p-4 border-b dark:border-slate-800 flex items-center justify-between">
-        {!collapsed && (
-          <div>
-            <h2 className="text-lg font-bold">Laklu</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Nhà hàng</p>
-          </div>
-        )}
-
-        <Button variant="ghost" size="icon" onClick={toggleCollapsed}>
-          <Menu className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* Accordion Menu */}
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-        <Accordion type="single" collapsible>
-          {menuItems.map(item => (
-            <AccordionItem value={item.value} key={item.value}>
-              <AccordionTrigger className="flex items-center gap-2">
-                {item.icon}
-                {!collapsed && <span>{item.label}</span>}
-              </AccordionTrigger>
-
-              <AccordionContent className={!collapsed ? 'pl-6' : ''}>
-                {item.children.map(child => (
-                  <Link
-                    key={child.href}
-                    href={child.href}
-                    className="flex items-center gap-2 py-1 text-sm hover:underline"
-                  >
-                    {child.icon}
-                    {!collapsed && <span>{child.label}</span>}
-                  </Link>
-                ))}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-
-        {/* Quick Links Section */}
-        {quickLinks.length > 0 && (
-          <div className="mt-4">
-            {!collapsed && (
-              <h3 className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                Truy cập nhanh
-              </h3>
-            )}
-            {quickLinks.map(link => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="flex items-center gap-2 py-1 text-sm hover:underline"
-              >
-                {link.icon}
-                {!collapsed && <span>{link.label}</span>}
-              </Link>
-            ))}
-          </div>
-        )}
-      </nav>
-
-      {/* Footer with dropdown */}
-      <div className="p-4 border-t dark:border-slate-800 flex items-center justify-between">
-        {!collapsed && data?.data && (
-          <div className="text-sm">
-            <div className="font-medium">{data.data.username}</div>
-            <div className="text-gray-500 dark:text-gray-400">
-              {data.data.email}
+      <aside className="flex flex-col h-full">
+        {/* Header */}
+        <div className="p-4 border-b dark:border-slate-800 flex items-center justify-between flex-shrink-0">
+          {!collapsed && (
+            <div>
+              <h2 className="text-lg font-bold">Laklu</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Nhà hàng</p>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Dropdown Menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <SettingsIcon className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Tài khoản của tôi</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem asChild>
-                <Link href="/profile">Hồ sơ</Link>
+          <Button variant="ghost" size="icon" onClick={toggleCollapsed}>
+            <Menu className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Content area - with flex-grow to push footer down */}
+        <div className="flex flex-col flex-grow overflow-hidden">
+          {/* Nếu đang loading thì hiển thị skeleton */}
+          {isLoading ? (
+            <div className="p-4 flex-shrink-0">
+              <div className="animate-pulse">
+                <div className="h-6 bg-gray-200 rounded mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded mb-3 w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded mb-3"></div>
+                <div className="h-4 bg-gray-200 rounded mb-3 w-5/6"></div>
+                <div className="h-4 bg-gray-200 rounded mb-3 w-4/5"></div>
+              </div>
+            </div>
+          ) : (
+            /* Accordion Menu */
+            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+              <Accordion type="single" collapsible>
+                {menuItems.map(item => (
+                  <AccordionItem value={item.value} key={item.value}>
+                    <AccordionTrigger className="flex items-center gap-2">
+                      {item.icon}
+                      {!collapsed && <span>{item.label}</span>}
+                    </AccordionTrigger>
+
+                    <AccordionContent className={!collapsed ? 'pl-6' : ''}>
+                      {item.children.map(child => (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className="flex items-center gap-2 py-1 text-sm hover:underline"
+                        >
+                          {child.icon}
+                          {!collapsed && <span>{child.label}</span>}
+                        </Link>
+                      ))}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+
+              {/* Quick Links Section */}
+              {quickLinks.length > 0 && (
+                <div className="mt-4">
+                  {!collapsed && (
+                    <h3 className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                      Truy cập nhanh
+                    </h3>
+                  )}
+                  {quickLinks.map(link => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className="flex items-center gap-2 py-1 text-sm hover:underline"
+                    >
+                      {link.icon}
+                      {!collapsed && <span>{link.label}</span>}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </nav>
+          )}
+        </div>
+
+        {/* Footer with dropdown - always at bottom */}
+        <div className="p-4 border-t dark:border-slate-800 flex items-center justify-between mt-auto flex-shrink-0">
+          {!collapsed && data?.data && (
+            <div className="text-sm">
+              <div className="font-medium">{data.data.username}</div>
+              <div className="text-gray-500 dark:text-gray-400">
+                {data.data.email}
+              </div>
+            </div>
+          )}
+
+          {/* Dropdown Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <SettingsIcon className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Tài khoản của tôi</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuItem asChild>
+                  <Link href="/profile">Hồ sơ</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/settings">Cài đặt</Link>
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => {
+                // Xóa token
+                document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                // Làm mới dữ liệu
+                refetch();
+                // Chuyển hướng
+                window.location.href = '/login';
+              }}>
+                Đăng xuất
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/settings">Cài đặt</Link>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Đăng xuất</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </aside>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </aside>
+    </div>
   );
 }

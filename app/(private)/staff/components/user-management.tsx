@@ -372,7 +372,7 @@ export function UserManagement() {
                             {translateStatus(user.profile.employmentStatus)}
                           </Badge>
                         </TableCell>
-                        <TableCell>{user.nameSalaryRate}</TableCell>
+                        <TableCell>{user.salaryRateName}</TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>

@@ -6,13 +6,15 @@ import {
   RevenueTodayResponse, 
   WeeklyRevenueResponse,
   LastThreeMonthsRevenueResponse,
-  LastThreeYearsRevenueResponse  
+  LastThreeYearsRevenueResponse,
+  TotalDishSoldResponse,
+  DishDetailResponse
 } from './types';
 
 export const statisticsApiSlice = createApi({
   reducerPath: 'statisticsApi',
   baseQuery,
-  tagTypes: ['top-dishes', 'revenue-today', 'weekly-revenue', 'last-three-months-revenue', 'last-three-years-revenue'],
+  tagTypes: ['top-dishes', 'revenue-today', 'weekly-revenue', 'last-three-months-revenue', 'last-three-years-revenue', 'top-dishes-last-hour', 'total-dish-sold', 'dish-details'],
   endpoints: builder => ({
     getTopSellingDishes: builder.query<TopDishesResponse, void>({
       query: () => ({
@@ -20,6 +22,30 @@ export const statisticsApiSlice = createApi({
         method: 'GET',
       }),
       providesTags: ['top-dishes'],
+    }),
+
+    getTopSellingDishesLastHour: builder.query<TopDishesResponse, void>({
+      query: () => ({
+        url: `${endpoints.StatisticsApi}top-selling-dishes/last-hour`,
+        method: 'GET',
+      }),
+      providesTags: ['top-dishes-last-hour'],
+    }),
+
+    getTotalDishSold: builder.query<TotalDishSoldResponse, void>({
+      query: () => ({
+        url: `${endpoints.StatisticsApi}dishes/evening-to-morning`,
+        method: 'GET',
+      }),
+      providesTags: ['total-dish-sold'],
+    }),
+
+    getDishDetails: builder.query<DishDetailResponse, void>({
+      query: () => ({
+        url: `${endpoints.StatisticsApi}dishes/evening-to-morning/details`,
+        method: 'GET',
+      }),
+      providesTags: ['dish-details'],
     }),
 
     getRevenueToday: builder.query<RevenueTodayResponse, void>({
@@ -58,6 +84,9 @@ export const statisticsApiSlice = createApi({
 
 export const {
   useGetTopSellingDishesQuery,
+  useGetTopSellingDishesLastHourQuery,
+  useGetTotalDishSoldQuery,
+  useGetDishDetailsQuery,
   useGetRevenueTodayQuery,
   useGetWeeklyRevenueQuery,
   useGetLastThreeMonthsRevenueQuery,

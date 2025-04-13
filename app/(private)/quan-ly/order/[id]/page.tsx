@@ -6,14 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useGetOrdersByReservationIdQuery } from "@/features/order/orderApiSlice";
+import { useGetOrdersByReservationIdQuery, useUpdateOrderItemQuantityMutation } from "@/features/order/orderApiSlice";
 import { Order, OrderItem } from "@/features/order/types";
 import { toast } from "sonner";
 // Import icons from lucide-react
@@ -25,16 +18,16 @@ export default function ReservationOrdersPage() {
   const reservationId = Number(params.id);
 
   const { data: ordersResponse, isLoading, isError } = useGetOrdersByReservationIdQuery(reservationId);
-  // const [updateOrderItem, { isLoading: isUpdating }] = useUpdateOrderItemMutation();
+  const [updateOrderItemQuantity, { isLoading: isUpdating }] = useUpdateOrderItemQuantityMutation();
 
   // Sort orders by createdAt (earliest first)
   const orders = (ordersResponse?.data || []).slice().sort((a: Order, b: Order) => {
     return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   });
 
-  // State for editing quantity and status
+  // State for editing quantity only
   const [editStates, setEditStates] = useState<{
-    [key: number]: { quantity: number; status: string };
+    [key: number]: { quantity: number };
   }>({});
 
   const getStatusBadge = (status: string) => {
@@ -85,49 +78,36 @@ export default function ReservationOrdersPage() {
       return {
         ...prev,
         [orderItemId]: {
-          ...prev[orderItemId],
           quantity: newQuantity,
         },
       };
     });
   };
 
-  const handleStatusChange = (orderItemId: number, status: string) => {
-    setEditStates((prev) => ({
-      ...prev,
-      [orderItemId]: {
-        ...prev[orderItemId],
-        status,
-      },
-    }));
+  const handleUpdate = async (orderItem: OrderItem) => {
+    const editState = editStates[orderItem.orderItemId] || {};
+    const updatedQuantity = editState.quantity ?? orderItem.quantity;
+
+    try {
+      await updateOrderItemQuantity({
+        orderItemId: orderItem.orderItemId,
+        quantity: updatedQuantity,
+      }).unwrap();
+      toast.success(`Cập nhật số lượng món ${orderItem.dish.name} thành công!`, {
+        position: "top-right",
+      });
+      // Clear edit state for this item
+      setEditStates((prev) => {
+        const newState = { ...prev };
+        delete newState[orderItem.orderItemId];
+        return newState;
+      });
+    } catch (error) {
+      toast.error("Có lỗi xảy ra khi cập nhật số lượng món.", {
+        position: "top-right",
+      });
+    }
   };
-
-  // const handleUpdate = async (orderItem: OrderItem) => {
-  //   const editState = editStates[orderItem.orderItemId] || {};
-  //   const updatedQuantity = editState.quantity ?? orderItem.quantity;
-  //   const updatedStatus = editState.status ?? orderItem.statusLabel;
-
-  //   try {
-  //     await updateOrderItem({
-  //       orderItemId: orderItem.orderItemId,
-  //       quantity: updatedQuantity,
-  //       status: updatedStatus,
-  //     }).unwrap();
-  //     toast.success(`Cập nhật món ${orderItem.dish.name} thành công!`, {
-  //       position: "top-right",
-  //     });
-  //     // Clear edit state for this item
-  //     setEditStates((prev) => {
-  //       const newState = { ...prev };
-  //       delete newState[orderItem.orderItemId];
-  //       return newState;
-  //     });
-  //   } catch (error) {
-  //     toast.error("Có lỗi xảy ra khi cập nhật món.", {
-  //       position: "top-right",
-  //     });
-  //   }
-  // };
 
   if (isLoading) {
     return (
@@ -215,7 +195,7 @@ export default function ReservationOrdersPage() {
                     {order.orderItems.map((item: OrderItem) => {
                       const isEditing = editStates[item.orderItemId] !== undefined;
                       const currentQuantity = isEditing ? editStates[item.orderItemId].quantity : item.quantity;
-                      const currentStatus = isEditing ? editStates[item.orderItemId].status : item.statusLabel;
+                      const isPending = item.statusLabel === "Đang chờ";
 
                       return (
                         <li key={item.orderItemId} className="flex flex-col gap-3 text-sm border-b pb-3 last:border-b-0">
@@ -224,7 +204,7 @@ export default function ReservationOrdersPage() {
                               <Salad className="w-4 h-4 text-gray-800" />
                               {item.dish.name}
                             </span>
-                            {getStatusBadge(currentStatus)}
+                            {getStatusBadge(item.statusLabel)}
                           </div>
                           <div className="flex flex-col gap-2">
                             <div className="flex items-center gap-2">
@@ -234,7 +214,7 @@ export default function ReservationOrdersPage() {
                                 size="sm"
                                 className="h-8 w-8 p-0"
                                 onClick={() => handleQuantityChange(item.orderItemId, -1)}
-                                disabled={currentQuantity <= 1}
+                                disabled={currentQuantity <= 1 || !isPending}
                               >
                                 <Minus className="w-4 h-4" />
                               </Button>
@@ -244,37 +224,17 @@ export default function ReservationOrdersPage() {
                                 size="sm"
                                 className="h-8 w-8 p-0"
                                 onClick={() => handleQuantityChange(item.orderItemId, 1)}
+                                disabled={!isPending}
                               >
                                 <PlusIcon className="w-4 h-4" />
-                              </Button>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-gray-600 font-medium">Trạng thái:</span>
-                              <Button
-                                variant={currentStatus === "Đã hủy" ? "destructive" : "outline"}
-                                size="sm"
-                                className="h-8 text-sm"
-                                onClick={() => handleStatusChange(item.orderItemId, "CANCELLED")}
-                                disabled={currentStatus === "Đã hủy"}
-                              >
-                                Hủy
-                              </Button>
-                              <Button
-                                variant={currentStatus === "Đã hoàn thành" ? "default" : "outline"}
-                                size="sm"
-                                className={`h-8 text-sm ${currentStatus === "Đã hoàn thành" ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
-                                onClick={() => handleStatusChange(item.orderItemId, "COMPLETED")}
-                                disabled={currentStatus === "Đã hoàn thành"}
-                              >
-                                Hoàn thành
                               </Button>
                             </div>
                             <Button
                               variant="default"
                               size="sm"
                               className="h-8 text-sm bg-indigo-600 hover:bg-indigo-700 text-white mt-2"
-                              // onClick={() => handleUpdate(item)}
-                              disabled={ !isEditing}
+                              onClick={() => handleUpdate(item)}
+                              disabled={isUpdating || !isEditing || !isPending}
                             >
                               Cập nhật
                             </Button>

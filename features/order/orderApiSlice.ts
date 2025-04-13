@@ -51,7 +51,14 @@ export const orderApiSlice = createApi({
       }),
       invalidatesTags: ['Order', 'ReservationOrder']
     }),
-
+    updateOrderItemQuantity: builder.mutation<OrderItem, { orderItemId: number, quantity: number }>({
+  query: ({ orderItemId, quantity }) => ({
+    url: `${endpoints.OrderItemApi}${orderItemId}`,
+    method: 'PUT',
+    body: { quantity }
+  }),
+  invalidatesTags: ['Order', 'ReservationOrder']
+}),
     // Update order status
     updateOrderStatus: builder.mutation<Order, { id: number, statusUpdate: UpdateOrderStatusRequest }>({
       query: ({ id, statusUpdate }) => ({
@@ -170,5 +177,6 @@ export const {
   useSplitOrderMutation,
   useMergeOrdersMutation,
   useCreateNewItemByOrderIdMutation,
-  useDeleteOrderItemByIdMutation
+  useDeleteOrderItemByIdMutation,
+  useUpdateOrderItemQuantityMutation
 } = orderApiSlice;

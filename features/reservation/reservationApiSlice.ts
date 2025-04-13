@@ -22,7 +22,9 @@ import {
   SearchReservationsResponse,
   SearchReservationsParams,
   FilterReservationsResponse,
-  FilterReservationsParams
+  FilterReservationsParams,
+  TransferTableRequest,
+  TransferTableResponse
 } from './type';
 
 export const reservationApiSlice = createApi({
@@ -179,6 +181,18 @@ export const reservationApiSlice = createApi({
       },
       providesTags: ['reservation-list'],
     }),
+    // Mutation chuyển bàn
+    transferTables: builder.mutation<TransferTableResponse, { reservationId: number; request: TransferTableRequest }>({
+      query: ({ reservationId, request }) => ({
+        url: `${endpoints.ReservationApi}${reservationId}/transfer-tables`,
+        method: 'POST',
+        body: request,
+      }),
+      invalidatesTags: (result, error, arg) => [
+        { type: 'reservation', id: arg.reservationId },
+        'reservation-list',
+      ],
+    }),
   }),
 });
 
@@ -197,5 +211,6 @@ export const {
   useConfirmReservationMutation,
   useGetReservationsByTimeRangeQuery,
   useSearchReservationsQuery,
-  useFilterReservationsQuery
+  useFilterReservationsQuery,
+  useTransferTablesMutation
 } = reservationApiSlice;

@@ -1,4 +1,4 @@
-// pages/OrderPage.tsx
+'use client'
 import { useState } from "react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -10,6 +10,21 @@ import { toast } from "sonner";
 import { useGetReservationsQuery } from "@/features/reservation/reservationApiSlice";
 import { useGetOrdersByReservationIdQuery } from "@/features/order/orderApiSlice";
 import { ReservationResponse, TableInfo } from "@/features/reservation/type";
+// Import icons from lucide-react
+import {
+  Plus,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  User,
+  Phone,
+  Users,
+  Table2,
+  Loader2,
+  Package,
+  ShoppingCart,
+  XCircle,
+} from "lucide-react";
 
 // Tách thành component con để xử lý việc lấy đơn hàng theo ID đặt bàn
 type ReservationCardProps = {
@@ -22,14 +37,14 @@ type ReservationCardProps = {
   handleCreateOrder: (reservation: ReservationResponse) => void;
 };
 
-function ReservationCard({ 
-  reservation, 
-  getStatusBadge, 
-  getCardColor, 
-  getTableBadgeStyle, 
-  getTableNumbers, 
-  formatDateTime, 
-  handleCreateOrder 
+function ReservationCard({
+  reservation,
+  getStatusBadge,
+  getCardColor,
+  getTableBadgeStyle,
+  getTableNumbers,
+  formatDateTime,
+  handleCreateOrder,
 }: ReservationCardProps) {
   const { data: ordersResponse, isFetching: ordersFetching } = useGetOrdersByReservationIdQuery(reservation.id);
   const orders = ordersResponse?.data || [];
@@ -43,19 +58,27 @@ function ReservationCard({
     >
       <CardHeader className="pb-2 bg-opacity-50 bg-white">
         <div className="flex justify-between items-center">
-          <CardTitle className="text-lg font-semibold text-gray-800">
+          <CardTitle className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <Table2 className="w-5 h-5 text-gray-800" />
             Bàn {reservation.id}
           </CardTitle>
           <div className="flex items-center space-x-2">
             {getStatusBadge(reservation.detail.status)}
             {ordersFetching ? (
-              <Badge className="bg-gray-200 text-gray-900">Đang kiểm tra...</Badge>
+              <Badge className="bg-gray-200 text-gray-900 flex items-center gap-1">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Đang kiểm tra...
+              </Badge>
             ) : hasOrders ? (
-              <Badge className="bg-indigo-200 text-indigo-900">
+              <Badge className="bg-indigo-200 text-indigo-900 flex items-center gap-1">
+                <ShoppingCart className="w-4 h-4" />
                 Có {orders.length} đơn
               </Badge>
             ) : (
-              <Badge className="bg-red-200 text-red-900">Chưa có đơn</Badge>
+              <Badge className="bg-red-200 text-red-900 flex items-center gap-1">
+                <XCircle className="w-4 h-4" />
+                Chưa có đơn
+              </Badge>
             )}
           </div>
         </div>
@@ -63,35 +86,60 @@ function ReservationCard({
       <CardContent className="space-y-3 pt-2">
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
-            <p className="text-gray-600 font-medium">Khách hàng</p>
+            <p className="text-gray-600 font-medium flex items-center gap-2">
+              <User className="w-4 h-4 text-gray-600" />
+              Khách hàng
+            </p>
             <p className="text-gray-800">{reservation.detail.customerName}</p>
           </div>
           <div>
-            <p className="text-gray-600 font-medium">Số điện thoại</p>
+            <p className="text-gray-600 font-medium flex items-center gap-2">
+              <Phone className="w-4 h-4 text-gray-600" />
+              Số điện thoại
+            </p>
             <p className="text-gray-800">{reservation.detail.customerPhone}</p>
           </div>
           <div>
-            <p className="text-gray-600 font-medium">Số người</p>
+            <p className="text-gray-600 font-medium flex items-center gap-2">
+              <Users className="w-4 h-4 text-gray-600" />
+              Số người
+            </p>
             <p className="text-gray-800">{reservation.detail.numberOfPeople}</p>
           </div>
           <div>
-            <p className="text-gray-600 font-medium">Bàn</p>
+            <p className="text-gray-600 font-medium flex items-center gap-2">
+              <Table2 className="w-4 h-4 text-gray-600" />
+              Bàn
+            </p>
             <span className={getTableBadgeStyle(reservation.detail.status)}>
               {getTableNumbers(reservation.detail.tables)}
             </span>
           </div>
         </div>
         <div>
-          <p className="text-gray-600 font-medium">Thời gian vào</p>
+          <p className="text-gray-600 font-medium flex items-center gap-2">
+            <Clock className="w-4 h-4 text-gray-600" />
+            Thời gian vào
+          </p>
           <p className="text-gray-800">{formatDateTime(reservation.timeIn)}</p>
         </div>
         <Button
           variant="default"
           size="sm"
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white mt-2"
+          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white mt-2 flex items-center gap-2"
           onClick={() => handleCreateOrder(reservation)}
         >
-          {hasOrders && !ordersFetching ? "Xem đơn" : "Tạo đơn hàng"}
+          {hasOrders && !ordersFetching ? (
+            <>
+              <Package className="w-4 h-4" />
+              Xem đơn
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4" />
+              Tạo đơn hàng
+            </>
+          )}
         </Button>
       </CardContent>
     </Card>
@@ -109,24 +157,32 @@ export default function OrderPage() {
     switch (status) {
       case "PENDING":
         return (
-          <Badge className="bg-yellow-200 text-yellow-900 hover:bg-yellow-300">
+          <Badge className="bg-yellow-200 text-yellow-900 hover:bg-yellow-300 flex items-center gap-1">
+            <Clock className="w-4 h-4" />
             Đang chờ
           </Badge>
         );
       case "CONFIRMED":
         return (
-          <Badge className="bg-blue-200 text-blue-900 hover:bg-blue-300">
+          <Badge className="bg-blue-200 text-blue-900 hover:bg-blue-300 flex items-center gap-1">
+            <CheckCircle className="w-4 h-4" />
             Đã xác nhận
           </Badge>
         );
       case "COMPLETED":
         return (
-          <Badge className="bg-green-200 text-green-900 hover:bg-green-300">
+          <Badge className="bg-green-200 text-green-900 hover:bg-green-300 flex items-center gap-1">
+            <CheckCircle className="w-4 h-4" />
             Hoàn thành
           </Badge>
         );
       default:
-        return <Badge className="bg-gray-200 text-gray-900">{status}</Badge>;
+        return (
+          <Badge className="bg-gray-200 text-gray-900 flex items-center gap-1">
+            <AlertCircle className="w-4 h-4" />
+            {status}
+          </Badge>
+        );
     }
   };
 
@@ -180,7 +236,10 @@ export default function OrderPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
-        <p className="text-gray-600 text-lg font-medium">Đang tải dữ liệu...</p>
+        <div className="flex items-center gap-2">
+          <Loader2 className="w-6 h-6 animate-spin text-gray-600" />
+          <p className="text-gray-600 text-lg font-medium">Đang tải dữ liệu...</p>
+        </div>
       </div>
     );
   }
@@ -188,22 +247,29 @@ export default function OrderPage() {
   if (isError) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
-        <p className="text-red-600 text-lg font-medium">Có lỗi xảy ra khi tải dữ liệu.</p>
+        <div className="flex items-center gap-2">
+          <AlertCircle className="w-6 h-6 text-red-600" />
+          <p className="text-red-600 text-lg font-medium">Có lỗi xảy ra khi tải dữ liệu.</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="w-full min-h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6 tracking-tight">
+      <h1 className="text-3xl font-bold text-gray-800 mb-6 tracking-tight flex items-center gap-2">
+        <Table2 className="w-8 h-8 text-indigo-600" />
         Quản lý đặt bàn
       </h1>
 
       {activeReservations.length === 0 ? (
         <div className="flex items-center justify-center h-[calc(100vh-12rem)] bg-white rounded-lg shadow-sm">
-          <p className="text-gray-600 text-lg font-medium">
-            Không có dữ liệu đặt bàn hiện tại
-          </p>
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-6 h-6 text-gray-600" />
+            <p className="text-gray-600 text-lg font-medium">
+              Không có dữ liệu đặt bàn hiện tại
+            </p>
+          </div>
         </div>
       ) : (
         <div className="flex overflow-x-auto space-x-6 pb-4 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">

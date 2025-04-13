@@ -298,7 +298,10 @@ export default function ReservationOrdersPage() {
           Đơn hàng cho đặt bàn {reservationId}
         </h1>
 
-        {orders.length > 1 && (
+        {/* Nút gộp đơn - Chỉ hiển thị khi có nhiều hơn 1 đơn và tất cả món trong các đơn đều đã giao */}
+        {orders.length > 1 && orders.every(order => 
+          order.orderItems.every(item => item.statusLabel === "Đã giao")
+        ) && (
           <Button
             variant="outline"
             className="bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100"
@@ -365,7 +368,9 @@ export default function ReservationOrdersPage() {
                 </div>
 
                 <div className="flex flex-col gap-2 mt-4">
-                  {order.orderItems.length > 0 && order.statusLabel === "Đang chờ" && (
+                  {/* Nút tách đơn - Chỉ hiển thị khi tất cả món trong đơn đều đã giao */}
+                  {order.orderItems.length > 0 && 
+                   order.orderItems.every(item => item.statusLabel === "Đã giao") && (
                     <Button
                       variant="outline"
                       size="sm"

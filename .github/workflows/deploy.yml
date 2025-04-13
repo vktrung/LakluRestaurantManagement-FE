@@ -49,8 +49,15 @@ jobs:
             # Cài đặt dependencies
             npm install --legacy-peer-deps
             
-            # Thiết lập biến môi trường
+            # Thiết lập biến môi trường và thêm BUILD_ID để tránh cache
+            BUILD_ID=$(date +%s)
             echo "NEXT_PUBLIC_SERVER_URL=https://api.laklu.com" > .env
+            echo "NEXT_PUBLIC_BUILD_ID=$BUILD_ID" >> .env
+            echo "Sử dụng BUILD_ID: $BUILD_ID để tránh cache"
+            
+            # Xóa cache trước khi build
+            echo "Xóa cache để đảm bảo build mới..."
+            rm -rf .next/cache
             
             # Build project
             export NODE_OPTIONS=--openssl-legacy-provider
@@ -74,9 +81,26 @@ jobs:
               
               # Khởi động ứng dụng
               cd /var/www/cmslaklu
+              
+              # Ghi chú về cache
+              echo "LƯU Ý: Để tránh cache hoàn toàn, bạn nên thêm thủ công cấu hình sau vào next.config.js:"
+              echo "---"
+              echo "// Thêm headers để ngăn cache"
+              echo "headers: async () => ["
+              echo "  {"
+              echo "    source: '/:path*',"
+              echo "    headers: ["
+              echo "      { key: 'Cache-Control', value: 'no-store, max-age=0, must-revalidate' },"
+              echo "    ],"
+              echo "  },"
+              echo "],"
+              echo "---"
+              
+              # Khởi động lại ứng dụng
               pm2 restart cmslaklu || pm2 start ecosystem.config.js
               
               echo "Deployment successful!"
+              echo "Build ID: $BUILD_ID"
             else
               echo "Build failed, deployment aborted!"
               exit 1

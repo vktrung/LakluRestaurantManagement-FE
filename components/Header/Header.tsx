@@ -124,13 +124,13 @@ export function Header({ className }: { className?: string }) {
 
         {/* Right side actions */}
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon">
+          {/* <Button variant="ghost" size="icon">
             <Search className="h-5 w-5" />
-          </Button>
+          </Button> */}
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="icon">
+            {/* <Button variant="ghost" size="icon">
               <Search className="h-5 w-5" />
-            </Button>
+            </Button> */}
             <NotificationBell />
           </div>
           <DropdownMenu>

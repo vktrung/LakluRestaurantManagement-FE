@@ -28,261 +28,253 @@ import {
 
 // lucide-react icons
 import {
-  Menu,
-  BarChart,
-  FileText,
+  LayoutDashboard,
   Users,
-  Settings as SettingsIcon,
-  PieChart,
+  SettingsIcon,
   DollarSign,
-  Soup,
-  Briefcase,
-  BookOpen,
-  Receipt,
-  Ticket,
+  Utensils,
   CalendarDays,
-} from 'lucide-react';
+  Table,
+  CalendarClock,
+  ShoppingCart,
+  Tag,
+  ListOrdered,
+  ChefHat,
+  History,
+  Shield,
+  UserCog,
+  CreditCard,
+  BadgePercent,
+  ScrollText,
+  Coffee,
+  UtensilsCrossed,
+  Receipt, 
+  Menu
+} from "lucide-react"
+
 import { IoFastFood } from 'react-icons/io5';
 import { useGetUserMeQuery } from '@/features/auth/authApiSlice';
 
 // Define menu items for each role
 const roleBasedMenuItems = {
-  'Quản trị viên hệ thống': [
+  "Quản trị viên hệ thống": [
     // Admin has access to all menu items
     {
-      label: 'Quản lý',
-      value: 'quan-ly',
-      icon: <BarChart className="h-4 w-4" />,
+      label: "Quản lý",
+      value: "quan-ly",
+      icon: <LayoutDashboard className="h-4 w-4" />, // Thay đổi từ BarChart
       children: [
         {
-          label: 'Tổng quát',
-          href: '/quan-ly/tong-quat',
-          icon: <PieChart className="h-4 w-4" />,
+          label: "Tổng quát",
+          href: "/quan-ly/tong-quat",
+          icon: <LayoutDashboard className="h-4 w-4" />, // Dashboard icon phù hợp hơn
         },
         {
-          label: 'Giao dịch',
-          href: '/payment',
-          icon: <DollarSign className="h-4 w-4" />,
+          label: "Bàn ăn",
+          href: "/quan-ly/table",
+          icon: <Table className="h-4 w-4" />, // Icon bàn phù hợp hơn
         },
         {
-          label: 'Món ăn',
-          href: '/quan-ly/mon-an',
-          icon: <Soup className="h-4 w-4" />,
+          label: "Đặt bàn",
+          href: "/quan-ly/reservation",
+          icon: <CalendarClock className="h-4 w-4" />, // Icon lịch đặt trước
         },
         {
-          label: 'Lương',
-          href: '/quan-ly/luong',
-          icon: <Briefcase className="h-4 w-4" />,
+          label: "Gọi món",
+          href: "/quan-ly/order",
+          icon: <ShoppingCart className="h-4 w-4" />, // Icon giỏ hàng phù hợp hơn
         },
         {
-          label: 'Bàn ăn',
-          href: '/quan-ly/table',
-          icon: <PieChart className="h-4 w-4" />,
-        },
-        {
-          label: 'Đặt bàn',
-          href: '/quan-ly/reservation',
-          icon: <PieChart className="h-4 w-4" />,
-        },
-        {
-          label: 'Gọi món',
-          href: '/quan-ly/order',
-          icon: <PieChart className="h-4 w-4" />,
-        },
-        {
-          label: 'Mã giảm giá',
-          href: '/voucher',
-          icon: <Ticket className="h-4 w-4" />,
+          label: "Mã giảm giá",
+          href: "/voucher",
+          icon: <Tag className="h-4 w-4" />, // Icon thẻ giảm giá
         },
       ],
     },
     {
-      label: 'Menu',
-      value: 'menu',
-      icon: <FileText className="h-4 w-4" />,
+      label: "Menu",
+      value: "menu",
+      icon: <UtensilsCrossed className="h-4 w-4" />, // Thay đổi từ FileText
       children: [
         {
-          label: 'Danh mục',
-          href: '/menu/category',
-          icon: <BookOpen className="h-4 w-4" />,
+          label: "Danh mục",
+          href: "/menu/category",
+          icon: <ListOrdered className="h-4 w-4" />, // Icon danh sách có thứ tự
         },
         {
-          label: 'Thực đơn',
-          href: '/menu/menu-info',
-          icon: <IoFastFood className="h-4 w-4" />,
+          label: "Thực đơn",
+          href: "/menu/menu-info",
+          icon: <UtensilsCrossed className="h-4 w-4" />, // Icon dao và nĩa
         },
         {
-          label: 'Món ăn',
-          href: '/menu/dish',
-          icon: <IoFastFood className="h-4 w-4" />,
-        },
-        {
-          label: 'Bàn ăn',
-          href: '/table',
-          icon: <PieChart className="h-4 w-4" />,
+          label: "Món ăn",
+          href: "/menu/dish",
+          icon: <Coffee className="h-4 w-4" />, // Icon món ăn
         },
       ],
     },
     {
-      label: 'Nhân viên',
-      value: 'staff',
-      icon: <Users className="h-4 w-4" />,
+      label: "Nhân viên",
+      value: "staff",
+      icon: <Users className="h-4 w-4" />, // Giữ nguyên
       children: [
         {
-          label: 'Danh sách',
-          href: '/staff',
-          icon: <Users className="h-4 w-4" />,
+          label: "Danh sách",
+          href: "/staff",
+          icon: <Users className="h-4 w-4" />, // Giữ nguyên
         },
         {
-          label: 'Mức Lương',
-          href: '/salary',
-          icon: <DollarSign className="h-4 w-4" />,
+          label: "Mức Lương",
+          href: "/salary",
+          icon: <BadgePercent className="h-4 w-4" />, // Icon phần trăm phù hợp hơn
         },
         {
-          label: 'Bảng Lương',
-          href: '/payroll',
-          icon: <Receipt className="h-4 w-4" />,
+          label: "Bảng Lương",
+          href: "/payroll",
+          icon: <ScrollText className="h-4 w-4" />, // Icon bảng lương
         },
         {
-          label: 'Lịch làm việc',
-          href: '/schedule',
-          icon: <CalendarDays className="h-4 w-4" />,
+          label: "Lịch làm việc",
+          href: "/schedule",
+          icon: <CalendarDays className="h-4 w-4" />, // Giữ nguyên
         },
       ],
     },
     {
-      label: 'Cài đặt',
-      value: 'cai-dat',
-      icon: <SettingsIcon className="h-4 w-4" />,
+      label: "Cài đặt",
+      value: "cai-dat",
+      icon: <SettingsIcon className="h-4 w-4" />, // Giữ nguyên
       children: [
         {
-          label: 'Vai trò',
-          href: '/role',
-          icon: <Users className="h-4 w-4" />,
+          label: "Vai trò",
+          href: "/role",
+          icon: <UserCog className="h-4 w-4" />, // Icon người dùng với bánh răng
         },
         {
-          label: 'Quyền',
-          href: '/permission',
-          icon: <SettingsIcon className="h-4 w-4" />,
+          label: "Quyền",
+          href: "/permission",
+          icon: <Shield className="h-4 w-4" />, // Icon khiên bảo vệ
         },
         {
-          label: 'Lịch sử hoạt động',
-          href: '/activitylog',
-          icon: <FileText className="h-4 w-4" />,
+          label: "Lịch sử hoạt động",
+          href: "/activitylog",
+          icon: <History className="h-4 w-4" />, // Icon lịch sử
         },
       ],
     },
   ],
-  'Phục vụ': [
+  "Phục vụ": [
     {
-      label: 'Phục vụ',
-      value: 'phuc-vu',
-      icon: <Users className="h-4 w-4" />,
+      label: "Phục vụ",
+      value: "phuc-vu",
+      icon: <Utensils className="h-4 w-4" />, // Thay đổi từ Users
       children: [
         {
-          label: 'Bàn ăn',
-          href: '/quan-ly/table',
-          icon: <PieChart className="h-4 w-4" />,
+          label: "Bàn ăn",
+          href: "/quan-ly/table",
+          icon: <Table className="h-4 w-4" />, // Icon bàn
         },
         {
-          label: 'Gọi món',
-          href: '/quan-ly/order',
-          icon: <IoFastFood className="h-4 w-4" />,
+          label: "Gọi món",
+          href: "/quan-ly/order",
+          icon: <ShoppingCart className="h-4 w-4" />, // Icon giỏ hàng
         },
         {
-          label: 'Lịch làm việc',
-          href: '/schedule',
-          icon: <CalendarDays className="h-4 w-4" />,
+          label: "Lịch làm việc",
+          href: "/schedule",
+          icon: <CalendarDays className="h-4 w-4" />, // Giữ nguyên
         },
       ],
     },
   ],
-  'Bếp': [
+  Bếp: [
     {
-      label: 'Bếp',
-      value: 'bep',
-      icon: <IoFastFood className="h-4 w-4" />,
+      label: "Bếp",
+      value: "bep",
+      icon: <ChefHat className="h-4 w-4" />, // Thay đổi từ IoFastFood
       children: [
         {
-          label: 'Bếp',
-          href: '/kitchen',
-          icon: <IoFastFood className="h-4 w-4" />,
+          label: "Bếp",
+          href: "/kitchen",
+          icon: <ChefHat className="h-4 w-4" />, // Icon đầu bếp
         },
         {
-          label: 'Lịch làm việc',
-          href: '/schedule',
-          icon: <CalendarDays className="h-4 w-4" />,
+          label: "Lịch làm việc",
+          href: "/schedule",
+          icon: <CalendarDays className="h-4 w-4" />, // Giữ nguyên
         },
       ],
     },
   ],
-  'Thu ngân': [
+  "Thu ngân": [
     {
-      label: 'Thu ngân',
-      value: 'thu-ngan',
-      icon: <DollarSign className="h-4 w-4" />,
+      label: "Thu ngân",
+      value: "thu-ngan",
+      icon: <DollarSign className="h-4 w-4" />, // Giữ nguyên
       children: [
         {
-          label: 'Máy POS',
-          href: '/cashier-order',
-          icon: <FileText className="h-4 w-4" />,
+          label: "Máy POS",
+          href: "/cashier-order",
+          icon: <CreditCard className="h-4 w-4" />, // Icon thẻ tín dụng
         },
         {
-          label: 'Lịch làm việc',
-          href: '/schedule',
-          icon: <CalendarDays className="h-4 w-4" />,
+          label: "Lịch làm việc",
+          href: "/schedule",
+          icon: <CalendarDays className="h-4 w-4" />, // Giữ nguyên
         },
       ],
     },
   ],
-};
+}
+
 
 // Define quick links for roles
 const roleBasedQuickLinks = {
-  'Quản trị viên hệ thống': [
+  "Quản trị viên hệ thống": [
     {
-      label: 'Máy POS',
-      href: '/cashier-order',
-      icon: <FileText className="h-4 w-4" />,
+      label: "Máy POS",
+      href: "/cashier-order",
+      icon: <CreditCard className="h-4 w-4" />, // Thay đổi từ FileText
     },
     {
-      label: 'Bếp',
-      href: '/kitchen',
-      icon: <IoFastFood className="h-4 w-4" />,
+      label: "Bếp",
+      href: "/kitchen",
+      icon: <ChefHat className="h-4 w-4" />, // Thay đổi từ IoFastFood
     },
     {
-      label: 'Máy POS 2',
-      href: '/cashier-order-2/order',
-      icon: <FileText className="h-4 w-4" />,
-    },
-  ],
-  'Phục vụ': [
-    {
-      label: 'Bàn ăn',
-      href: '/table',
-      icon: <PieChart className="h-4 w-4" />,
-    },
-    {
-      label: 'Gọi món',
-      href: '/quan-ly/order',
-      icon: <IoFastFood className="h-4 w-4" />,
+      label: "Máy POS 2",
+      href: "/cashier-order-2/order",
+      icon: <Receipt className="h-4 w-4" />, // Thay đổi từ FileText
     },
   ],
-  'Bếp': [
+  "Phục vụ": [
     {
-      label: 'Bếp',
-      href: '/kitchen',
-      icon: <IoFastFood className="h-4 w-4" />,
+      label: "Bàn ăn",
+      href: "/table",
+      icon: <Table className="h-4 w-4" />, // Thay đổi từ PieChart
+    },
+    {
+      label: "Gọi món",
+      href: "/quan-ly/order",
+      icon: <ShoppingCart className="h-4 w-4" />, // Thay đổi từ IoFastFood
     },
   ],
-  'Thu ngân': [
+  Bếp: [
     {
-      label: 'Máy POS',
-      href: '/cashier-order',
-      icon: <FileText className="h-4 w-4" />,
+      label: "Bếp",
+      href: "/kitchen",
+      icon: <ChefHat className="h-4 w-4" />, // Thay đổi từ IoFastFood
     },
   ],
-};
+  "Thu ngân": [
+    {
+      label: "Máy POS",
+      href: "/cashier-order",
+      icon: <CreditCard className="h-4 w-4" />, // Thay đổi từ FileText
+    },
+  ],
+}
+
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 

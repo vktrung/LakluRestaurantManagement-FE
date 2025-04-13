@@ -1,5 +1,5 @@
 // pages/OrderPage.tsx
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { useRouter } from "next/navigation";
@@ -7,23 +7,46 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { useGetReservations1Query, useGetReservationsQuery } from "@/features/reservation/reservationApiSlice";
 import { useGetOrdersByReservationIdQuery } from "@/features/order/orderApiSlice";
 import { ReservationResponse, TableInfo } from "@/features/reservation/type";
 
-export default function OrderPage() {
-  const [isViewOpen] = useState(false);
-  const router = useRouter();
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+interface OrderPageProps {
+  reservations: ReservationResponse[];
+}
 
-  const { data: reservationsResponse, isLoading, isError } = useGetReservations1Query({
-    page,
-    size: pageSize
-  });
-  
-  // Truy cập mảng reservations từ cấu trúc phân trang mới
-  const reservations = reservationsResponse?.data?.content || [];
+interface OrderQueryResult {
+  data: any;
+  isLoading: boolean;
+  error: any;
+  reservationId: number;
+}
+
+export default function OrderPage({ reservations }: OrderPageProps) {
+  const router = useRouter();
+
+  // Fetch all orders data at once for active reservations
+  const activeReservations = useMemo(() => 
+    reservations.filter(
+      (reservation) => 
+        reservation.detail.status !== "CANCELLED" && 
+        reservation.detail.status !== "COMPLETED"
+    ),
+    [reservations]
+  );
+
+  // Create an array of reservation IDs
+  const reservationIds = useMemo(() => 
+    activeReservations.map(reservation => reservation.id),
+    [activeReservations]
+  );
+
+  // Fetch orders for all active reservations
+  const { data: ordersData, isLoading: isOrdersLoading } = useGetOrdersByReservationIdQuery(
+    reservationIds[0] || 0, // Use the first reservation ID or 0 if none
+    {
+      skip: reservationIds.length === 0
+    }
+  );
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -100,121 +123,85 @@ export default function OrderPage() {
     }
   };
 
-  const activeReservations = reservations.filter(
-    (reservation) => 
-      reservation.detail.status !== "CANCELLED" && 
-      reservation.detail.status !== "COMPLETED"
-  );
-
-  if (isLoading) {
+  if (reservations.length === 0) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-100">
-        <p className="text-gray-600 text-lg font-medium">Đang tải dữ liệu...</p>
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-100">
-        <p className="text-red-600 text-lg font-medium">Có lỗi xảy ra khi tải dữ liệu.</p>
+      <div className="flex items-center justify-center h-[calc(100vh-12rem)] bg-white rounded-lg shadow-sm">
+        <p className="text-gray-600 text-lg font-medium">
+          Không có dữ liệu đặt bàn hiện tại
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="w-full min-h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6 tracking-tight">
-        Quản lý đặt bàn
-      </h1>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {activeReservations.map((reservation) => {
+        const orders = ordersData?.data || [];
+        const hasOrders = orders.length > 0;
 
-      {activeReservations.length === 0 ? (
-        <div className="flex items-center justify-center h-[calc(100vh-12rem)] bg-white rounded-lg shadow-sm">
-          <p className="text-gray-600 text-lg font-medium">
-            Không có dữ liệu đặt bàn hiện tại
-          </p>
-        </div>
-      ) : (
-        <div className="flex overflow-x-auto space-x-6 pb-4 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
-          {activeReservations.map((reservation) => {
-            // Fetch orders for each reservation
-            const { data: ordersResponse, isFetching: ordersFetching } = useGetOrdersByReservationIdQuery(reservation.id);
-            const orders = ordersResponse?.data || [];
-            const hasOrders = orders.length > 0;
-
-            return (
-              <Card
-                key={reservation.id}
-                className={`${getCardColor(
-                  reservation.detail.status
-                )} min-w-[300px] shadow-md hover:shadow-lg transition-shadow duration-200 border rounded-lg`}
+        return (
+          <Card
+            key={reservation.id}
+            className={`${getCardColor(
+              reservation.detail.status
+            )} shadow-md hover:shadow-lg transition-shadow duration-200 border rounded-lg`}
+          >
+            <CardHeader className="pb-2 bg-opacity-50 bg-white">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg font-semibold text-gray-800">
+                  Bàn {getTableNumbers(reservation.detail.tables)}
+                </CardTitle>
+                <div className="flex items-center space-x-2">
+                  {getStatusBadge(reservation.detail.status)}
+                  {hasOrders ? (
+                    <Badge className="bg-indigo-200 text-indigo-900">
+                      Có {orders.length} đơn
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-red-200 text-red-900">Chưa có đơn</Badge>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p className="text-gray-600 font-medium">Khách hàng</p>
+                  <p className="text-gray-800">
+                    {!reservation.detail.customerName || reservation.detail.customerName === "stringstri" 
+                      ? "Chưa có tên" 
+                      : reservation.detail.customerName}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-600 font-medium">Số điện thoại</p>
+                  <p className="text-gray-800">
+                    {!reservation.detail.customerPhone || reservation.detail.customerPhone === "stringstri" 
+                      ? "Chưa có SĐT" 
+                      : reservation.detail.customerPhone}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-600 font-medium">Số người</p>
+                  <p className="text-gray-800">{reservation.detail.numberOfPeople}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-gray-600 font-medium">Thời gian vào</p>
+                <p className="text-gray-800">{formatDateTime(reservation.timeIn)}</p>
+              </div>
+              <Button
+                variant="default"
+                size="sm"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                onClick={() => handleCreateOrder(reservation, hasOrders)}
               >
-                <CardHeader className="pb-2 bg-opacity-50 bg-white">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-lg font-semibold text-gray-800">
-                      Bàn {reservation.id}
-                    </CardTitle>
-                    <div className="flex items-center space-x-2">
-                      {getStatusBadge(reservation.detail.status)}
-                      {ordersFetching ? (
-                        <Badge className="bg-gray-200 text-gray-900">Đang kiểm tra...</Badge>
-                      ) : hasOrders ? (
-                        <Badge className="bg-indigo-200 text-indigo-900">
-                          Có {orders.length} đơn
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-red-200 text-red-900">Chưa có đơn</Badge>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3 pt-2">
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <p className="text-gray-600 font-medium">Khách hàng</p>
-                      <p className="text-gray-800">
-                        {!reservation.detail.customerName || reservation.detail.customerName === "stringstri" 
-                          ? "" 
-                          : reservation.detail.customerName}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600 font-medium">Số điện thoại</p>
-                      <p className="text-gray-800">
-                        {!reservation.detail.customerPhone || reservation.detail.customerPhone === "stringstri" 
-                          ? "" 
-                          : reservation.detail.customerPhone}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600 font-medium">Số người</p>
-                      <p className="text-gray-800">{reservation.detail.numberOfPeople}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600 font-medium">Bàn</p>
-                      <span className={getTableBadgeStyle(reservation.detail.status)}>
-                        {getTableNumbers(reservation.detail.tables)}
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 font-medium">Thời gian vào</p>
-                    <p className="text-gray-800">{formatDateTime(reservation.timeIn)}</p>
-                  </div>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white mt-2"
-                    onClick={() => handleCreateOrder(reservation, hasOrders)}
-                  >
-                    {hasOrders && !ordersFetching ? "Xem đơn" : "Tạo đơn hàng"}
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                {hasOrders ? "Xem đơn" : "Tạo đơn hàng"}
+              </Button>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }

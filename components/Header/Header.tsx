@@ -48,6 +48,10 @@ export function Header({ className }: { className?: string }) {
   const { collapsed } = useSidebar();
   const pathname = usePathname();
   const router = useRouter();
+  
+  // Lấy refetch function từ hook để có thể làm mới dữ liệu user
+  const { refetch: refetchUserMe } = useGetUserMeQuery();
+  
   // Generate breadcrumb items from pathname
   const generateBreadcrumbs = (): BreadcrumbItem[] => {
     if (!pathname || pathname === '/') {
@@ -72,6 +76,9 @@ export function Header({ className }: { className?: string }) {
   const handleLogout = () => {
     // Delete auth_token cookie by setting its expiration date to the past
     document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    
+    // Làm mới dữ liệu người dùng
+    refetchUserMe();
     
     // Redirect to login page
     router.push('/login');

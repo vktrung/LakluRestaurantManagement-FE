@@ -972,7 +972,7 @@ export default function IntegratedPaymentPage() {
         
         // Redirect to order list after printing (with delay)
         setTimeout(() => {
-          handleNavigation('/cashier-order');
+          handleNavigation('/cashier-order-2');
         }, 2000);
       } catch (error: any) {
         console.error('Error printing bill:', error);
@@ -1091,7 +1091,7 @@ export default function IntegratedPaymentPage() {
       setPaymentCompleted(false);
       // Chuyển hướng về trang danh sách đơn hàng sau 2 giây
       setTimeout(() => {
-        handleNavigation('/cashier-order');
+        handleNavigation('/cashier-order-2');
       }, 2000);
     } catch (error: any) {
       const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định.";

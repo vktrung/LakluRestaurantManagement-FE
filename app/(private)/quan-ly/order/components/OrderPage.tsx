@@ -281,7 +281,7 @@ export default function OrderPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <h1 className="text-4xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
           <Table2 className="w-9 h-9 text-indigo-600" />
-          Quản lý đặt bàn
+          Gọi món
         </h1>
         <div className="w-full sm:w-64">
           <Select value={timeRange} onValueChange={handleTimeRangeChange}>

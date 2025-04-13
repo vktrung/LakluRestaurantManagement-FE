@@ -1,7 +1,13 @@
 import { endpoints } from '@/configs/endpoints';
 import baseQuery from '@/features/baseQuery';
 import { createApi } from '@reduxjs/toolkit/query/react';
-import { MenuItem, MenuItemRequest, MenuItemResponse,MenuByIdResponse } from './types';
+import {
+  MenuItem,
+  MenuItemRequest,
+  MenuItemResponse,
+  MenuByIdResponse,
+  UpdateMenuItemStatusResponse,
+} from './types';
 
 export const menuItemApiSlice = createApi({
   reducerPath: 'menuItemApi',
@@ -44,7 +50,16 @@ export const menuItemApiSlice = createApi({
       }),
       invalidatesTags: ['menu-item-list', 'menu-item'],
     }),
-
+    updateMenuItemStatus: builder.mutation<
+      UpdateMenuItemStatusResponse,
+      { id: number }
+    >({
+      query: ({ id }) => ({
+        url: `${endpoints.MenuItemApi}${id.toString() + '/toggle-status'}`,
+        method: 'GET',
+      }),
+      invalidatesTags: ['menu-item-list', 'menu-item'],
+    }),
     deleteMenuItem: builder.mutation<MenuItemResponse, number>({
       query: id => ({
         url: `${endpoints.MenuItemApi}${id.toString()}`,
@@ -61,4 +76,5 @@ export const {
   useCreateMenuItemMutation,
   useUpdateMenuItemMutation,
   useDeleteMenuItemMutation,
+  useUpdateMenuItemStatusMutation,
 } = menuItemApiSlice;

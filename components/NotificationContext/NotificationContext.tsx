@@ -26,6 +26,7 @@ interface Notification {
   read: boolean;
   timestamp: string;
   orderItemId?: number;
+  type?: 'completed' | 'cancelled'; // Add type to differentiate notifications
 }
 
 interface NotificationContextType {
@@ -35,11 +36,15 @@ interface NotificationContextType {
   markAllAsRead: () => void;
   addTestNotification: () => void;
   markAsDelivered: (id: string) => Promise<void>;
+  dismissNotification: (id: string) => void; // Add new function to dismiss cancelled notifications
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(
   undefined,
 );
+
+// Constants
+const DISMISSED_NOTIFICATION_IDS_KEY = 'laklu-dismissed-notification-ids';
 
 // Lấy token từ cookie để kiểm tra auth
 const getAuthToken = () => {
@@ -50,17 +55,56 @@ const getAuthToken = () => {
   return null;
 };
 
+// Helper function to load dismissed notification IDs from localStorage
+const loadDismissedNotificationIds = (): string[] => {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const saved = localStorage.getItem(DISMISSED_NOTIFICATION_IDS_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch (error) {
+    console.error('Error loading dismissed notification IDs:', error);
+    return [];
+  }
+};
+
+// Helper function to save dismissed notification ID to localStorage
+const saveDismissedNotificationId = (id: string): void => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const savedIds = loadDismissedNotificationIds();
+    if (!savedIds.includes(id)) {
+      savedIds.push(id);
+      localStorage.setItem(
+        DISMISSED_NOTIFICATION_IDS_KEY,
+        JSON.stringify(savedIds),
+      );
+    }
+  } catch (error) {
+    console.error('Error saving dismissed notification ID:', error);
+  }
+};
+
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [processedOrderItemIds, setProcessedOrderItemIds] = useState<
     Set<number>
   >(new Set());
+  const [processedCancelledItemIds, setProcessedCancelledItemIds] = useState<
+    Set<number>
+  >(new Set());
   const [isInitialized, setIsInitialized] = useState(false);
+  const [dismissedNotificationIds, setDismissedNotificationIds] = useState<
+    string[]
+  >([]);
 
   // Sử dụng useRef để tránh re-render không cần thiết
   const processedOrderItemIdsRef = useRef<Set<number>>(new Set());
+  const processedCancelledItemIdsRef = useRef<Set<number>>(new Set());
   const notificationIdsRef = useRef<Set<string>>(new Set());
   const authTokenRef = useRef<string | null>(getAuthToken() || null);
+  const dismissedNotificationIdsRef = useRef<string[]>([]);
 
   const [updateOrderItemStatus] = useUpdateOrderItemStatusMutation();
 
@@ -86,14 +130,31 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     refetchOnReconnect: true,
   });
 
+  // Load dismissed notification IDs from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedIds = loadDismissedNotificationIds();
+      setDismissedNotificationIds(savedIds);
+      dismissedNotificationIdsRef.current = savedIds;
+    }
+  }, []);
+
   // Đồng bộ refs với states
   useEffect(() => {
     processedOrderItemIdsRef.current = processedOrderItemIds;
   }, [processedOrderItemIds]);
 
   useEffect(() => {
+    processedCancelledItemIdsRef.current = processedCancelledItemIds;
+  }, [processedCancelledItemIds]);
+
+  useEffect(() => {
     notificationIdsRef.current = new Set(notifications.map(n => n.id));
   }, [notifications]);
+
+  useEffect(() => {
+    dismissedNotificationIdsRef.current = dismissedNotificationIds;
+  }, [dismissedNotificationIds]);
 
   // Kiểm tra và cập nhật token khi component mount
   useEffect(() => {
@@ -161,8 +222,12 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     const newNotificationsToAdd: Notification[] = [];
     // Danh sách orderItemIds đã xử lý mới
     const newProcessedIds = new Set<number>(processedOrderItemIdsRef.current);
+    // Danh sách orderItemIds đã hủy đã xử lý
+    const newProcessedCancelledIds = new Set<number>(
+      processedCancelledItemIdsRef.current,
+    );
 
-    // Xử lý tất cả đơn hàng để tìm các món đã hoàn thành và đã giao
+    // Xử lý tất cả đơn hàng để tìm các món đã hoàn thành, đã giao và đã hủy
     ordersData.data.forEach(order => {
       order.orderItems.forEach(item => {
         // Thêm các món đã giao vào danh sách để lọc ra khỏi thông báo
@@ -191,10 +256,42 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
               read: false,
               timestamp: new Date().toISOString(),
               orderItemId: item.orderItemId,
+              type: 'completed',
             });
 
             // Đánh dấu là đã xử lý
             newProcessedIds.add(item.orderItemId);
+          }
+        }
+
+        // Tạo thông báo cho các món đã hủy nhưng chưa được xử lý
+        if (
+          item.statusLabel === 'Đã hủy' &&
+          !processedCancelledItemIdsRef.current.has(item.orderItemId) &&
+          item.dish // Đảm bảo có thông tin món ăn
+        ) {
+          const notificationId = `cancelled-item-${item.orderItemId}`;
+
+          // Kiểm tra xem thông báo đã tồn tại chưa và chưa được đóng trước đó
+          if (
+            !notificationIdsRef.current.has(notificationId) &&
+            !dismissedNotificationIdsRef.current.includes(notificationId)
+          ) {
+            const tableNames = order.tables
+              ? order.tables.map(t => t.tableNumber).join(', ')
+              : '';
+
+            newNotificationsToAdd.push({
+              id: notificationId,
+              message: `Món ăn "${item.dish.name}" ở bàn "${tableNames}" với số lượng "${item.quantity}" đã bị hủy`,
+              read: false,
+              timestamp: new Date().toISOString(),
+              orderItemId: item.orderItemId,
+              type: 'cancelled',
+            });
+
+            // Đánh dấu là đã xử lý
+            newProcessedCancelledIds.add(item.orderItemId);
           }
         }
       });
@@ -209,12 +306,27 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         const filteredNotifications = prev.filter(notification => {
           return !(
             notification.orderItemId &&
-            deliveredOrderItemIds.has(notification.orderItemId)
+            deliveredOrderItemIds.has(notification.orderItemId) &&
+            notification.type === 'completed'
           );
         });
 
+        // Lọc ra các thông báo đã bị dismiss trước đó
+        const filteredByDismissed = filteredNotifications.filter(
+          notification => {
+            // Nếu là thông báo hủy, kiểm tra xem đã được đóng trước đó chưa
+            if (notification.type === 'cancelled') {
+              return !dismissedNotificationIdsRef.current.includes(
+                notification.id,
+              );
+            }
+            // Các loại thông báo khác giữ nguyên
+            return true;
+          },
+        );
+
         // Thêm các thông báo mới
-        return [...newNotificationsToAdd, ...filteredNotifications];
+        return [...newNotificationsToAdd, ...filteredByDismissed];
       });
     }
 
@@ -222,15 +334,23 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     if (newProcessedIds.size > processedOrderItemIdsRef.current.size) {
       setProcessedOrderItemIds(newProcessedIds);
     }
+
+    // 3. Cập nhật danh sách các món đã hủy đã xử lý
+    if (
+      newProcessedCancelledIds.size > processedCancelledItemIdsRef.current.size
+    ) {
+      setProcessedCancelledItemIds(newProcessedCancelledIds);
+    }
   }, [ordersData, userData]);
 
   // TEST FUNCTION
   const addTestNotification = useCallback(() => {
-    const newNotification = {
+    const newNotification: Notification = {
       id: `test-${Date.now()}`,
       message: `Món ăn "Test món" ở bàn "D01" đã hoàn thành, đến lấy món ăn`,
       read: false,
       timestamp: new Date().toISOString(),
+      type: 'completed' as const,
     };
 
     setNotifications(prev => [newNotification, ...prev]);
@@ -249,7 +369,8 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const markAsDelivered = useCallback(
     async (id: string) => {
       const notification = notifications.find(n => n.id === id);
-      if (!notification?.orderItemId) return;
+      if (!notification?.orderItemId || notification.type !== 'completed')
+        return;
 
       try {
         await updateOrderItemStatus({
@@ -273,6 +394,28 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     [notifications, updateOrderItemStatus, refetchOrders, userData],
   );
 
+  // Function to dismiss cancelled notification and save to localStorage
+  const dismissNotification = useCallback(
+    (id: string) => {
+      const notification = notifications.find(n => n.id === id);
+
+      // Chỉ lưu vào localStorage nếu là thông báo hủy món
+      if (notification?.type === 'cancelled') {
+        saveDismissedNotificationId(id);
+
+        // Cập nhật state để lần sau không hiển thị lại
+        setDismissedNotificationIds(prev => {
+          if (prev.includes(id)) return prev;
+          return [...prev, id];
+        });
+      }
+
+      // Xóa thông báo khỏi danh sách hiện tại
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    },
+    [notifications],
+  );
+
   const unreadCount = useMemo(
     () => notifications.filter(notif => !notif.read).length,
     [notifications],
@@ -287,6 +430,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         markAllAsRead,
         addTestNotification,
         markAsDelivered,
+        dismissNotification,
       }}
     >
       {children}

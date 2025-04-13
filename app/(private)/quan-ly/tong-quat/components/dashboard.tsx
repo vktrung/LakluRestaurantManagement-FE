@@ -6,7 +6,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RevenueChart } from "./revenue-chart";
 import { SummaryCards } from "./summary-cards";
 import { 
-  useGetTopSellingDishesQuery, 
+  useGetDishDetailsQuery,
+  useGetTopSellingDishesLastHourQuery,
+  useGetTotalDishSoldQuery,
   useGetRevenueTodayQuery, 
   useGetWeeklyRevenueQuery, 
   useGetLastThreeMonthsRevenueQuery,
@@ -18,9 +20,19 @@ import TopDishes from "./top-dishes";
 export default function Dashboard() {
   const [timeFrame, setTimeFrame] = useState("daily");
 
-  // Lấy dữ liệu từ API top-selling-dishes
-  const { data: topDishesData, isLoading: isTopDishesLoading, error: topDishesError } = useGetTopSellingDishesQuery();
-  const topDishes: Dish[] = topDishesData?.data || [];
+  // Lấy dữ liệu từ API chi tiết món ăn bán được
+  const { data: dishDetailsData, isLoading: isDishDetailsLoading, error: dishDetailsError } = useGetDishDetailsQuery();
+  // Xử lý và sắp xếp dữ liệu để lấy top món bán chạy trong ngày
+  const dishes: Dish[] = dishDetailsData?.data || [];
+  const topDishes = [...dishes].sort((a, b) => b.totalQuantity - a.totalQuantity);
+
+  // Lấy dữ liệu từ API top-selling-dishes/last-hour
+  const { data: topDishesLastHourData, isLoading: isTopDishesLastHourLoading, error: topDishesLastHourError } = useGetTopSellingDishesLastHourQuery();
+  const topDishesLastHour: Dish[] = topDishesLastHourData?.data || [];
+
+  // Lấy dữ liệu về tổng số món bán trong ngày
+  const { data: totalDishSoldData, isLoading: isTotalDishSoldLoading, error: totalDishSoldError } = useGetTotalDishSoldQuery();
+  const totalDishesToday = totalDishSoldData?.data?.totalDishSold || 0;
 
   // Lấy dữ liệu từ API revenue/today
   const { data: revenueTodayData, isLoading: isRevenueLoading, error: revenueError } = useGetRevenueTodayQuery();
@@ -89,17 +101,12 @@ export default function Dashboard() {
   const revenueData = getRevenueData();
   const maxRevenue = Math.max(...revenueData.map(item => item.revenue), 0);
 
-  // Kiểm tra trạng thái loading và error cho tất cả API
-  if (isTopDishesLoading || isRevenueLoading || isWeeklyLoading || isLastThreeMonthsLoading || isLastThreeYearsLoading) 
+  // Kiểm tra trạng thái loading và error cho tất cả API doanh thu
+  if (isRevenueLoading || isTotalDishSoldLoading || isDishDetailsLoading || isWeeklyLoading || isLastThreeMonthsLoading || isLastThreeYearsLoading) 
     return <div className="p-4">Loading...</div>;
   
-  if (topDishesError || revenueError || weeklyError || lastThreeMonthsError || lastThreeYearsError) 
+  if (revenueError || totalDishSoldError || dishDetailsError || weeklyError || lastThreeMonthsError || lastThreeYearsError) 
     return <div className="p-4 text-red-500">Đã có lỗi xảy ra.</div>;
-
-  // Mock data cho totalDishesToday
-  const mockData = {
-    totalDishesToday: 342,
-  };
 
   return (
     <div className="p-6 space-y-6">
@@ -116,14 +123,14 @@ export default function Dashboard() {
 
       <SummaryCards
         totalRevenueToday={totalRevenueToday}
-        totalDishesToday={mockData.totalDishesToday}
+        totalDishesToday={totalDishesToday}
         topDishName={topDishes[0]?.dishName || "Không có dữ liệu"}
         topDishCount={topDishes[0]?.totalQuantity || 0}
         maxRevenue={maxRevenue}
         formatCurrency={formatCurrency}
       />
 
-      <Card className="col-span-4">
+      <Card>
         <CardHeader>
           <CardTitle>
             Doanh Thu Theo{" "}
@@ -144,9 +151,9 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      <TopDishes
-        formatCurrency={formatCurrency}
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TopDishes formatCurrency={formatCurrency} />
+      </div>
     </div>
   );
 }

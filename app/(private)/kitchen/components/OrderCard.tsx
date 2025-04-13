@@ -6,9 +6,8 @@ import {
   AlertCircle,
   CheckCircle2,
   ChefHat,
-  MoreHorizontal,
-  User,
   Ban,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   Order,
@@ -25,6 +24,13 @@ import {
   useGetOrderItemByIdQuery,
 } from '@/features/order-cashier/orderCashierApiSlice';
 import { useGetStaffByIdQuery } from '@/features/staff/staffApiSlice';
+import { useUpdateMenuItemStatusMutation } from '@/features/menu-item/menuItemApiSlice';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface OrderCardProps {
   order: Order;
@@ -46,7 +52,6 @@ const isValidStatusTransition = (
   }
 };
 
-// Component to fetch and display order item details
 function OrderItemDetail({
   orderItemId,
   fallbackName,
@@ -61,7 +66,6 @@ function OrderItemDetail({
     return <div className="animate-pulse">{fallbackName}</div>;
   }
 
-  // Access the dish name from the response
   return <div>{orderItemData?.data?.dish?.name || fallbackName}</div>;
 }
 
@@ -73,11 +77,11 @@ export default function OrderCard({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [updateOrderItemStatus] = useUpdateOrderItemStatusMutation();
+  const [updateMenuItemStatus] = useUpdateMenuItemStatusMutation();
   const { data: staffData } = useGetStaffByIdQuery(order.staffId.toString());
   const [currentTime, setCurrentTime] = useState(new Date());
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Update current time every minute
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -86,7 +90,6 @@ export default function OrderCard({
     return () => clearInterval(timer);
   }, []);
 
-  // Calculate time elapsed
   const getTimeElapsed = (dateString: string) => {
     try {
       const orderDate = parseISO(dateString);
@@ -104,7 +107,6 @@ export default function OrderCard({
     }
   };
 
-  // Flash animation on status change
   const flashCard = () => {
     if (cardRef.current) {
       cardRef.current.classList.add('flash-animation');
@@ -129,9 +131,31 @@ export default function OrderCard({
       setIsLoading(true);
       setError(null);
 
-      await updateOrderItemStatus({
+      const result = await updateOrderItemStatus({
         id: itemId,
         data: { status: newStatus },
+      }).unwrap();
+
+      flashCard();
+      refetchOrders();
+    } catch (err: any) {
+      console.error('Lỗi khi cập nhật trạng thái món ăn:', err);
+      setError(
+        err.message ||
+          'Không thể cập nhật trạng thái món ăn. Vui lòng thử lại sau.',
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleMarkOutOfStock = async (menuItemId: number) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const result = await updateMenuItemStatus({
+        id: menuItemId,
       }).unwrap();
 
       flashCard();
@@ -171,15 +195,17 @@ export default function OrderCard({
     }
   };
 
-  // Kiểm tra xem có còn món nào hiển thị không
-  const hasVisibleItems = order.orderItems.some(
+  const filteredItems = order.orderItems.filter(
+    item => item.dish?.requiresPreparation === true,
+  );
+
+  const hasVisibleItems = filteredItems.some(
     item =>
       item.statusLabel !== 'Đã hoàn thành' &&
       item.statusLabel !== 'Đã hủy' &&
       item.statusLabel !== 'Đã giao',
   );
 
-  // Nếu không còn món nào hiển thị, không render card
   if (!hasVisibleItems) {
     return null;
   }
@@ -189,7 +215,6 @@ export default function OrderCard({
       ref={cardRef}
       className="border border-gray-300 rounded-lg overflow-hidden bg-white h-full"
     >
-      {/* Header của đơn */}
       <div className="border-b border-gray-300 bg-amber-50 px-2.5 py-2">
         <div className="flex justify-between items-center mb-1">
           <span className="font-medium text-amber-800">Phiếu vào bếp</span>
@@ -207,7 +232,6 @@ export default function OrderCard({
         </div>
       </div>
 
-      {/* Tiêu đề của bảng */}
       <div className="border-b border-gray-300 grid grid-cols-12 bg-gray-50">
         <div className="col-span-5 px-2.5 py-1.5 font-medium border-r border-gray-300 text-xs">
           Món
@@ -227,10 +251,8 @@ export default function OrderCard({
         </Alert>
       )}
 
-      {/* Danh sách món ăn */}
       <div className="max-h-[280px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
-        {order.orderItems.map((item: OrderItem, index: number) => {
-          // Skip rendering completed, cancelled or delivered items
+        {filteredItems.map((item: OrderItem, index: number) => {
           if (
             item.statusLabel === 'Đã hoàn thành' ||
             item.statusLabel === 'Đã hủy' ||
@@ -267,7 +289,6 @@ export default function OrderCard({
                   {item.statusLabel}
                 </Badge>
 
-                {/* Status transition toggles */}
                 <div className="flex space-x-1">
                   {item.statusLabel === 'Đang chờ' && (
                     <>
@@ -299,23 +320,63 @@ export default function OrderCard({
                       >
                         <Ban className="h-3.5 w-3.5" />
                       </Toggle>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Toggle
+                              aria-label="Đánh dấu hết đồ chuẩn bị"
+                              className="h-6 w-6 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                              onClick={() =>
+                                handleMarkOutOfStock(item.menuItemId)
+                              }
+                              disabled={isLoading}
+                            >
+                              <AlertTriangle className="h-3.5 w-3.5" />
+                            </Toggle>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">
+                            <p className="text-xs">Đánh dấu hết đồ chuẩn bị</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </>
                   )}
                   {item.statusLabel === 'Đang làm' && (
-                    <Toggle
-                      aria-label="Hoàn thành món"
-                      className="h-6 w-6 text-green-600 hover:text-green-700 hover:bg-green-50"
-                      onClick={() =>
-                        handleUpdateItemStatus(
-                          item.orderItemId,
-                          'COMPLETED',
-                          item.statusLabel,
-                        )
-                      }
-                      disabled={isLoading}
-                    >
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                    </Toggle>
+                    <>
+                      <Toggle
+                        aria-label="Hoàn thành món"
+                        className="h-6 w-6 text-green-600 hover:text-green-700 hover:bg-green-50"
+                        onClick={() =>
+                          handleUpdateItemStatus(
+                            item.orderItemId,
+                            'COMPLETED',
+                            item.statusLabel,
+                          )
+                        }
+                        disabled={isLoading}
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      </Toggle>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Toggle
+                              aria-label="Đánh dấu hết đồ chuẩn bị"
+                              className="h-6 w-6 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                              onClick={() =>
+                                handleMarkOutOfStock(item.menuItemId)
+                              }
+                              disabled={isLoading}
+                            >
+                              <AlertTriangle className="h-3.5 w-3.5" />
+                            </Toggle>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">
+                            <p className="text-xs">Đánh dấu hết đồ chuẩn bị</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </>
                   )}
                 </div>
               </div>

@@ -161,6 +161,13 @@ export default function TempBillPage() {
             text-overflow: ellipsis;
           }
           
+          .grid > div > div.wrap-text {
+            white-space: normal;
+            word-break: break-word;
+            overflow: visible;
+            hyphens: auto;
+          }
+          
           .font-mono {
             font-family: monospace;
             font-size: 11px;
@@ -171,6 +178,12 @@ export default function TempBillPage() {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+          }
+          
+          .wrap-text {
+            white-space: normal;
+            word-break: break-word;
+            hyphens: auto;
           }
           
           .border-t {
@@ -226,7 +239,7 @@ export default function TempBillPage() {
           <div class="grid gap-1 mb-3">
             <div>
               <div style="width: 50%;">
-                <p class="text-xs">BÀN: ${tempBill.tableNumber || "—"}</p>
+                <p class="text-xs">HÓA ĐƠN: ${tempBill.tableNumber || "—"}</p>
               </div>
               <div style="width: 50%; text-align: right;">
                 <p class="text-xs">NGÀY: ${printFormattedDate}</p>
@@ -254,7 +267,7 @@ export default function TempBillPage() {
           <div class="grid mb-1">
             <div>
               <div class="col-span-1 text-xs">${index + 1}</div>
-              <div class="col-span-4 text-xs truncate">${item.dishName}</div>
+              <div class="col-span-4 text-xs wrap-text">${item.dishName}</div>
               <div class="col-span-1 text-xs text-center">${item.quantity}</div>
               <div class="col-span-3 text-xs text-right font-mono">${formatPrice(Number(item.price), { currency: false, minLength: 8 })}</div>
               <div class="col-span-3 text-xs text-right font-mono">${formatPrice(Number(item.price) * item.quantity, { currency: false, minLength: 8 })}</div>
@@ -367,35 +380,32 @@ export default function TempBillPage() {
     .text-center { text-align: center; }
     .text-right { text-align: right; }
     
-    .grid {
-      display: table;
+    table {
       width: 100%;
-      table-layout: fixed;
       border-collapse: collapse;
     }
     
-    .grid > div {
-      display: table-row;
+    table th, 
+    table td {
+      font-size: 11px;
+      padding: 1px 0;
+      text-align: left;
+      vertical-align: top;
     }
     
-    .grid > div > div {
-      display: table-cell;
-      padding: 1mm 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    table th {
+      font-weight: 600;
+    }
+    
+    .dish-name {
+      word-break: break-word;
+      white-space: normal;
     }
     
     .font-mono {
       font-family: monospace;
       font-size: 11px;
       letter-spacing: -0.5px;
-    }
-    
-    .truncate {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
     
     .border-t {
@@ -411,11 +421,6 @@ export default function TempBillPage() {
       display: block;
       width: 100%;
     }
-    
-    .col-span-1 { width: 8%; }
-    .col-span-3 { width: 24%; }
-    .col-span-4 { width: 32%; }
-    .col-span-5 { width: 40%; }
     
     .space-y-1 > * + * {
       margin-top: 0.25rem;
@@ -448,44 +453,46 @@ export default function TempBillPage() {
     </div>
 
     <!-- Order Info -->
-    <div class="grid gap-1 mb-3">
-      <div>
-        <div style="width: 50%;">
-          <p class="text-xs">BÀN: ${tempBill.tableNumber || "—"}</p>
-        </div>
-        <div style="width: 50%; text-align: right;">
+    <table class="mb-3" style="width: 100%;">
+      <tr>
+        <td style="width: 50%;">
+          <p class="text-xs">HÓA ĐƠN: ${tempBill.tableNumber || "—"}</p>
+        </td>
+        <td style="width: 50%; text-align: right;">
           <p class="text-xs">NGÀY: ${formattedDate}</p>
           <p class="text-xs">GIỜ: ${formattedTime}</p>
-        </div>
-      </div>
-    </div>
+        </td>
+      </tr>
+    </table>
 
     <!-- Table Header -->
-    <div class="grid mb-1">
-      <div>
-        <div class="col-span-1 text-xs font-semibold">TT</div>
-        <div class="col-span-4 text-xs font-semibold">Tên món</div>
-        <div class="col-span-1 text-xs font-semibold text-center">SL</div>
-        <div class="col-span-3 text-xs font-semibold text-right">Đơn giá</div>
-        <div class="col-span-3 text-xs font-semibold text-right">T.Tiền</div>
-      </div>
-    </div>
+    <table class="mb-1" style="width: 100%;">
+      <tr>
+        <th style="width: 5%; text-align: left;" class="text-xs">TT</th>
+        <th style="width: 45%; text-align: left;" class="text-xs">Tên món</th>
+        <th style="width: 10%; text-align: center;" class="text-xs">SL</th>
+        <th style="width: 20%; text-align: right;" class="text-xs">Đơn giá</th>
+        <th style="width: 20%; text-align: right;" class="text-xs">T.Tiền</th>
+      </tr>
+    </table>
 
     <!-- Divider -->
     <div class="border-t mb-1"></div>
 
     <!-- Items -->
-    ${tempBill.orderItems.map((item, index) => `
-    <div class="grid mb-1">
-      <div>
-        <div class="col-span-1 text-xs">${index + 1}</div>
-        <div class="col-span-4 text-xs truncate">${item.dishName}</div>
-        <div class="col-span-1 text-xs text-center">${item.quantity}</div>
-        <div class="col-span-3 text-xs text-right font-mono">${formatPrice(Number(item.price), { currency: false, minLength: 8 })}</div>
-        <div class="col-span-3 text-xs text-right font-mono">${formatPrice(Number(item.price) * item.quantity, { currency: false, minLength: 8 })}</div>
-      </div>
-    </div>
-    `).join('')}
+    <table class="mb-1" style="width: 100%;">
+      <tbody>
+        ${tempBill.orderItems.map((item, index) => `
+          <tr>
+            <td style="width: 5%; text-align: left; vertical-align: top;" class="text-xs">${index + 1}</td>
+            <td style="width: 45%; text-align: left; vertical-align: top; word-break: break-word;" class="text-xs dish-name">${item.dishName}</td>
+            <td style="width: 10%; text-align: center; vertical-align: top;" class="text-xs">${item.quantity}</td>
+            <td style="width: 20%; text-align: right; vertical-align: top;" class="text-xs font-mono">${formatPrice(Number(item.price), { currency: false, minLength: 8 })}</td>
+            <td style="width: 20%; text-align: right; vertical-align: top;" class="text-xs font-mono">${formatPrice(Number(item.price) * item.quantity, { currency: false, minLength: 8 })}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
 
     <!-- Divider -->
     <div class="border-t border-dashed mt-2 mb-2"></div>
@@ -553,7 +560,7 @@ export default function TempBillPage() {
       {/* Order Info */}
       <div className="grid grid-cols-2 gap-1 mb-3">
         <div>
-          <p className="text-xs">BÀN: {tempBill.tableNumber || "—"}</p>
+          <p className="text-xs">HÓA ĐƠN: {tempBill.tableNumber || "—"}</p>
         </div>
         <div className="text-right">
           <p className="text-xs">NGÀY: {formattedDate}</p>
@@ -577,7 +584,7 @@ export default function TempBillPage() {
       {tempBill.orderItems.map((item, index) => (
         <div key={item.id} className="grid grid-cols-12 gap-1 mb-1 text-xs">
           <div className="col-span-1">{index + 1}</div>
-          <div className="col-span-4 truncate">{item.dishName}</div>
+          <div className="col-span-4 wrap-text">{item.dishName}</div>
           <div className="col-span-1 text-center">{item.quantity}</div>
           <div className="col-span-3 text-right font-mono text-xs">{formatPrice(Number(item.price), { currency: false, minLength: 8 })}</div>
           <div className="col-span-3 text-right font-mono text-xs">{formatPrice(Number(item.price) * item.quantity, { currency: false, minLength: 8 })}</div>
@@ -637,6 +644,12 @@ export default function TempBillPage() {
           font-size: 12px;
           background: white;
           font-family: monospace;
+        }
+
+        .wrap-text {
+          white-space: normal;
+          word-break: break-word;
+          hyphens: auto;
         }
 
         /* Print media styles */
@@ -734,6 +747,16 @@ export default function TempBillPage() {
             font-size: 12px !important;
             margin: 1mm 0 !important;
             display: block !important;
+          }
+          
+          /* Make sure dish names can wrap */
+          .print-bill .wrap-text {
+            white-space: normal !important;
+            word-break: break-word !important;
+            overflow: visible !important;
+            display: table-cell !important;
+            max-width: 32% !important;
+            padding-right: 2mm !important;
           }
 
           .print-bill .font-mono {

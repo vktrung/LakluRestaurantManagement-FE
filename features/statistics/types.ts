@@ -62,3 +62,24 @@ export interface Dish {
     error: string | null;
   }
   
+  export interface TotalDishSoldData {
+    totalDishSold: number;
+    totalDishTypes: number;
+  }
+  
+  export interface TotalDishSoldResponse {
+    data: TotalDishSoldData;
+    message: string;
+    httpStatus: number;
+    timestamp: string;
+    error: string | null;
+  }
+  
+  export interface DishDetailResponse {
+    data: Dish[];
+    message: string;
+    httpStatus: number;
+    timestamp: string;
+    error: string | null;
+  }
+  

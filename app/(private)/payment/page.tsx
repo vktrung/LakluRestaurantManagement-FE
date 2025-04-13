@@ -36,8 +36,8 @@ export default function PaymentManagementPage() {
   const [openEndDate, setOpenEndDate] = useState(false)
 
   // Format các ngày thành chuỗi ISO cho API
-  const formattedStartDate = formatISO(startOfDay(dateRange.startDate))
-  const formattedEndDate = formatISO(endOfDay(dateRange.endDate))
+  const formattedStartDate = format(startOfDay(dateRange.startDate), "yyyy-MM-dd'T'HH:mm:ssXXX")
+  const formattedEndDate = format(endOfDay(dateRange.endDate), "yyyy-MM-dd'T'HH:mm:ssXXX")
 
   const { data, error, isLoading, refetch } = useGetPaymentsQuery({
     page,

@@ -310,6 +310,13 @@ export default function ScheduleWeekView({
     return isSameDayOrOvernight && isBeforeEndTime;
   };
 
+  // Kiểm tra xem ca đã qua thời gian checkout chưa
+  const isShiftPastCheckoutTime = (shift: Shift) => {
+    const currentTime = currentDate;
+    const timeOut = parseISO(shift.timeOut);
+    return isAfter(currentTime, timeOut);
+  };
+
   return (
     <div className="p-4 bg-white rounded-lg">
       <div className="overflow-x-auto">
@@ -372,7 +379,8 @@ export default function ScheduleWeekView({
                                 <div className="flex items-center gap-2">
                                   <User className="h-4 w-4 text-gray-600" />
                                   <p className="text-sm font-medium text-gray-800">
-                                    {shift.detail.manager || 'Không có quản lý'}
+                                    {shift.detail.managerFullName ||
+                                      'Không có quản lý'}
                                   </p>
                                   {isOvernightShift(
                                     shift.timeIn,
@@ -384,14 +392,16 @@ export default function ScheduleWeekView({
                                   )}
                                 </div>
                                 <div className="flex gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7 text-gray-500 hover:text-blue-600"
-                                    onClick={() => handleOpenDialog(shift)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
+                                  {!isShiftPastCheckoutTime(shift) && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-gray-500 hover:text-blue-600"
+                                      onClick={() => handleOpenDialog(shift)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  )}
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -641,7 +651,7 @@ export default function ScheduleWeekView({
                     <div>
                       <p className="font-semibold">Quản lý</p>
                       <p className="text-sm text-slate-600">
-                        {selectedShift.detail.manager || 'Không có'}
+                        {selectedShift.detail.managerFullName || 'Không có'}
                       </p>
                     </div>
                   </div>
@@ -660,25 +670,41 @@ export default function ScheduleWeekView({
                   </div>
                 </CardContent>
                 <CardContent className="p-4">
-                  <div className="flex items-start gap-2 text-slate-700">
-                    <User className="h-5 w-5 text-sky-600" />
-                    <div>
-                      <p className="font-semibold">Danh sách nhân viên</p>
-                      {selectedShift.detail.usernames &&
-                      selectedShift.detail.usernames.length > 0 ? (
-                        <ul className="text-sm text-slate-600 list-disc list-inside">
-                          {selectedShift.detail.usernames.map(
-                            (username, index) => (
-                              <li key={index}>{username}</li>
-                            ),
-                          )}
-                        </ul>
-                      ) : (
-                        <p className="text-sm text-slate-600">
-                          Không có danh sách nhân viên
-                        </p>
-                      )}
-                    </div>
+                  <div>
+                    <p className="font-semibold">Danh sách nhân viên</p>
+                    {selectedShift.detail.userFullNames &&
+                    selectedShift.detail.userFullNames.length > 0 ? (
+                      <ul className="text-sm text-slate-600 list-disc list-inside space-y-1">
+                        {selectedShift.detail.userFullNames.map(
+                          (fullName, index) => (
+                            <li
+                              key={index}
+                              className="flex justify-between items-center"
+                            >
+                              <span>{fullName}</span>
+                              <span
+                                className={`text-xs px-2 py-1 rounded-full ${
+                                  selectedShift.detail
+                                    .userAttendancesByFullName[fullName]
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
+                                }`}
+                              >
+                                {selectedShift.detail.userAttendancesByFullName[
+                                  fullName
+                                ]
+                                  ? 'Có mặt'
+                                  : 'Vắng mặt'}
+                              </span>
+                            </li>
+                          ),
+                        )}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-slate-600">
+                        Không có danh sách nhân viên
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -704,15 +730,17 @@ export default function ScheduleWeekView({
               >
                 Đóng
               </Button>
-              <Button
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => {
-                  setSelectedShift(null);
-                  handleOpenDialog(selectedShift);
-                }}
-              >
-                <Edit className="h-4 w-4 mr-2" /> Chỉnh sửa
-              </Button>
+              {!isShiftPastCheckoutTime(selectedShift) && (
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => {
+                    setSelectedShift(null);
+                    handleOpenDialog(selectedShift);
+                  }}
+                >
+                  <Edit className="h-4 w-4 mr-2" /> Chỉnh sửa
+                </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>

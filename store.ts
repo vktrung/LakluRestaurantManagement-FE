@@ -24,6 +24,7 @@ import { statisticsApiSlice } from '@/features/statistics/statisticsApiSlice';
 import { voucherApiSlice } from './features/voucher/voucherApiSlice';
 import { activityLogApiSlice } from './features/activitylog/activityLogApiSlice';
 import { tableOrderApiSlice } from './features/table-order/table-orderApiSlice';
+import { cashRegisterApi } from './features/cash-register/cashregisterApiSlice';
 
 export const store = configureStore({
   reducer: {
@@ -49,6 +50,7 @@ export const store = configureStore({
     [voucherApiSlice.reducerPath]: voucherApiSlice.reducer,
     [activityLogApiSlice.reducerPath]: activityLogApiSlice.reducer,
     [tableOrderApiSlice.reducerPath]: tableOrderApiSlice.reducer,
+    [cashRegisterApi.reducerPath]: cashRegisterApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
@@ -74,7 +76,8 @@ export const store = configureStore({
       .concat(payrollApiSlice.middleware)
       .concat(activityLogApiSlice.middleware)
       .concat(voucherApiSlice.middleware)
-  .concat(tableOrderApiSlice.middleware)
+      .concat(tableOrderApiSlice.middleware)
+      .concat(cashRegisterApi.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

@@ -1,9 +1,10 @@
 interface VoucherInputProps {
     voucherCode: string;
     onChange: (code: string) => void;
+    error?: string | null | undefined;
 }
 
-export function VoucherInput({ voucherCode, onChange }: VoucherInputProps) {
+export function VoucherInput({ voucherCode, onChange, error }: VoucherInputProps) {
     return (
         <div className="bg-white rounded-xl border shadow-md p-5">
             <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
@@ -24,23 +25,33 @@ export function VoucherInput({ voucherCode, onChange }: VoucherInputProps) {
                         value={voucherCode}
                         onChange={(e) => onChange(e.target.value)}
                         placeholder="Nhập mã giảm giá"
-                        className="pl-10 pr-10 w-full rounded-lg border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary/20 focus:ring-opacity-50 py-2.5"
+                        className={`pl-10 pr-10 w-full rounded-lg border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary/20 focus:ring-opacity-50 py-2.5 ${
+                            error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''
+                        }`}
                     />
-                    {voucherCode && (
-                        <button 
-                            onClick={() => onChange('')}
-                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                            type="button"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                            </svg>
-                        </button>
-                    )}
+                    
+                    <button 
+                        onClick={() => onChange('')}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                        type="button"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                    </button>
                 </div>
                 
+                {error && (
+                    <div className="text-sm text-red-500 flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        {error}
+                    </div>
+                )}
+                
                 <div className="text-xs text-muted-foreground">
-                    <p>Nhập mã giảm giá nếu có để được giảm giá cho đơn hàng</p>
+                    <p>Nhập mã giảm giá để được giảm giá cho đơn hàng</p>
                 </div>
             </div>
         </div>

@@ -20,6 +20,7 @@ import {
 import { useCreateNewItemByOrderIdMutation, useDeleteOrderItemByIdMutation } from '@/features/order/orderApiSlice'
 import { formatPrice } from "@/lib/utils"
 import { getTokenFromCookie } from "@/utils/token"
+import { PaymentStatus } from "@/features/payment/types"
 
 import { PaymentMethod } from "../components/PaymentMethod"
 import { VatInput } from "../components/VatInput"
@@ -61,6 +62,11 @@ interface TempBillData {
   subtotal: number;
   tableNumber: number;
   date: string;
+}
+
+// Thêm kiểu dữ liệu cho OrderItemExtended
+interface OrderItemExtended extends OrderItem {
+  statusLabel?: string;
 }
 
 export default function IntegratedPaymentPage() {
@@ -105,15 +111,20 @@ export default function IntegratedPaymentPage() {
   const [vatRate, setVatRate] = useState<number>(0)
   const [voucherCode, setVoucherCode] = useState<string>("")
   const [isPaymentCreated, setIsPaymentCreated] = useState(false)
+  const [voucherError, setVoucherError] = useState<string | null>(null)
 
   // State cho payment
   const [paymentId, setPaymentId] = useState<number | null>(null)
   const [vat, setVat] = useState<string>("0")
   const [totalAmount, setTotalAmount] = useState<string>("0")
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
+  const [voucherValue, setVoucherValue] = useState<string | number | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [paymentStatus, setPaymentStatus] = useState<"PENDING" | "PAID" | "FAILED" | null>(null)
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(null)
   const [paymentCompleted, setPaymentCompleted] = useState(false)
+
+  // Thêm state để quản lý việc in hóa đơn
+  const [printBill, setPrintBill] = useState<boolean>(false)
 
   // Tạo một phiên bản tùy chỉnh của router để chặn navigation
   const originalPush = useRef(router.push).current;
@@ -346,14 +357,15 @@ export default function IntegratedPaymentPage() {
     );
   }
 
-  // Sửa hàm xử lý tạo payment để đảm bảo kiểu dữ liệu đúng
+  // Cập nhật hàm handleCreatePayment
   const handleCreatePayment = async () => {
     try {
+      setVoucherError(null)
       const result = await createPayment({
         orderId: orderIdNumber,
         paymentMethod,
         vat: vatRate,
-        voucher: voucherCode || undefined,
+        voucherCode: voucherCode || undefined,
       }).unwrap()
       
       if (result.data?.paymentId) {
@@ -363,6 +375,7 @@ export default function IntegratedPaymentPage() {
       // Lấy thông tin từ backend và chuyển đổi sang string nếu cần
       setTotalAmount(String(result.data?.amountPaid || "0"))
       setVat(String(result.data?.vat || "0"))
+      setVoucherValue(result.data?.voucherValue || null)
       setIsPaymentCreated(true)
       
       // Nếu chọn in hóa đơn tự động và thanh toán ngay
@@ -371,26 +384,33 @@ export default function IntegratedPaymentPage() {
       }
     } catch (error: any) {
       const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định."
-      setErrorMessage(`Lỗi tạo thanh toán: ${message}`)
+      if (message.includes("voucher") || message.includes("Voucher") || message.includes("không tìm thấy")) {
+        setVoucherError("Mã giảm giá không hợp lệ hoặc không tồn tại")
+        setErrorMessage(null)
+      } else {
+        setErrorMessage(`Lỗi tạo thanh toán: ${message}`)
+        setVoucherError(null)
+      }
     }
   }
 
   // Thêm hàm xử lý thanh toán nhanh
   const handleQuickPayment = async () => {
-    // Trước tiên tạo payment
     try {
+      setVoucherError(null)
       const result = await createPayment({
         orderId: orderIdNumber,
         paymentMethod,
         vat: vatRate,
-        voucher: voucherCode || undefined,
+        voucherCode: voucherCode || undefined,
       }).unwrap()
       
       if (result.data?.paymentId) {
         setPaymentId(result.data.paymentId)
         setTotalAmount(String(result.data?.amountPaid || "0"))
         setVat(String(result.data?.vat || "0"))
-      setIsPaymentCreated(true)
+        setVoucherValue(result.data?.voucherValue || null)
+        setIsPaymentCreated(true)
         
         // Sau đó xử lý thanh toán ngay
         if (paymentMethod === "CASH") {
@@ -418,7 +438,13 @@ export default function IntegratedPaymentPage() {
       }
     } catch (error: any) {
       const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định."
-      setErrorMessage(`Lỗi tạo thanh toán: ${message}`)
+      if (message.includes("voucher") || message.includes("Voucher") || message.includes("không tìm thấy")) {
+        setVoucherError("Mã giảm giá không hợp lệ hoặc không tồn tại")
+        setErrorMessage(null)
+      } else {
+        setErrorMessage(`Lỗi tạo thanh toán: ${message}`)
+        setVoucherError(null)
+      }
     }
   }
 
@@ -440,9 +466,6 @@ export default function IntegratedPaymentPage() {
       setErrorMessage(`Thanh toán thất bại: ${message}`)
     }
   }
-
-  // Thêm state để quản lý việc in hóa đơn
-  const [printBill, setPrintBill] = useState<boolean>(false)
 
   // Hàm in phiếu tạm tính trực tiếp
   const handlePrintTempBill = (tempBillData: TempBillData): void => {
@@ -516,9 +539,6 @@ export default function IntegratedPaymentPage() {
           .grid > div > div {
             display: table-cell;
             padding: 1mm 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
           }
           
           .font-mono {
@@ -531,6 +551,17 @@ export default function IntegratedPaymentPage() {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+          }
+          
+          .wrap-text {
+            white-space: normal !important;
+            word-break: normal !important;
+            overflow-wrap: break-word !important;
+            hyphens: none !important;
+            overflow: visible !important;
+            text-overflow: initial !important;
+            max-width: 100px !important;
+            display: table-cell !important;
           }
           
           .border-t {
@@ -586,7 +617,7 @@ export default function IntegratedPaymentPage() {
           <div class="grid gap-1 mb-3">
             <div>
               <div style="width: 50%;">
-                <p class="text-xs">BÀN: ${tempBillData.tableNumber || "—"}</p>
+                <p class="text-xs">HÓA ĐƠN: ${tempBillData.tableNumber || "—"}</p>
               </div>
               <div style="width: 50%; text-align: right;">
                 <p class="text-xs">NGÀY: ${new Date(tempBillData.date).toLocaleDateString()}</p>
@@ -613,7 +644,7 @@ export default function IntegratedPaymentPage() {
           <div class="grid mb-1">
             <div>
               <div class="col-span-1 text-xs">${index + 1}</div>
-              <div class="col-span-4 text-xs truncate">${item.dishName}</div>
+              <div class="col-span-4 text-xs wrap-text" style="white-space: normal; word-break: normal; overflow-wrap: break-word;">${item.dishName}</div>
               <div class="col-span-1 text-xs text-center">${item.quantity}</div>
               <div class="col-span-3 text-xs text-right font-mono">${formatPrice(Number(item.price), { currency: false, minLength: 8 })}</div>
               <div class="col-span-3 text-xs text-right font-mono">${formatPrice(Number(item.price) * item.quantity, { currency: false, minLength: 8 })}</div>
@@ -789,9 +820,6 @@ export default function IntegratedPaymentPage() {
               .grid > div > div {
                 display: table-cell;
                 padding: 1mm 0;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
               }
               
               .font-mono {
@@ -804,6 +832,17 @@ export default function IntegratedPaymentPage() {
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+              }
+              
+              .wrap-text {
+                white-space: normal !important;
+                word-break: normal !important;
+                overflow-wrap: break-word !important;
+                hyphens: none !important;
+                overflow: visible !important;
+                text-overflow: initial !important;
+                max-width: 100px !important;
+                display: table-cell !important;
               }
               
               .border-t {
@@ -888,7 +927,7 @@ export default function IntegratedPaymentPage() {
               <div class="grid mb-1">
                 <div>
                   <div class="col-span-1 text-xs">${index + 1}</div>
-                  <div class="col-span-4 text-xs truncate">${item.dishName}</div>
+                  <div class="col-span-4 text-xs wrap-text" style="white-space: normal; word-break: normal; overflow-wrap: break-word;">${item.dishName}</div>
                   <div class="col-span-1 text-xs text-center">${item.quantity}</div>
                   <div class="col-span-3 text-xs text-right font-mono">${formatPrice(item.price, { currency: false, minLength: 8 })}</div>
                   <div class="col-span-3 text-xs text-right font-mono">${formatPrice(item.price * item.quantity, { currency: false, minLength: 8 })}</div>
@@ -933,7 +972,7 @@ export default function IntegratedPaymentPage() {
         
         // Redirect to order list after printing (with delay)
         setTimeout(() => {
-          handleNavigation('/cashier-order');
+          handleNavigation('/cashier-order-2');
         }, 2000);
       } catch (error: any) {
         console.error('Error printing bill:', error);
@@ -1048,15 +1087,15 @@ export default function IntegratedPaymentPage() {
     try {
       await cancelPayment(paymentId).unwrap();
       setErrorMessage("Đã hủy thanh toán thành công");
-      setPaymentStatus("FAILED");
+      // Không cần set paymentStatus ở đây, backend sẽ trả về trạng thái mới
       setPaymentCompleted(false);
       // Chuyển hướng về trang danh sách đơn hàng sau 2 giây
       setTimeout(() => {
-        handleNavigation('/cashier-order');
+        handleNavigation('/cashier-order-2');
       }, 2000);
     } catch (error: any) {
       const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định.";
-      setErrorMessage(`Lỗi hủ hủy thanh toán: ${message}`);
+      setErrorMessage(`Lỗi hủy thanh toán: ${message}`);
     }
   };
 
@@ -1303,7 +1342,14 @@ export default function IntegratedPaymentPage() {
               <PaymentMethod selectedMethod={paymentMethod} onChange={setPaymentMethod} />
               <div className="grid md:grid-cols-2 gap-4">
                 <VatInput vatRate={vatRate} vatAmount={vat} onChange={setVatRate} />
-                <VoucherInput voucherCode={voucherCode} onChange={setVoucherCode} />
+                <VoucherInput 
+                  voucherCode={voucherCode} 
+                  onChange={(code) => {
+                    setVoucherCode(code)
+                    setVoucherError(null) // Reset lỗi khi người dùng thay đổi mã
+                  }} 
+                  error={voucherError}
+                />
               </div>
                   
                   <div className="flex gap-2">
@@ -1365,7 +1411,8 @@ export default function IntegratedPaymentPage() {
                 <OrderSummary
                   total={Number(totalAmount).toLocaleString("vi-VN", { style: "currency", currency: "VND" })}
                   vat={vat}
-                      orderItems={orderItems}
+                  orderItems={orderItems}
+                  voucherValue={voucherValue}
                 />
               </div>
 

@@ -84,6 +84,10 @@ export function PayslipSummary({ payslips }: PayslipSummaryProps) {
                   <span className="text-xl font-bold">{payslip.totalWorkingDays}</span>
                 </div>
                 <div className="flex flex-col">
+                  <span className="text-sm text-muted-foreground">Giờ làm việc</span>
+                  <span className="text-xl font-bold">{payslip.totalWorkingHours}</span>
+                </div>
+                <div className="flex flex-col">
                   <span className="text-sm text-muted-foreground">Tổng lương</span>
                   <span className="text-xl font-bold text-primary">
                     {payslip.totalSalary.toLocaleString("vi-VN")} đ

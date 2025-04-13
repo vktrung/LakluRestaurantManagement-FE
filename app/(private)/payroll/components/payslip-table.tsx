@@ -67,6 +67,7 @@ export function PayslipTable({ payslips }: PayslipTableProps) {
               <TableHead>Nhân viên</TableHead>
               <TableHead>Mã NV</TableHead>
               <TableHead>Ngày làm</TableHead>
+              <TableHead>Giờ làm</TableHead>
               <TableHead>Tổng lương</TableHead>
               <TableHead>Số lần trễ</TableHead>
               <TableHead>Số giờ trễ</TableHead>
@@ -88,6 +89,7 @@ export function PayslipTable({ payslips }: PayslipTableProps) {
                 </TableCell>
                 <TableCell>{payslip.staffId}</TableCell>
                 <TableCell>{payslip.totalWorkingDays}</TableCell>
+                <TableCell>{payslip.totalWorkingHours}</TableCell>
                 <TableCell>{payslip.totalSalary.toLocaleString("vi-VN")} đ</TableCell>
                 <TableCell>
                   <Badge variant="outline" className="bg-orange-50">

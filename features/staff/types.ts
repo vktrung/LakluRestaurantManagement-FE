@@ -2,10 +2,10 @@ export interface Staff {
   id: number;
   username: string;
   email: string;
-  phone: string | null;
-  avatar: string | null;
   roles: string[];
-  nameSalaryRate: string;
+  salaryRateName: string;
+  salaryAmount: number;
+  salaryType: string;
   profile: Profile;
 }
 

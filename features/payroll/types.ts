@@ -4,6 +4,7 @@ export interface Payslip {
   staffName: string;
   salaryMonth: string;
   totalWorkingDays: number;
+  totalWorkingHours: number;
   totalSalary: number;
   lateCount: number;
   lateHours: number;

@@ -6,15 +6,21 @@ interface OrderSummaryProps {
   total: string
   vat: string
   orderItems: OrderItem[]
+  voucherValue?: string | number | null
 }
 
-export function OrderSummary({ total, vat, orderItems }: OrderSummaryProps) {
+export function OrderSummary({ total, vat, orderItems, voucherValue }: OrderSummaryProps) {
   // Tính tổng trước VAT từ orderItems
   const subTotal = orderItems.reduce((sum, item) => {
     const price = Number(item.price) || 0
     const quantity = item.quantity || 0
     return sum + price * quantity
   }, 0)
+
+  // Định dạng giá trị voucher
+  const formattedVoucherValue = voucherValue 
+    ? Number(voucherValue).toLocaleString("vi-VN", { style: "currency", currency: "VND" })
+    : null
 
   return (
     <Card className="w-full shadow-sm">
@@ -33,6 +39,14 @@ export function OrderSummary({ total, vat, orderItems }: OrderSummaryProps) {
             <div className="flex justify-between items-center text-sm">
               <span className="text-muted-foreground">VAT:</span>
               <span className="font-medium">{Number(vat)}%</span>
+            </div>
+          )}
+          
+          {/* Hiển thị giá trị voucher nếu có */}
+          {formattedVoucherValue && (
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-muted-foreground">Giảm giá voucher:</span>
+              <span className="font-medium text-green-600">-{formattedVoucherValue}</span>
             </div>
           )}
 

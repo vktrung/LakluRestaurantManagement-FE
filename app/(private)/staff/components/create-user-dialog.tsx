@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Save, X, AlertCircle } from "lucide-react"
+import { Save, X, AlertCircle, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -17,10 +17,11 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useCreateStaffMutation } from "@/features/staff/staffApiSlice"
 import { useToast } from "@/components/ui/use-toast"
-import { useGetSalaryRatesQuery } from "@/features/salary/salaryApiSlice"
+import { useGetSalaryRatesQuery, useCreateSalaryRateMutation } from "@/features/salary/salaryApiSlice"
 import { useGetRolesQuery } from "@/features/role/roleApiSlice"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { SalaryType } from "@/features/salary/types"
 
 interface CreateUserDialogProps {
   isOpen: boolean
@@ -70,9 +71,19 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
     password: ""
   })
 
+  // State cho phần tạo mức lương mới
+  const [isCreatingSalary, setIsCreatingSalary] = useState(false)
+  const [newSalaryData, setNewSalaryData] = useState({
+    levelName: "",
+    amount: 0,
+    type: "MONTHLY" as SalaryType,
+    isGlobal: true
+  })
+
   const { toast } = useToast()
   const [createStaff, { isLoading }] = useCreateStaffMutation()
-  const { data: salaryRatesResponse, isLoading: isLoadingSalaryRates } = useGetSalaryRatesQuery()
+  const { data: salaryRatesResponse, isLoading: isLoadingSalaryRates, refetch: refetchSalaryRates } = useGetSalaryRatesQuery()
+  const [createSalaryRate, { isLoading: isCreatingSalaryRate }] = useCreateSalaryRateMutation()
   const { data: rolesResponse, isLoading: isLoadingRoles } = useGetRolesQuery()
   
   // Lấy danh sách chức vụ và vai trò từ API
@@ -132,6 +143,77 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
       ...formData,
       [name]: value,
     })
+  }
+
+  // Xử lý tạo mức lương mới
+  const handleNewSalaryInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setNewSalaryData({
+      ...newSalaryData,
+      [name]: name === 'amount' ? Number(value) : value,
+    })
+  }
+
+  const handleNewSalaryTypeChange = (value: string) => {
+    setNewSalaryData({
+      ...newSalaryData,
+      type: value as SalaryType,
+    })
+  }
+
+  const handleCreateSalary = async () => {
+    if (!newSalaryData.levelName.trim()) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng nhập tên mức lương",
+        variant: "destructive",
+      })
+      return;
+    }
+
+    if (newSalaryData.amount <= 0) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng nhập số tiền lương hợp lệ",
+        variant: "destructive",
+      })
+      return;
+    }
+
+    try {
+      const result = await createSalaryRate(newSalaryData).unwrap();
+      toast({
+        title: "Thành công",
+        description: "Đã tạo mức lương mới thành công",
+      })
+      
+      // Đóng modal và làm mới danh sách lương
+      setIsCreatingSalary(false);
+      await refetchSalaryRates();
+      
+      // Nếu tạo thành công và có kết quả trả về, chọn mức lương mới
+      if (result.data && result.data.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          salaryRateId: result.data[0].id
+        }));
+      }
+      
+      // Reset form tạo lương
+      setNewSalaryData({
+        levelName: "",
+        amount: 0,
+        type: "MONTHLY",
+        isGlobal: true
+      })
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: "Không thể tạo mức lương mới. Vui lòng thử lại.",
+        variant: "destructive",
+      })
+      console.error("Lỗi khi tạo mức lương:", error)
+    }
   }
 
   const handleSubmit = async () => {
@@ -262,31 +344,122 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
             {isLoadingSalaryRates ? (
               <Skeleton className="h-10 col-span-3" />
             ) : (
-              <Select 
-                value={formData.salaryRateId ? formData.salaryRateId.toString() : ""} 
-                onValueChange={(value) => setFormData({
-                  ...formData,
-                  salaryRateId: parseInt(value)
-                })}
-                disabled={salaryRates.length === 0}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Chọn mức lương" />
-                </SelectTrigger>
-                <SelectContent>
-                  {salaryRates.length > 0 ? (
-                    salaryRates.map((rate) => (
-                      <SelectItem key={rate.id} value={rate.id.toString()}>
-                        {rate.levelName} - {formatCurrency(rate.amount)} ({translateSalaryType(rate.type)})
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="" disabled>
-                      Không có dữ liệu về mức lương
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+              <div className="col-span-3">
+                <div className="flex w-full items-center">
+                  <div className="flex-1">
+                    <Select 
+                      value={formData.salaryRateId ? formData.salaryRateId.toString() : ""} 
+                      onValueChange={(value) => setFormData({
+                        ...formData,
+                        salaryRateId: parseInt(value)
+                      })}
+                      disabled={salaryRates.length === 0}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn mức lương" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {salaryRates.length > 0 ? (
+                          salaryRates.map((rate) => (
+                            <SelectItem key={rate.id} value={rate.id.toString()}>
+                              {rate.levelName} - {formatCurrency(rate.amount)} ({translateSalaryType(rate.type)})
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="" disabled>
+                            Không có dữ liệu về mức lương
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="icon"
+                    className="ml-2"
+                    onClick={() => setIsCreatingSalary(true)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                {/* Modal thêm mức lương mới */}
+                {isCreatingSalary && (
+                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={(e) => e.stopPropagation()}>
+                    <div className="bg-white rounded-lg p-6 w-[400px] shadow-lg" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold">Thêm mức lương mới</h3>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setIsCreatingSalary(false)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="levelName">Tên mức lương</Label>
+                          <Input
+                            id="levelName"
+                            name="levelName"
+                            placeholder="Ví dụ: Cấp 1, Senior, Junior..."
+                            value={newSalaryData.levelName}
+                            onChange={handleNewSalaryInputChange}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="amount">Số tiền</Label>
+                          <Input
+                            id="amount"
+                            name="amount"
+                            type="number"
+                            placeholder="Nhập số tiền..."
+                            value={newSalaryData.amount || ''}
+                            onChange={handleNewSalaryInputChange}
+                            min="0"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="type">Loại lương</Label>
+                          <Select 
+                            value={newSalaryData.type} 
+                            onValueChange={handleNewSalaryTypeChange}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Chọn loại lương" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="MONTHLY">Theo tháng</SelectItem>
+                              <SelectItem value="HOURLY">Theo giờ</SelectItem>
+                              <SelectItem value="SHIFTLY">Theo ca</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="flex justify-end space-x-2 pt-4">
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setIsCreatingSalary(false)}
+                          >
+                            Hủy
+                          </Button>
+                          <Button 
+                            onClick={handleCreateSalary}
+                            disabled={isCreatingSalaryRate}
+                          >
+                            {isCreatingSalaryRate ? "Đang lưu..." : "Lưu mức lương"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 

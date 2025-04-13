@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { Bell, Check } from 'lucide-react';
+import { Bell, Check, X, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNotifications } from '../NotificationContext/NotificationContext';
 import {
@@ -23,6 +23,7 @@ export function NotificationBell() {
     markAsRead,
     markAllAsRead,
     markAsDelivered,
+    dismissNotification,
   } = useNotifications();
 
   const formatTime = (timestamp: string) => {
@@ -36,6 +37,11 @@ export function NotificationBell() {
   const handleConfirm = async (id: string, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent triggering markAsRead
     await markAsDelivered(id); // This will update status to DELIVERED and remove notification
+  };
+
+  const handleDismiss = (id: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent triggering markAsRead
+    dismissNotification(id); // Remove the cancelled notification
   };
 
   return (
@@ -82,26 +88,46 @@ export function NotificationBell() {
               onClick={() => markAsRead(notification.id)}
             >
               <div className="flex flex-col gap-1 w-full">
-                <div
-                  className={`text-sm ${
-                    !notification.read ? 'font-semibold' : ''
-                  }`}
-                >
-                  {notification.message}
+                <div className="flex items-start gap-2">
+                  {notification.type === 'cancelled' && (
+                    <AlertCircle className="text-red-500 h-4 w-4 mt-0.5 flex-shrink-0" />
+                  )}
+                  <div
+                    className={`text-sm ${
+                      !notification.read ? 'font-semibold' : ''
+                    } ${
+                      notification.type === 'cancelled' ? 'text-red-700' : ''
+                    }`}
+                  >
+                    {notification.message}
+                  </div>
                 </div>
                 <div className="flex justify-between items-center mt-2">
                   <span className="text-xs text-gray-500">
                     {formatTime(notification.timestamp)}
                   </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 border-blue-200"
-                    onClick={e => handleConfirm(notification.id, e)}
-                  >
-                    <Check className="h-3.5 w-3.5 mr-1" />
-                    Xác nhận
-                  </Button>
+
+                  {notification.type === 'completed' ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 border-blue-200"
+                      onClick={e => handleConfirm(notification.id, e)}
+                    >
+                      <Check className="h-3.5 w-3.5 mr-1" />
+                      Xác nhận
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-700 border-gray-200"
+                      onClick={e => handleDismiss(notification.id, e)}
+                    >
+                      <X className="h-3.5 w-3.5 mr-1" />
+                      Đóng
+                    </Button>
+                  )}
                 </div>
               </div>
             </DropdownMenuItem>

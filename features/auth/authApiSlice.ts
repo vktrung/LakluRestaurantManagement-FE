@@ -29,6 +29,7 @@ const getAuthToken = () => {
 export const authApiSlice = createApi({
   reducerPath: 'authApi',
   baseQuery,
+  tagTypes: ['userMe'],
   endpoints: builder => ({
 
     checkUsername: builder.mutation<CheckUsernameResponse, CheckUsernameRequest>({
@@ -51,6 +52,7 @@ export const authApiSlice = createApi({
         method: 'POST',
         body: credentials,
       }),
+      invalidatesTags: ['userMe'],
     }),
 
     register: builder.mutation<RegisterApiResponse, RegisterCredentials>({
@@ -95,6 +97,7 @@ export const authApiSlice = createApi({
           body: credentials,
         };
       },
+      invalidatesTags: ['userMe'],
     }),
     getUserMe: builder.query<UserMeResponse, void>({
       query: () => {
@@ -111,8 +114,7 @@ export const authApiSlice = createApi({
         };
       },
       keepUnusedDataFor: 0,
-  // @ts-ignore
-  pollingInterval: 0,
+      providesTags: ['userMe'],
     }),
   }),
 });

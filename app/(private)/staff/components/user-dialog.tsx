@@ -41,7 +41,9 @@ interface UserFormData {
   phone?: string | null
   avatar?: string | null
   roles: string[]
-  nameSalaryRate: string
+  salaryRateName: string
+  salaryAmount: number
+  salaryType: string
   profile: {
     id?: number
     userId?: number
@@ -114,7 +116,9 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
     username: "",
     email: "",
     roles: [],
-    nameSalaryRate: "",
+    salaryRateName: "",
+    salaryAmount: 0,
+    salaryType: "",
     profile: {
       fullName: "",
       gender: "MALE",
@@ -268,7 +272,7 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
       // Lấy ID của salary rate từ các options nếu có
       let salaryRateId: number | undefined
       if (salaryRatesResponse?.data && salaryRatesResponse.data.length > 0) {
-        const selectedRate = salaryRatesResponse.data.find(rate => rate.levelName === formData.nameSalaryRate)
+        const selectedRate = salaryRatesResponse.data.find(rate => rate.levelName === formData.salaryRateName)
         if (selectedRate) {
           salaryRateId = selectedRate.id
         }
@@ -589,17 +593,17 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="nameSalaryRate">Mức lương</Label>
+                <Label htmlFor="salaryRateName">Mức lương</Label>
                 {isViewMode ? (
                   <Input
-                    id="nameSalaryRate"
-                    value={formData.nameSalaryRate || ""}
+                    id="salaryRateName"
+                    value={formData.salaryRateName || ""}
                     disabled
                   />
                 ) : (
                   <Select
-                    value={formData.nameSalaryRate || ""}
-                    onValueChange={(value) => handleSelectChange("nameSalaryRate", value)}
+                    value={formData.salaryRateName || ""}
+                    onValueChange={(value) => handleSelectChange("salaryRateName", value)}
                     disabled={isLoadingSalaryRates}
                   >
                     <SelectTrigger>

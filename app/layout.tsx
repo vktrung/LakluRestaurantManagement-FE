@@ -24,7 +24,6 @@ export default function RootLayout({
   return (
     <html lang="en" className="white" data-theme="white">
       <body className={inter.className}>
-        <div id="header-portal" className={clsx(styles.headerPortal)}></div>
         <div
           id="header-secondary-portal"
           className={clsx(styles.headerSecondary)}

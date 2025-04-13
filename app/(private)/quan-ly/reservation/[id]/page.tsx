@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format, parseISO } from "date-fns"
-import { Calendar, Check, Clock, Edit, MapPin, Phone, Trash, User, Users, X, Table, Loader2 } from "lucide-react"
+import { Calendar, Check, Clock, Edit, MapPin, Phone, Trash, User, Users, X, Table, Loader2, ArrowRight } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { EditTablesDialog } from "./edit-tables-dialog"
+import { TransferTableDialog } from "./transfer-table-dialog"
 import { ReservationResponse } from "@/features/reservation/type"
 import { useGetReservationByIdQuery, useCancelReservationMutation } from "@/features/reservation/reservationApiSlice"
 import { toast } from "sonner"
@@ -45,8 +46,10 @@ export default function ReservationDetailPage({ params }: { params: { id: string
   const router = useRouter()
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const [isEditTablesOpen, setIsEditTablesOpen] = useState(false)
+  const [isTransferTableOpen, setIsTransferTableOpen] = useState(false)
   // Key độc nhất cho dialog để ép React tạo mới component khi mở lại
   const [dialogKey, setDialogKey] = useState(0)
+  const [transferDialogKey, setTransferDialogKey] = useState(0)
   const [isCancelling, setIsCancelling] = useState(false)
   
   // Validate ID
@@ -92,6 +95,21 @@ export default function ReservationDetailPage({ params }: { params: { id: string
   // Xử lý đóng dialog gộp/tách bàn và refresh dữ liệu
   const handleCloseEditTables = useCallback(() => {
     setIsEditTablesOpen(false)
+    // Refetch dữ liệu sau khi đóng dialog
+    setTimeout(() => {
+      refetch()
+    }, 100)
+  }, [refetch])
+
+  // Xử lý mở dialog chuyển bàn và tạo key mới
+  const handleOpenTransferTable = useCallback(() => {
+    setTransferDialogKey(prev => prev + 1) // Tạo key mới
+    setIsTransferTableOpen(true)
+  }, [])
+
+  // Xử lý đóng dialog chuyển bàn và refresh dữ liệu
+  const handleCloseTransferTable = useCallback(() => {
+    setIsTransferTableOpen(false)
     // Refetch dữ liệu sau khi đóng dialog
     setTimeout(() => {
       refetch()
@@ -279,6 +297,15 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                     Gộp/Tách bàn
                   </Button>
                   
+                  <Button 
+                    className="w-full bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800" 
+                    variant="outline"
+                    onClick={handleOpenTransferTable}
+                  >
+                    <ArrowRight className="mr-2 h-4 w-4" />
+                    Chuyển bàn
+                  </Button>
+                  
                   <Button
                     className="w-full bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800"
                     variant="outline"
@@ -327,6 +354,17 @@ export default function ReservationDetailPage({ params }: { params: { id: string
             reservation={reservation}
             isOpen={isEditTablesOpen}
             onClose={handleCloseEditTables}
+          />
+        </div>
+      )}
+
+      {/* Dialog chuyển bàn - Với key để tạo mới component mỗi khi mở */}
+      {isTransferTableOpen && reservation && (
+        <div key={transferDialogKey}>
+          <TransferTableDialog
+            reservation={reservation}
+            isOpen={isTransferTableOpen}
+            onClose={handleCloseTransferTable}
           />
         </div>
       )}

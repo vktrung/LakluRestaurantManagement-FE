@@ -139,3 +139,11 @@ export interface RemoveTableRequest {
 export interface AddTableRequest {
   tableIds: number[];
 }
+
+// Interfaces cho API chuyển bàn
+export interface TransferTableRequest {
+  fromTableIds: number[];
+  toTableIds: number[];
+}
+
+export type TransferTableResponse = BaseApiResponse<ReservationResponse>;

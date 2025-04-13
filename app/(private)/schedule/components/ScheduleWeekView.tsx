@@ -293,21 +293,28 @@ export default function ScheduleWeekView({
 
   const shouldShowCheckInButton = (shift: Shift) => {
     const currentTime = currentDate;
+    const timeIn = parseISO(shift.timeIn);
     const timeOut = parseISO(shift.timeOut);
 
+    const shiftStartDate = new Date(timeIn);
     const shiftEndDate = new Date(timeOut);
     const currentDay = format(currentDate, 'yyyy-MM-dd');
+    const shiftStartDay = format(shiftStartDate, 'yyyy-MM-dd');
     const shiftEndDay = format(shiftEndDate, 'yyyy-MM-dd');
 
     // Điều kiện 1: Ngày hiện tại phải khớp với ngày của ca hoặc ca liên ngày
     const isSameDayOrOvernight =
+      currentDay === shiftStartDay ||
       currentDay === shiftEndDay ||
       isOvernightShift(shift.timeIn, shift.timeOut);
 
-    // Điều kiện 2: Thời gian hiện tại chưa vượt qua timeOut
+    // Điều kiện 2: Thời gian hiện tại nằm trong khoảng giữa timeIn và timeOut
+    const isAfterStartTime =
+      isAfter(currentTime, timeIn) ||
+      currentTime.getTime() === timeIn.getTime();
     const isBeforeEndTime = !isAfter(currentTime, timeOut);
 
-    return isSameDayOrOvernight && isBeforeEndTime;
+    return isSameDayOrOvernight && isAfterStartTime && isBeforeEndTime;
   };
 
   // Kiểm tra xem ca đã qua thời gian checkout chưa

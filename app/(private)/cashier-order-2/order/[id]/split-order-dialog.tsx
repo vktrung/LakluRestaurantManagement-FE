@@ -40,6 +40,12 @@ export function SplitOrderDialog({ isOpen, onClose, order }: SplitOrderDialogPro
   }, [order])
 
   const handleCheckboxChange = (orderItemId: number, checked: boolean) => {
+    // Kiểm tra nếu đang chọn tất cả các món
+    if (checked && selectedItems.length === order.orderItems.length - 1) {
+      toast.warning("Không thể tách tất cả các món. Phải để lại ít nhất một món trong đơn hàng gốc.");
+      return;
+    }
+
     if (checked) {
       setSelectedItems((prev) => [...prev, orderItemId])
     } else {
@@ -200,6 +206,13 @@ export function SplitOrderDialog({ isOpen, onClose, order }: SplitOrderDialogPro
             <div className="flex items-center gap-2 text-amber-600 text-xs bg-amber-50 p-2 rounded border border-amber-200">
               <AlertCircle className="h-4 w-4" />
               <span>Vui lòng chọn ít nhất một món để tách đơn hàng</span>
+            </div>
+          )}
+
+          {selectedItems.length === order.orderItems.length - 1 && (
+            <div className="flex items-center gap-2 text-amber-600 text-xs bg-amber-50 p-2 rounded border border-amber-200">
+              <AlertCircle className="h-4 w-4" />
+              <span>Bạn đã chọn gần hết các món. Phải để lại ít nhất một món trong đơn hàng gốc.</span>
             </div>
           )}
         </div>

@@ -1,5 +1,5 @@
 import { useDeleteSalaryRateMutation } from '@/features/salary/salaryApiSlice';
-import { useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -10,35 +10,54 @@ interface DeleteSalaryConfirmProps {
 
 export default function DeleteSalaryConfirm({ id, onClose }: DeleteSalaryConfirmProps) {
   const [deleteSalaryRate] = useDeleteSalaryRateMutation();
-  const [error, setError] = useState<string | null>(null);
 
   const handleDelete = async () => {
+    onClose();
     try {
       await deleteSalaryRate(id).unwrap();
-      onClose();
-      setError(null);
-    } catch (err) {
-      setError('Lỗi khi xoá mức lương: ' + (err as Error).message);
+    } catch (err: any) {
+      let errorMessage = 'Không thể xóa mức lương. ';
+      
+      if (err?.data?.message) {
+        errorMessage = err.data.message;
+      } else if (err?.status === 403) {
+        errorMessage = 'Không thể xóa mức lương. Mức lương đang được sử dụng bởi một hoặc nhiều người dùng';
+      } else if (err?.status === 404) {
+        errorMessage = 'Mức lương không tồn tại.';
+      } else if (err?.status === 400) {
+        errorMessage = 'Yêu cầu không hợp lệ.';
+      } else {
+        errorMessage = 'Lỗi khi xóa mức lương: undefined';
+      }
+      
+      toast.error(errorMessage, {
+        position: 'top-right',
+        duration: 3000,
+        style: {
+          backgroundColor: '#FEF2F2',
+          color: '#DC2626',
+          border: '1px solid #FCA5A5'
+        }
+      });
     }
   };
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="bg-white border border-gray-200 shadow-xl p-6 rounded-lg w-[400px]">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-black text-lg font-semibold">Xác Nhận Xóa</DialogTitle>
+          <DialogTitle>Xác Nhận Xóa</DialogTitle>
         </DialogHeader>
-
-        <p className="text-gray-700">Bạn có chắc muốn xóa mức lương này không?</p>
-        {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
-
-        <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-100" onClick={onClose}>
-            Hủy
-          </Button>
-          <Button className="bg-black text-white hover:bg-gray-900" onClick={handleDelete}>
-            Xóa
-          </Button>
+        <div className="space-y-4">
+          <p>Bạn có chắc muốn xóa mức lương này không?</p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Hủy
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Xóa
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

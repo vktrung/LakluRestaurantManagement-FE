@@ -227,6 +227,9 @@ export default function ReservationsPage() {
     setDebouncedSearchTerm("")
     setIsSearching(false)
     setIsFiltering(false)
+    // Đặt lại bộ lọc khi chọn thời gian
+    setStatusFilter(null)
+    setDate(undefined)
     setTimeRange(value as TimeRangeType)
     setCurrentPage(0) // Reset về trang đầu tiên khi thay đổi khoảng thời gian
   }
@@ -345,7 +348,7 @@ export default function ReservationsPage() {
           <Select 
             defaultValue={timeRange} 
             onValueChange={handleTimeRangeChange} 
-            disabled={isSearching || isFiltering}
+            disabled={isSearching}
           >
             <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Thời gian" />
@@ -357,6 +360,7 @@ export default function ReservationsPage() {
                 <SelectItem value="yesterday">Hôm qua</SelectItem>
                 <SelectItem value="week">Tuần này</SelectItem>
                 <SelectItem value="month">Tháng này</SelectItem>
+                <SelectItem value="all">Tất cả</SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -464,16 +468,6 @@ export default function ReservationsPage() {
                                     >
                                       Chỉnh sửa
                                     </DropdownMenuItem>
-                                    {reservation.detail.status === "PENDING" && (
-                                      <DropdownMenuItem 
-                                        onClick={() => {
-                                          setSelectedReservationId(reservation.id)
-                                          setConfirmDialogOpen(true)
-                                        }}
-                                      >
-                                        Xác nhận
-                                      </DropdownMenuItem>
-                                    )}
                                     {(reservation.detail.status === "PENDING" || reservation.detail.status === "CONFIRMED") && (
                                       <DropdownMenuItem 
                                         onClick={() => {

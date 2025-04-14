@@ -185,11 +185,6 @@ export function ReservationDetailDialog({ reservation, isOpen, onClose }: Reserv
                 Xác nhận
               </Button>
             )}
-            {!reservation.detail.timeOut && reservation.detail.status !== "CANCELLED" && (
-              <Button variant="outline" className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800">
-                Check Out
-              </Button>
-            )}
             <Button onClick={handleEdit}>
               Chỉnh sửa
             </Button>

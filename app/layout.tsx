@@ -3,7 +3,7 @@ import './globals.css';
 import '@/styles/utilities.css';
 import Providers from '@/components/Providers/Providers';
 import '@/styles/fonts.css';
-import { Toaster } from '@/components/ui/toaster';
+import { Toaster } from 'sonner';
 import styles from './layout.module.scss';
 import clsx from 'clsx';
 import ScrollToTop from '@/components/ScrollToTop/ScrollToTop';
@@ -28,7 +28,13 @@ export default function RootLayout({
           id="header-secondary-portal"
           className={clsx(styles.headerSecondary)}
         ></div>
-        <Toaster />
+        <Toaster 
+          position="top-right" 
+          duration={3000}
+          theme="light"
+          richColors
+          closeButton
+        />
         <div
           id="scroll-to-top-portal"
           className={clsx(styles.scrollToTop)}

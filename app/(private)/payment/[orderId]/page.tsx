@@ -69,6 +69,37 @@ interface OrderItemExtended extends OrderItem {
   statusLabel?: string;
 }
 
+// Thêm hàm kiểm tra và xóa dữ liệu hết hạn
+const STORAGE_EXPIRATION = 2 * 60 * 60 * 1000; // 2 giờ tính bằng milliseconds
+
+function setStorageWithExpiry(key: string, value: string) {
+  const item = {
+    value,
+    timestamp: new Date().getTime()
+  };
+  localStorage.setItem(key, JSON.stringify(item));
+}
+
+function getStorageWithExpiry(key: string) {
+  const itemStr = localStorage.getItem(key);
+  if (!itemStr) return null;
+
+  try {
+    const item = JSON.parse(itemStr);
+    const now = new Date().getTime();
+
+    // Kiểm tra xem dữ liệu đã hết hạn chưa
+    if (now - item.timestamp > STORAGE_EXPIRATION) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return item.value;
+  } catch {
+    localStorage.removeItem(key);
+    return null;
+  }
+}
+
 export default function IntegratedPaymentPage() {
   const { orderId } = useParams()
   const router = useRouter()
@@ -107,9 +138,26 @@ export default function IntegratedPaymentPage() {
   )
 
   // === PAYMENT SECTION ===
-  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "TRANSFER">("CASH")
-  const [vatRate, setVatRate] = useState<number>(0)
-  const [voucherCode, setVoucherCode] = useState<string>("")
+  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "TRANSFER">(() => {
+    if (typeof window !== 'undefined') {
+      const savedMethod = getStorageWithExpiry(`payment_method_${orderIdValue}`);
+      return (savedMethod as "CASH" | "TRANSFER") || "CASH";
+    }
+    return "CASH";
+  })
+  const [vatRate, setVatRate] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const savedVatRate = getStorageWithExpiry(`payment_vatRate_${orderIdValue}`);
+      return savedVatRate ? Number(savedVatRate) : 0;
+    }
+    return 0;
+  })
+  const [voucherCode, setVoucherCode] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return getStorageWithExpiry(`payment_voucherCode_${orderIdValue}`) || "";
+    }
+    return "";
+  })
   const [isPaymentCreated, setIsPaymentCreated] = useState(false)
   const [voucherError, setVoucherError] = useState<string | null>(null)
 
@@ -125,6 +173,8 @@ export default function IntegratedPaymentPage() {
 
   // Thêm state để quản lý việc in hóa đơn
   const [printBill, setPrintBill] = useState<boolean>(false)
+  // Thêm state để theo dõi trạng thái nút hủy
+  const [isCancelButtonDisabled, setIsCancelButtonDisabled] = useState<boolean>(false)
 
   // Tạo một phiên bản tùy chỉnh của router để chặn navigation
   const originalPush = useRef(router.push).current;
@@ -357,7 +407,36 @@ export default function IntegratedPaymentPage() {
     );
   }
 
-  // Cập nhật hàm handleCreatePayment
+  // Thêm useEffect để lưu phương thức thanh toán vào localStorage khi nó thay đổi
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setStorageWithExpiry(`payment_method_${orderIdValue}`, paymentMethod);
+    }
+  }, [paymentMethod, orderIdValue]);
+
+  // Thêm useEffect để lưu VAT rate và voucher code vào localStorage khi chúng thay đổi
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setStorageWithExpiry(`payment_vatRate_${orderIdValue}`, vatRate.toString());
+    }
+  }, [vatRate, orderIdValue]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setStorageWithExpiry(`payment_voucherCode_${orderIdValue}`, voucherCode);
+    }
+  }, [voucherCode, orderIdValue]);
+
+  // Thêm hàm để xóa dữ liệu đã lưu khi thanh toán hoàn tất hoặc hủy
+  const clearSavedPaymentData = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(`payment_method_${orderIdValue}`);
+      localStorage.removeItem(`payment_vatRate_${orderIdValue}`);
+      localStorage.removeItem(`payment_voucherCode_${orderIdValue}`);
+    }
+  };
+
+  // Cập nhật hàm handleCreatePayment để xóa dữ liệu đã lưu khi tạo thanh toán thành công
   const handleCreatePayment = async () => {
     try {
       setVoucherError(null)
@@ -377,6 +456,9 @@ export default function IntegratedPaymentPage() {
       setVat(String(result.data?.vat || "0"))
       setVoucherValue(result.data?.voucherValue || null)
       setIsPaymentCreated(true)
+      
+      // Xóa dữ liệu đã lưu khi tạo thanh toán thành công
+      clearSavedPaymentData();
       
       // Nếu chọn in hóa đơn tự động và thanh toán ngay
       if (printBill && result.data?.paymentId && paymentStatus === "PAID") {
@@ -1054,10 +1136,12 @@ export default function IntegratedPaymentPage() {
     if (!paymentId) return;
     
     try {
+      setIsCancelButtonDisabled(true);
       await cancelPayment(paymentId).unwrap();
       setErrorMessage("Đã hủy thanh toán thành công");
-      // Không cần set paymentStatus ở đây, backend sẽ trả về trạng thái mới
       setPaymentCompleted(false);
+      // Xóa dữ liệu đã lưu khi hủy thanh toán
+      clearSavedPaymentData();
       // Chuyển hướng về trang danh sách đơn hàng sau 2 giây
       setTimeout(() => {
         handleNavigation('/cashier-order-2/order');
@@ -1065,6 +1149,7 @@ export default function IntegratedPaymentPage() {
     } catch (error: any) {
       const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định.";
       setErrorMessage(`Lỗi hủy thanh toán: ${message}`);
+      setIsCancelButtonDisabled(false);
     }
   };
 
@@ -1390,7 +1475,7 @@ export default function IntegratedPaymentPage() {
                 <Button
                   variant="destructive"
                   onClick={handleCancelPayment}
-                  disabled={isCancelling}
+                  disabled={isCancelling || isCancelButtonDisabled}
                   className="w-full"
                 >
                   {isCancelling ? "Đang hủy..." : "Hủy thanh toán"}

@@ -162,7 +162,7 @@ export const reservationApiSlice = createApi({
     // Query lấy danh sách đặt bàn hoạt động theo khoảng thời gian (phân trang)
     getActiveReservationsByTimeRange: builder.query<GetReservationsByTimeRangeResponse, GetReservationsByTimeRangeParams>({
       query: ({ timeRange, page = 0, size = 10 }) => ({
-        url: `${endpoints.ReservationApi}time-range?timeRange=${timeRange}/active&page=${page}&size=${size}`,
+        url: `${endpoints.ReservationApi}time-range/active?timeRange=${timeRange}&page=${page}&size=${size}`,
         method: 'GET',
       }),
       providesTags: ['reservation-list'],

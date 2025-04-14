@@ -175,7 +175,7 @@ export default function IntegratedPaymentPage() {
     item.dish?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  // Ghi đè phương thức push của router
+  // Ghi đè phương thức push của  r
   useEffect(() => {
     // @ts-ignore - Override router method temporarily
     router.push = customRouterPush;
@@ -972,7 +972,7 @@ export default function IntegratedPaymentPage() {
         
         // Redirect to order list after printing (with delay)
         setTimeout(() => {
-          handleNavigation('/cashier-order-2');
+          handleNavigation('/cashier-order-2/order');
         }, 2000);
       } catch (error: any) {
         console.error('Error printing bill:', error);
@@ -1004,37 +1004,6 @@ export default function IntegratedPaymentPage() {
     // Cleanup khi component unmount
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [paymentCompleted, existingOrderItemsData?.data]);
-
-  // Xử lý khi người dùng nhấn nút Back của trình duyệt
-  useEffect(() => {
-    // Hàm xử lý khi người dùng nhấn nút Back
-    const handlePopState = (e: PopStateEvent) => {
-      // Ngăn chặn hành động mặc định nếu chưa thanh toán và có thông tin cần lưu
-      if (!paymentCompleted && (existingOrderItemsData?.data?.length ?? 0) > 0) {
-        // Ngăn router của Next.js điều hướng
-        e.preventDefault();
-        
-        // Hiển thị modal xác nhận
-        setIsModalOpen(true);
-        
-        // Đẩy một state mới vào history để ngăn việc điều hướng về trang trước
-        window.history.pushState(null, '', window.location.href);
-        
-        return;
-      }
-    };
-
-    // Thêm state vào history stack để có thể bắt sự kiện popstate
-    window.history.pushState(null, '', window.location.href);
-    
-    // Lắng nghe sự kiện popstate (khi người dùng nhấn nút Back)
-    window.addEventListener('popstate', handlePopState);
-    
-    // Cleanup khi component unmount
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
     };
   }, [paymentCompleted, existingOrderItemsData?.data]);
 
@@ -1091,7 +1060,7 @@ export default function IntegratedPaymentPage() {
       setPaymentCompleted(false);
       // Chuyển hướng về trang danh sách đơn hàng sau 2 giây
       setTimeout(() => {
-        handleNavigation('/cashier-order-2');
+        handleNavigation('/cashier-order-2/order');
       }, 2000);
     } catch (error: any) {
       const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định.";

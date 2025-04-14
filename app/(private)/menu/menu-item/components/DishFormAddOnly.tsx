@@ -229,7 +229,7 @@ const DishFormAddOnly: React.FC<DishFormAddOnlyProps> = ({ onClose }) => {
               htmlFor="requiresPreparation"
               className="text-sm font-semibold text-gray-700 cursor-pointer"
             >
-             Cần chuẩn bị
+              Cần chuẩn bị
             </Label>
           </div>
           <div className="space-y-2">

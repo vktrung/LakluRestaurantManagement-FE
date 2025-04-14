@@ -27,6 +27,8 @@ interface Notification {
   timestamp: string;
   orderItemId?: number;
   type?: 'completed' | 'cancelled'; // Add type to differentiate notifications
+  staffId?: number; // Staff ID associado à notificação
+  isPriority?: boolean; // Indica se é uma notificação prioritária para o usuário atual
 }
 
 interface NotificationContextType {
@@ -216,6 +218,9 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    // ID của staff đang đăng nhập
+    const currentStaffId = userData.data.id;
+
     // Lấy tất cả OrderItem IDs đã có trạng thái DELIVERED
     const deliveredOrderItemIds = new Set<number>();
     // Danh sách thông báo mới cần thêm vào
@@ -229,6 +234,9 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
     // Xử lý tất cả đơn hàng để tìm các món đã hoàn thành, đã giao và đã hủy
     ordersData.data.forEach(order => {
+      // Kiểm tra xem order có phải của nhân viên hiện tại không
+      const isStaffOrder = order.staffId === currentStaffId;
+
       order.orderItems.forEach(item => {
         // Thêm các món đã giao vào danh sách để lọc ra khỏi thông báo
         if (item.statusLabel === 'Đã giao') {
@@ -257,6 +265,8 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
               timestamp: new Date().toISOString(),
               orderItemId: item.orderItemId,
               type: 'completed',
+              staffId: order.staffId,
+              isPriority: isStaffOrder, // Đánh dấu là ưu tiên nếu là order của nhân viên hiện tại
             });
 
             // Đánh dấu là đã xử lý
@@ -288,6 +298,8 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
               timestamp: new Date().toISOString(),
               orderItemId: item.orderItemId,
               type: 'cancelled',
+              staffId: order.staffId,
+              isPriority: isStaffOrder, // Đánh dấu là ưu tiên nếu là order của nhân viên hiện tại
             });
 
             // Đánh dấu là đã xử lý
@@ -326,7 +338,24 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         );
 
         // Thêm các thông báo mới
-        return [...newNotificationsToAdd, ...filteredByDismissed];
+        const combinedNotifications = [
+          ...newNotificationsToAdd,
+          ...filteredByDismissed,
+        ];
+
+        // Sắp xếp để các thông báo có isPriority=true hiển thị trước
+        combinedNotifications.sort((a, b) => {
+          // Ưu tiên 1: Thông báo ưu tiên lên trước
+          if (a.isPriority && !b.isPriority) return -1;
+          if (!a.isPriority && b.isPriority) return 1;
+
+          // Ưu tiên 2: Theo thời gian (mới nhất lên đầu)
+          return (
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          );
+        });
+
+        return combinedNotifications;
       });
     }
 
@@ -351,10 +380,12 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       read: false,
       timestamp: new Date().toISOString(),
       type: 'completed' as const,
+      staffId: userData?.data?.id,
+      isPriority: true,
     };
 
     setNotifications(prev => [newNotification, ...prev]);
-  }, []);
+  }, [userData?.data?.id]);
 
   const markAsRead = useCallback((id: string) => {
     setNotifications(prev =>

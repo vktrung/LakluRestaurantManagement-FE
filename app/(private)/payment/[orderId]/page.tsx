@@ -11,6 +11,7 @@ import {
   useUpdateOrderItemQuantityMutation,
   useGetBillQuery,
   useCancelPaymentMutation,
+  useCompletePaymentMutation,
   paymentApiSlice
 } from "@/features/payment/PaymentApiSlice"
 import {
@@ -30,11 +31,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import Image from "next/image"
-import { CalendarIcon, Plus, Minus, X, Trash2 } from "lucide-react"
+import { CalendarIcon, Plus, Minus, X, Trash2, RefreshCw } from "lucide-react"
 import type { OrderItem, PaymentResponse } from "@/features/payment/types"
 import type { Menu, MenuItem } from '@/features/menu/types'
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
+import { toast } from "sonner"
 
 // Extended MenuItem interface with additional properties needed for our component
 interface ExtendedMenuItem extends MenuItem {
@@ -162,6 +164,7 @@ export default function IntegratedPaymentPage() {
   const [voucherError, setVoucherError] = useState<string | null>(null)
   const [isPaymentCancelled, setIsPaymentCancelled] = useState(false)
   const [shouldPrintBill, setShouldPrintBill] = useState(false)
+  const [isCompletingPayment, setIsCompletingPayment] = useState(false)
 
   // State cho payment
   const [paymentId, setPaymentId] = useState<number | null>(null)
@@ -177,6 +180,9 @@ export default function IntegratedPaymentPage() {
   const [printBill, setPrintBill] = useState<boolean>(false)
   // Thêm state để theo dõi trạng thái nút hủy
   const [isCancelButtonDisabled, setIsCancelButtonDisabled] = useState<boolean>(false)
+
+  // Thêm state cho modal xác nhận hoàn thành thanh toán
+  const [isCompletePaymentModalOpen, setIsCompletePaymentModalOpen] = useState(false);
 
   // Tạo một phiên bản tùy chỉnh của router để chặn navigation
   const originalPush = useRef(router.push).current;
@@ -208,6 +214,7 @@ export default function IntegratedPaymentPage() {
     skip: !paymentId || paymentMethod !== "TRANSFER" || paymentStatus === "PAID",
     pollingInterval: 5000,
   }) as { data: PaymentData | undefined }
+  const [completePayment] = useCompletePaymentMutation()
 
   // Add the updateOrderItemQuantity mutation
   const [updateOrderItemQuantity, { isLoading: isUpdatingOrderItem }] = useUpdateOrderItemQuantityMutation()
@@ -1157,6 +1164,25 @@ export default function IntegratedPaymentPage() {
     }
   };
 
+  // Thêm hàm xử lý hoàn thành thanh toán
+  const handleCompletePayment = async () => {
+    if (!paymentId) return;
+    
+    try {
+      setIsCompletingPayment(true);
+      await completePayment(paymentId).unwrap();
+      toast.success("Hoàn thành thanh toán thành công");
+      setPaymentStatus("PAID");
+      setPaymentCompleted(true);
+    } catch (error: any) {
+      const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định.";
+      toast.error(`Lỗi hoàn thành thanh toán: ${message}`);
+    } finally {
+      setIsCompletingPayment(false);
+      setIsCompletePaymentModalOpen(false);
+    }
+  };
+
   return (
     <div className="container mx-auto p-4" ref={pageRef}>
       {/* Modal xác nhận rời trang */}
@@ -1193,6 +1219,48 @@ export default function IntegratedPaymentPage() {
         </div>
       )}
 
+      {/* Modal xác nhận hoàn thành thanh toán */}
+      {isCompletePaymentModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Xác nhận hoàn thành thanh toán</h3>
+              <button 
+                onClick={() => setIsCompletePaymentModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700">Bạn có chắc chắn muốn hoàn thành thanh toán này? Hành động này không thể hoàn tác.</p>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsCompletePaymentModalOpen(false)}
+              >
+                Hủy
+              </Button>
+              <Button 
+                variant="default"
+                onClick={handleCompletePayment}
+                disabled={isCompletingPayment}
+              >
+                {isCompletingPayment ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                    Đang xử lý...
+                  </>
+                ) : (
+                  "Xác nhận"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {errorMessage && (
         <div
           className={`mb-4 p-4 rounded-lg shadow-sm flex items-center gap-2 ${errorMessage.includes("thành công") ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}
@@ -1222,19 +1290,19 @@ export default function IntegratedPaymentPage() {
         {/* Menu Selection Column */}
         <div className="lg:w-2/3">
           <Card className="shadow-lg">
-        <CardHeader className="bg-muted/30">
-          <div className="flex justify-between items-center">
+            <CardHeader className="bg-muted/30">
+              <div className="flex justify-between items-center">
                 <CardTitle className="text-xl font-bold">
                   Chọn món
-            </CardTitle>
+                </CardTitle>
                 <Input
                   placeholder="Tìm kiếm món ăn..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="max-w-xs"
                 />
-          </div>
-        </CardHeader>
+              </div>
+            </CardHeader>
             <CardContent className="p-4">
               {/* Menu Tabs */}
               <div className="flex flex-wrap gap-2 mb-6">
@@ -1298,7 +1366,7 @@ export default function IntegratedPaymentPage() {
               )}
             </CardContent>
           </Card>
-                </div>
+        </div>
 
         {/* Payment Column */}
         <div className="lg:w-1/3">
@@ -1307,24 +1375,24 @@ export default function IntegratedPaymentPage() {
               <CardTitle className="text-xl font-bold">Thanh toán</CardTitle>
               <div className="px-3 py-1 bg-primary/10 text-primary rounded-full font-medium text-sm">
                 Hóa Đơn: {orderIdValue || "Mới"}
-                </div>
+              </div>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
               {/* Selected Items List */}
-                <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-                  <div className="bg-muted/30 px-4 py-3 border-b">
+              <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+                <div className="bg-muted/30 px-4 py-3 border-b">
                   <h3 className="font-medium">Món đã chọn</h3>
                   {isPaymentCreated && (
                     <p className="text-sm text-orange-600 mt-1">
                       Không thể thay đổi món ăn sau khi đã tạo thanh toán
                     </p>
                   )}
-                  </div>
+                </div>
                 <div className="divide-y">
                   {isExistingOrderItemsLoading ? (
                     <div className="p-4 text-center text-gray-500">
                       Đang tải danh sách món...
-                </div>
+                    </div>
                   ) : (existingOrderItemsData?.data?.length ?? 0) === 0 ? (
                     <div className="p-4 text-center text-gray-500">
                       Chưa có món nào được chọn
@@ -1372,7 +1440,6 @@ export default function IntegratedPaymentPage() {
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
-                          {/* Add Delete Button */} 
                           <Button 
                             variant="destructive" 
                             size="icon" 
@@ -1397,32 +1464,32 @@ export default function IntegratedPaymentPage() {
 
               {!isPaymentCreated ? (
                 <div className="space-y-4">
-              <PaymentMethod selectedMethod={paymentMethod} onChange={setPaymentMethod} />
-              <div className="grid md:grid-cols-2 gap-4">
-                <VatInput vatRate={vatRate} vatAmount={vat} onChange={setVatRate} />
-                <VoucherInput 
-                  voucherCode={voucherCode} 
-                  onChange={(code) => {
-                    setVoucherCode(code)
-                    setVoucherError(null) // Reset lỗi khi người dùng thay đổi mã
-                  }} 
-                  error={voucherError}
-                />
-              </div>
+                  <PaymentMethod selectedMethod={paymentMethod} onChange={setPaymentMethod} />
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <VatInput vatRate={vatRate} vatAmount={vat} onChange={setVatRate} />
+                    <VoucherInput 
+                      voucherCode={voucherCode} 
+                      onChange={(code) => {
+                        setVoucherCode(code)
+                        setVoucherError(null)
+                      }} 
+                      error={voucherError}
+                    />
+                  </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="printBill"
-                  checked={shouldPrintBill}
-                  onCheckedChange={(checked) => setShouldPrintBill(checked as boolean)}
-                />
-                <label
-                  htmlFor="printBill"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  In hóa đơn sau khi thanh toán
-                </label>
-              </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="printBill"
+                      checked={shouldPrintBill}
+                      onCheckedChange={(checked) => setShouldPrintBill(checked as boolean)}
+                    />
+                    <label
+                      htmlFor="printBill"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      In hóa đơn sau khi thanh toán
+                    </label>
+                  </div>
                   
                   <div className="flex gap-2">
                     <Button
@@ -1438,60 +1505,58 @@ export default function IntegratedPaymentPage() {
                 <div className="space-y-4">
                   <div className="bg-green-50 p-4 rounded-lg border border-green-100">
                     <h3 className="text-green-800 font-medium mb-2">
-                  Đã tạo thanh toán thành công
-                </h3>
+                      Đã tạo thanh toán thành công
+                    </h3>
                     <p className="text-green-600 text-sm">Vui lòng hoàn tất thanh toán</p>
-              </div>
+                  </div>
 
-              <div className="bg-muted/10 rounded-lg p-4 border">
-                <OrderSummary
-                  total={Number(totalAmount).toLocaleString("vi-VN", { style: "currency", currency: "VND" })}
-                  vat={vat}
-                  orderItems={orderItems}
-                  voucherValue={voucherValue}
-                />
-              </div>
+                  <div className="bg-muted/10 rounded-lg p-4 border">
+                    <OrderSummary
+                      total={Number(totalAmount).toLocaleString("vi-VN", { style: "currency", currency: "VND" })}
+                      vat={vat}
+                      orderItems={orderItems}
+                      voucherValue={voucherValue}
+                    />
+                  </div>
 
-              {/* Thêm nút hủy thanh toán */}
-              {paymentStatus !== "PAID" && (
-                <Button
-                  variant="destructive"
-                  onClick={handleCancelPayment}
-                  disabled={isCancelling || isCancelButtonDisabled}
-                  className="w-full"
-                >
-                  {isCancelling ? "Đang hủy..." : "Hủy thanh toán"}
-                </Button>
-              )}
+                  {paymentStatus !== "PAID" && (
+                    <Button
+                      variant="destructive"
+                      onClick={handleCancelPayment}
+                      disabled={isCancelling || isCancelButtonDisabled}
+                      className="w-full"
+                    >
+                      {isCancelling ? "Đang hủy..." : "Hủy thanh toán"}
+                    </Button>
+                  )}
 
-              {paymentMethod === "CASH" ? (
+                  {paymentMethod === "CASH" ? (
                     <div className="bg-white rounded-lg border shadow-sm p-4">
                       <h3 className="font-medium text-lg mb-4">
-                    Thanh toán tiền mặt
-                  </h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label htmlFor="receivedAmount" className="block text-sm font-medium mb-1">
-                        Số tiền nhận được
-                      </label>
-                        <input
-                          id="receivedAmount"
-                          type="number"
-                          value={receivedAmount}
-                          onChange={(e) => setReceivedAmount(e.target.value)}
-                          placeholder="Nhập số tiền nhận được"
+                        Thanh toán tiền mặt
+                      </h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label htmlFor="receivedAmount" className="block text-sm font-medium mb-1">
+                            Số tiền nhận được
+                          </label>
+                          <input
+                            id="receivedAmount"
+                            type="number"
+                            value={receivedAmount}
+                            onChange={(e) => setReceivedAmount(e.target.value)}
+                            placeholder="Nhập số tiền nhận được"
                             className="w-full p-2 border rounded"
-                          required
-                          disabled={isPaymentCancelled}
-                        />
-                      {receivedAmount && Number(receivedAmount) >= Number(totalAmount) && (
-                        <div className="mt-2 text-sm text-green-600">
+                            required
+                            disabled={isPaymentCancelled}
+                          />
+                          {receivedAmount && Number(receivedAmount) >= Number(totalAmount) && (
+                            <div className="mt-2 text-sm text-green-600">
                               Tiền thối: {(Number(receivedAmount) - Number(totalAmount)).toLocaleString()} VND
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
                         
-                        {/* Hiển thị tùy chọn in hóa đơn sau khi đã xử lý tiền mặt thành công */}
                         {errorMessage && errorMessage.includes("thành công") && shouldPrintBill ? (
                           <div className="space-y-3">
                             <Button
@@ -1517,66 +1582,65 @@ export default function IntegratedPaymentPage() {
                             {isProcessing ? "Đang xử lý..." : "Xác nhận thanh toán"}
                           </Button>
                         )}
-                  </div>
-                </div>
-              ) : (
+                      </div>
+                    </div>
+                  ) : (
                     <div className="bg-white rounded-lg border shadow-sm p-4">
                       <h3 className="font-medium text-lg mb-4">
-                    Thanh toán chuyển khoản
-                  </h3>
-                  <div className="text-center space-y-4">
-                    {isQrLoading ? (
+                        Thanh toán chuyển khoản
+                      </h3>
+                      <div className="text-center space-y-4">
+                        {isQrLoading ? (
                           <div>Đang tải mã QR...</div>
-                    ) : qrCodeData?.data?.qrCodeUrl ? (
-                      <div className="flex flex-col items-center">
+                        ) : qrCodeData?.data?.qrCodeUrl ? (
+                          <div className="flex flex-col items-center">
                             <p className="mb-4">Quét mã QR để thanh toán:</p>
-                          <Image
+                            <Image
                               src={qrCodeData.data.qrCodeUrl}
-                            alt="QR Code"
-                            width={200}
-                            height={200}
-                            className="mx-auto"
-                          />
+                              alt="QR Code"
+                              width={200}
+                              height={200}
+                              className="mx-auto"
+                            />
                             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                               <p className="text-red-600 font-medium text-sm">
                                 ⚠️ QUÝ KHÁCH VUI LÒNG KHÔNG THAY ĐỔI SỐ TIỀN HOẶC NỘI DUNG THANH TOÁN
                               </p>
-                        </div>
+                            </div>
                             <p className="text-sm text-gray-500 mt-4">
-                          Hệ thống sẽ tự động cập nhật khi nhận được thanh toán
-                        </p>
-                            
-                            {/* Hiển thị trạng thái thanh toán */}
-                            <div className="mt-4 py-2 px-4 rounded-full flex items-center justify-center gap-2">
+                              Hệ thống sẽ tự động cập nhật khi nhận được thanh toán
+                            </p>
+
                             {paymentStatus === "PENDING" && (
+                              <Button
+                                onClick={() => setIsCompletePaymentModalOpen(true)}
+                                disabled={isCompletingPayment || isPaymentCancelled}
+                                className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
+                              >
+                                Hoàn thành thanh toán
+                              </Button>
+                            )}
+                            
+                            <div className="mt-4 py-2 px-4 rounded-full flex items-center justify-center gap-2">
+                              {paymentStatus === "PENDING" && (
                                 <div className="bg-yellow-50 text-yellow-700 py-2 px-4 rounded-full flex items-center">
                                   <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-yellow-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
+                                  </svg>
                                   <span>Đang chờ thanh toán...</span>
                                 </div>
-                            )}
-                            {paymentStatus === "PAID" && (
+                              )}
+                              {paymentStatus === "PAID" && (
                                 <div className="bg-green-50 text-green-700 py-2 px-4 rounded-full flex items-center">
                                   <svg className="h-5 w-5 mr-2 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                </svg>
+                                  </svg>
                                   <span>Thanh toán thành công!</span>
-                          </div>
+                                </div>
                               )}
-                              {!paymentStatus && (
-                                <div className="bg-blue-50 text-blue-700 py-2 px-4 rounded-full flex items-center">
-                                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span>Đang kiểm tra trạng thái...</span>
-                          </div>
-                        )}
-                      </div>
-                            
-                            {/* Hướng dẫn bổ sung khi đang chờ thanh toán */}
+                            </div>
+
                             {paymentStatus === "PENDING" && (
                               <div className="mt-4 text-sm bg-blue-50 p-3 rounded-md text-blue-700 text-left">
                                 <p className="font-medium mb-1">Lưu ý:</p>
@@ -1587,8 +1651,7 @@ export default function IntegratedPaymentPage() {
                                 </ul>
                               </div>
                             )}
-                            
-                            {/* Hành động sau khi thanh toán thành công */}
+
                             {paymentStatus === "PAID" && shouldPrintBill && (
                               <div className="mt-4 flex flex-col space-y-3">
                                 <Button
@@ -1606,25 +1669,23 @@ export default function IntegratedPaymentPage() {
                             )}
                           </div>
                         ) : (
-                          <div className="text-red-500">
-                        <p>Không thể tạo mã QR</p>
+                          <div>Không có mã QR</div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-          )}
               
-            <Button
-              variant="outline"
-              onClick={() => handleNavigation('/cashier-order-2/order')}
-              className="w-full"
-            >
-              Quay lại danh sách đơn hàng
-            </Button>
-        </CardContent>
-      </Card>
+              <Button
+                variant="outline"
+                onClick={() => handleNavigation('/cashier-order-2/order')}
+                className="w-full"
+              >
+                Quay lại danh sách đơn hàng
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

@@ -79,7 +79,7 @@ export default function EventForm({
   const [endTime, setEndTime] = useState<Date | null>(null);
 
   const [formData, setFormData] = useState<AddShiftRequest>({
-    user: [{ staffId: 1, isManager: false }],
+    user: [{ staffId: 0, isManager: false }],
     shiftStart: '',
     shiftEnd: '',
     shiftType: 'MORNING',
@@ -87,7 +87,7 @@ export default function EventForm({
   });
 
   const [staffs, setStaffs] = useState<UserShift[]>([
-    { staffId: 1, isManager: false },
+    { staffId: 0, isManager: false },
   ]);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -118,14 +118,14 @@ export default function EventForm({
       }
 
       setFormData({
-        user: shiftbyidResp.data.user || [{ staffId: 1, isManager: false }],
+        user: shiftbyidResp.data.user || [{ staffId: 0, isManager: false }],
         shiftStart: shiftbyidResp.data.shiftStart || '',
         shiftEnd: shiftbyidResp.data.shiftEnd || '',
         shiftType: shiftbyidResp.data.shiftType || 'MORNING',
         note: shiftbyidResp.data.note || '',
       });
 
-      setStaffs(shiftbyidResp.data.user || [{ staffId: 1, isManager: false }]);
+      setStaffs(shiftbyidResp.data.user || [{ staffId: 0, isManager: false }]);
     }
   }, [shiftbyidResp]);
 
@@ -260,7 +260,7 @@ export default function EventForm({
   const hasManager = staffs.some(staff => staff.isManager);
 
   const addStaff = () => {
-    setStaffs([...staffs, { staffId: 1, isManager: false }]);
+    setStaffs([...staffs, { staffId: 0, isManager: false }]);
   };
 
   const removeStaff = (index: number) => {
@@ -570,7 +570,7 @@ export default function EventForm({
               {staffs.map((staff, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <Select
-                    value={staff.staffId ? staff.staffId.toString() : ''}
+                    value={staff.staffId > 0 ? staff.staffId.toString() : ''}
                     onValueChange={value => {
                       const newStaffs = [...staffs];
                       newStaffs[index].staffId = Number(value);

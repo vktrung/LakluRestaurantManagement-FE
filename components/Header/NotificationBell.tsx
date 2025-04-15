@@ -82,11 +82,11 @@ export function NotificationBell() {
           </TabsList>
 
           <TabsContent value="all" className="m-0">
-            {renderNotificationList(filteredNotifications)}
+            {renderNotificationList(notifications)}
           </TabsContent>
 
           <TabsContent value="mine" className="m-0">
-            {renderNotificationList(filteredNotifications)}
+            {renderNotificationList(notifications.filter(n => n.isPriority))}
           </TabsContent>
         </Tabs>
       </DropdownMenuContent>

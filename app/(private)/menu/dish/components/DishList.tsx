@@ -20,6 +20,7 @@ import {
   InfoIcon,
   ChevronLeft,
   ChevronRight,
+  AlertCircle,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
@@ -153,17 +154,22 @@ const DishList: React.FC<DishListProps> = ({
   if (!isMounted) return null;
   if (isLoading && !propDishes)
     return (
-      <div className="flex items-center justify-center h-40 w-full">
-        <div className="text-gray-500 font-medium">
-          Đang tải danh sách món ăn...
+      <div className="flex items-center justify-center h-60 w-full bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
+        <div className="flex flex-col items-center">
+          <div className="h-10 w-10 border-4 border-t-emerald-600 border-b-emerald-600 border-l-gray-200 border-r-gray-200 rounded-full animate-spin mb-4"></div>
+          <div className="text-gray-500 font-medium">
+            Đang tải danh sách món ăn...
+          </div>
         </div>
       </div>
     );
   if (error && !propDishes)
     return (
-      <div className="p-6 rounded-lg bg-gray-50 border border-gray-200">
-        <div className="text-red-500 text-center">
-          Lỗi khi tải danh sách: {JSON.stringify(error)}
+      <div className="p-8 rounded-lg bg-red-50 border border-red-200 shadow-sm">
+        <div className="text-red-600 text-center flex flex-col items-center">
+          <AlertCircle className="h-10 w-10 mb-2" />
+          <p className="font-medium">Lỗi khi tải danh sách món ăn</p>
+          <p className="text-sm mt-1">{JSON.stringify(error)}</p>
         </div>
       </div>
     );
@@ -171,12 +177,14 @@ const DishList: React.FC<DishListProps> = ({
   return (
     <div className="w-full">
       {!propDishes && !debouncedSearchTerm && (
-        <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col md:flex-row justify-between mb-6 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
+          <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Sắp xếp theo:</span>
+              <span className="text-sm font-medium text-gray-700">
+                Sắp xếp theo:
+              </span>
               <Select value={sortBy} onValueChange={handleSortByChange}>
-                <SelectTrigger className="w-[120px]">
+                <SelectTrigger className="w-[130px] bg-white">
                   <SelectValue placeholder="Chọn trường" />
                 </SelectTrigger>
                 <SelectContent>
@@ -187,12 +195,12 @@ const DishList: React.FC<DishListProps> = ({
               </Select>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Thứ tự:</span>
+              <span className="text-sm font-medium text-gray-700">Thứ tự:</span>
               <Select
                 value={sortDirection}
                 onValueChange={handleSortDirectionChange}
               >
-                <SelectTrigger className="w-[120px]">
+                <SelectTrigger className="w-[130px] bg-white">
                   <SelectValue placeholder="Chọn thứ tự" />
                 </SelectTrigger>
                 <SelectContent>
@@ -203,16 +211,16 @@ const DishList: React.FC<DishListProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Hiển thị:</span>
+            <span className="text-sm font-medium text-gray-700">Hiển thị:</span>
             <Select value={size.toString()} onValueChange={handleSizeChange}>
-              <SelectTrigger className="w-[80px]">
+              <SelectTrigger className="w-[90px] bg-white">
                 <SelectValue placeholder="Số lượng" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="6">6</SelectItem>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="6">6 món</SelectItem>
+                <SelectItem value="10">10 món</SelectItem>
+                <SelectItem value="20">20 món</SelectItem>
+                <SelectItem value="50">50 món</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -241,6 +249,18 @@ const DishList: React.FC<DishListProps> = ({
                   <span className="sr-only">Không có ảnh</span>
                 </div>
               )}
+              {typeof dish.requiresPreparation === 'boolean' && (
+                <Badge
+                  variant={dish.requiresPreparation ? 'secondary' : 'outline'}
+                  className={`absolute top-2 right-2 text-xs ${
+                    dish.requiresPreparation
+                      ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+                      : 'bg-green-100 text-green-800 border border-green-300'
+                  }`}
+                >
+                  {dish.requiresPreparation ? 'Cần chuẩn bị' : 'Có Sẵn'}
+                </Badge>
+              )}
             </div>
             <CardHeader className="pb-2 pt-4">
               <CardTitle className="text-xl font-semibold text-gray-900 line-clamp-1">
@@ -252,7 +272,7 @@ const DishList: React.FC<DishListProps> = ({
                 {dish.description || 'Không có mô tả'}
               </p>
               <div className="flex items-center">
-                <span className="font-bold text-lg text-black">
+                <span className="font-bold text-lg text-emerald-600">
                   {dish.price.toLocaleString('vi-VN')} VND
                 </span>
               </div>
@@ -272,37 +292,24 @@ const DishList: React.FC<DishListProps> = ({
                     </span>
                   </div>
                 )}
-                {typeof dish.requiresPreparation === 'boolean' && (
-                  <Badge
-                    variant={dish.requiresPreparation ? 'secondary' : 'outline'}
-                    className={`mt-1 text-xs ${
-                      dish.requiresPreparation
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-green-100 text-green-800'
-                    }`}
-                  >
-                    {dish.requiresPreparation
-                      ? 'Cần chuẩn bị '
-                      : 'Có Sẵn'}
-                  </Badge>
-                )}
               </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-3 pt-3 pb-4 border-t border-gray-200">
               <Button
                 onClick={() => onEdit(dish.id, dish)}
-                className="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600 text-white"
+                className="flex items-center gap-1 bg-amber-500 hover:bg-amber-600 text-white"
                 size="sm"
               >
-                <GrUpdate className="text-xl text-white" />
+                <GrUpdate className="h-4 w-4" />
                 Sửa
               </Button>
               <Button
                 variant="destructive"
                 size="sm"
                 onClick={() => onDelete(dish.id)}
+                className="bg-rose-600 hover:bg-rose-700"
               >
-                <MdDeleteOutline className="mr-1" />
+                <MdDeleteOutline className="h-4 w-4 mr-1" />
                 Xóa
               </Button>
             </CardFooter>
@@ -318,11 +325,16 @@ const DishList: React.FC<DishListProps> = ({
               ? 'Không tìm thấy món ăn nào phù hợp'
               : 'Không có món ăn nào trong danh sách'}
           </p>
+          <p className="text-gray-500 text-sm mt-2">
+            {debouncedSearchTerm
+              ? 'Thử tìm kiếm với từ khóa khác'
+              : 'Hãy thêm món ăn mới vào danh sách'}
+          </p>
         </div>
       )}
 
       {!propDishes && !debouncedSearchTerm && dishes.length > 0 && (
-        <div className="mt-8">
+        <div className="mt-8 bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
           <Pagination>
             <PaginationContent>
               <PaginationItem>
@@ -331,7 +343,7 @@ const DishList: React.FC<DishListProps> = ({
                   className={
                     isFirstPage
                       ? 'pointer-events-none opacity-50'
-                      : 'cursor-pointer'
+                      : 'cursor-pointer hover:bg-gray-100'
                   }
                 />
               </PaginationItem>
@@ -363,6 +375,11 @@ const DishList: React.FC<DishListProps> = ({
                       <PaginationLink
                         isActive={pageToShow === currentPage}
                         onClick={() => handlePageChange(pageToShow)}
+                        className={
+                          pageToShow === currentPage
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                            : 'hover:bg-gray-100'
+                        }
                       >
                         {pageToShow + 1}
                       </PaginationLink>
@@ -378,13 +395,13 @@ const DishList: React.FC<DishListProps> = ({
                   className={
                     isLastPage
                       ? 'pointer-events-none opacity-50'
-                      : 'cursor-pointer'
+                      : 'cursor-pointer hover:bg-gray-100'
                   }
                 />
               </PaginationItem>
             </PaginationContent>
           </Pagination>
-          <div className="text-center text-sm text-gray-500 mt-2">
+          <div className="text-center text-sm text-gray-600 mt-2 font-medium">
             Hiển thị {dishes.length} trên tổng số {totalElements} món ăn
           </div>
         </div>

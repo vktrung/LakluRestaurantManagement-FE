@@ -23,6 +23,7 @@ import {
   RefreshCw,
   Merge,
   CalendarClock,
+  Printer,
 } from "lucide-react"
 import { useDeleteOrderItemByIdMutation } from "@/features/order/orderApiSlice"
 import {
@@ -45,6 +46,247 @@ import {
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
 import { Separator } from "@/components/ui/separator"
+import { formatPrice } from "@/lib/utils"
+
+// Thêm interface cho dữ liệu phiếu tạm tính
+interface TempOrderItem {
+  id: number
+  dishName: string
+  quantity: number
+  price: string | number
+}
+
+interface TempBillData {
+  orderItems: TempOrderItem[]
+  subtotal: number
+  tableNumber: number
+  date: string
+}
+
+// Thêm hàm xử lý in phiếu tạm tính
+const handlePrintTempBill = (tempBillData: TempBillData): void => {
+  const printContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Phiếu tạm tính - Bàn ${tempBillData.tableNumber || "—"}</title>
+      <style>
+        @page {
+          size: 72mm auto;
+          margin: 0;
+        }
+        
+        body {
+          font-family: monospace;
+          width: 72mm;
+          max-width: 72mm;
+          margin: 0 auto;
+          padding: 0;
+          background-color: white;
+          color: black;
+          font-size: 12px;
+        }
+        
+        .print-bill {
+          width: 72mm;
+          max-width: 72mm;
+          padding: 2mm;
+          font-size: 12px;
+          box-sizing: border-box;
+          margin: 0 auto;
+        }
+        
+        h1 { 
+          font-size: 14px; 
+          margin: 5px 0; 
+          text-align: center;
+          font-weight: bold;
+        }
+        
+        h2 { 
+          font-size: 13px; 
+          margin: 4px 0; 
+          text-align: center;
+          font-weight: semibold;
+        }
+        
+        p { 
+          font-size: 11px; 
+          margin: 2px 0; 
+        }
+        
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        
+        .grid {
+          display: table;
+          width: 100%;
+          table-layout: fixed;
+          border-collapse: collapse;
+        }
+        
+        .grid > div {
+          display: table-row;
+        }
+        
+        .grid > div > div {
+          display: table-cell;
+          padding: 1mm 0;
+        }
+        
+        .font-mono {
+          font-family: monospace;
+          font-size: 11px;
+          letter-spacing: -0.5px;
+        }
+        
+        .truncate {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        
+        .wrap-text {
+          white-space: normal !important;
+          word-break: normal !important;
+          overflow-wrap: break-word !important;
+          hyphens: none !important;
+          overflow: visible !important;
+          text-overflow: initial !important;
+          max-width: 100px !important;
+          display: table-cell !important;
+        }
+        
+        .border-t {
+          border-top: 1px solid black;
+          margin: 2mm 0;
+          display: block;
+          width: 100%;
+        }
+        
+        .border-dashed {
+          border-top: 1px dashed black;
+          margin: 2mm 0;
+          display: block;
+          width: 100%;
+        }
+        
+        .col-span-1 { width: 8%; }
+        .col-span-3 { width: 24%; }
+        .col-span-4 { width: 32%; }
+        .col-span-5 { width: 40%; }
+        
+        .space-y-1 > * + * {
+          margin-top: 0.25rem;
+        }
+        
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 0.75rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-3 { margin-top: 0.75rem; }
+        .mt-4 { margin-top: 1rem; }
+        .ml-2 { margin-left: 0.5rem; }
+        
+        .gap-1 { gap: 0.25rem; }
+        
+        .font-bold { font-weight: bold; }
+        .font-semibold { font-weight: 600; }
+        
+        .text-sm { font-size: 0.875rem; }
+        .text-xs { font-size: 0.75rem; }
+        .text-md { font-size: 1rem; }
+      </style>
+    </head>
+    <body>
+      <div class="print-bill">
+        <!-- Header -->
+        <div class="text-center mb-3">
+          <h1 class="text-md font-bold">LAKLU - BIA KHÔ MỰC</h1>
+          <h2 class="text-sm font-semibold mt-2 mb-3">PHIẾU TẠM TÍNH</h2>
+        </div>
+
+        <!-- Order Info -->
+        <div class="grid gap-1 mb-3">
+          <div>
+            <div style="width: 50%;">
+              <p class="text-xs">HÓA ĐƠN: ${tempBillData.tableNumber || "—"}</p>
+            </div>
+            <div style="width: 50%; text-align: right;">
+              <p class="text-xs">NGÀY: ${new Date(tempBillData.date).toLocaleDateString()}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Header -->
+        <div class="grid mb-1">
+          <div>
+            <div class="col-span-1 text-xs font-semibold">TT</div>
+            <div class="col-span-4 text-xs font-semibold">Tên món</div>
+            <div class="col-span-1 text-xs font-semibold text-center">SL</div>
+            <div class="col-span-3 text-xs font-semibold text-right">Đơn giá</div>
+            <div class="col-span-3 text-xs font-semibold text-right">T.Tiền</div>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="border-t mb-1"></div>
+
+        <!-- Items -->
+        ${tempBillData.orderItems.map((item: TempOrderItem, index: number) => `
+        <div class="grid mb-1">
+          <div>
+            <div class="col-span-1 text-xs">${index + 1}</div>
+            <div class="col-span-4 text-xs wrap-text" style="white-space: normal; word-break: normal; overflow-wrap: break-word;">${item.dishName}</div>
+            <div class="col-span-1 text-xs text-center">${item.quantity}</div>
+            <div class="col-span-3 text-xs text-right font-mono">${formatPrice(Number(item.price), { currency: false, minLength: 8 })}</div>
+            <div class="col-span-3 text-xs text-right font-mono">${formatPrice(Number(item.price) * item.quantity, { currency: false, minLength: 8 })}</div>
+          </div>
+        </div>
+        `).join('')}
+
+        <!-- Divider -->
+        <div class="border-t border-dashed mt-2 mb-2"></div>
+
+        <!-- Payment Summary -->
+        <div class="text-right space-y-1 mb-3">
+          <p class="text-xs font-bold">Tổng tạm tính: <span class="font-mono ml-2">${formatPrice(tempBillData.subtotal)}</span></p>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-4">
+          <p class="text-xs">Phiếu tạm tính - Chưa thanh toán</p>
+          <p class="text-xs mt-2">Cảm ơn quý khách!</p>
+        </div>
+      </div>
+      <script>
+        // Auto print when loaded
+        window.onload = function() {
+          setTimeout(function() {
+            window.print();
+            // Optional: Close the window after printing
+            // setTimeout(function() { window.close(); }, 500);
+          }, 500);
+        };
+      </script>
+    </body>
+    </html>
+  `;
+
+  // Create a new window with only the bill content
+  const printWindow = window.open('', '_blank', 'width=400,height=600');
+  if (!printWindow) {
+    alert('Vui lòng cho phép cửa sổ pop-up để in phiếu tạm tính');
+    return;
+  }
+
+  // Write to the new window and print
+  printWindow.document.open();
+  printWindow.document.write(printContent);
+  printWindow.document.close();
+};
 
 export default function ReservationOrdersPage() {
   const params = useParams()
@@ -489,6 +731,26 @@ export default function ReservationOrdersPage() {
                         Thanh toán
                       </>
                     )}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100 flex items-center justify-center gap-2"
+                    onClick={() => handlePrintTempBill({
+                      orderItems: order.orderItems.map((item) => ({
+                        id: item.orderItemId,
+                        dishName: item.dish.name,
+                        quantity: item.quantity,
+                        price: item.dish.price,
+                      })),
+                      subtotal: order.orderItems.reduce((total, item) => total + (item.dish.price * item.quantity), 0),
+                      tableNumber: order.tableNumber || reservationId,
+                      date: order.updatedAt,
+                    })}
+                  >
+                    <Printer className="h-4 w-4" />
+                    In phiếu tạm tính
                   </Button>
 
                   {/* Nút xóa đơn - Chỉ hiển thị khi tất cả món trong đơn đang ở trạng thái đang chờ hoặc đã hủy */}

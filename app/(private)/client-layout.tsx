@@ -2,6 +2,7 @@
 
 import { ClientWrapper } from '@/components/ClientWrapper/ClientWrapper';
 import { Sidebar } from '@/components/Sidebar/Sidebar';
+import { MobileSidebar } from '@/components/Sidebar/MobileSidebar';
 import { useEffect, useState } from 'react';
 import { useGetUserMeQuery } from '@/features/auth/authApiSlice';
 import dynamic from 'next/dynamic';
@@ -12,30 +13,34 @@ const DynamicSidebar = dynamic(() => import('@/components/Sidebar/Sidebar').then
 });
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  // Force refetch khi layout được tải
-  const { refetch } = useGetUserMeQuery();
+  const { refetch } = useGetUserMeQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
   const [isClient, setIsClient] = useState(false);
-  
+
   useEffect(() => {
-    // Làm mới dữ liệu khi component mount
     refetch();
     setIsClient(true);
   }, [refetch]);
-  
-  // Chờ đến khi client-side rendering để tránh lỗi hydration
+
   if (!isClient) {
     return (
-      <div className="flex">
-        <div className="fixed top-0 left-0 w-64 h-screen border-r"></div>
+      <div className="flex min-h-screen">
+        <div className="fixed top-0 left-0 w-64 h-screen border-r hidden md:block"></div>
         <ClientWrapper>{children}</ClientWrapper>
       </div>
     );
   }
-  
+
   return (
-    <div className="flex">
-      <DynamicSidebar />
-      <ClientWrapper>{children}</ClientWrapper>
+    <div className="flex min-h-screen flex-col">
+      <div className="flex flex-1">
+        <div className="hidden md:block">
+          <DynamicSidebar />
+        </div>
+        <ClientWrapper>{children}</ClientWrapper>
+      </div>
+      <MobileSidebar />
     </div>
   );
-} 
+}

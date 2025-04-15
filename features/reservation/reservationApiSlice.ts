@@ -159,6 +159,14 @@ export const reservationApiSlice = createApi({
       }),
       providesTags: ['reservation-list'],
     }),
+    // Query lấy danh sách đặt bàn hoạt động theo khoảng thời gian (phân trang)
+    getActiveReservationsByTimeRange: builder.query<GetReservationsByTimeRangeResponse, GetReservationsByTimeRangeParams>({
+      query: ({ timeRange, page = 0, size = 10 }) => ({
+        url: `${endpoints.ReservationApi}time-range/active?timeRange=${timeRange}&page=${page}&size=${size}`,
+        method: 'GET',
+      }),
+      providesTags: ['reservation-list'],
+    }),
     // Query tìm kiếm đặt bàn theo tên hoặc số điện thoại
     searchReservations: builder.query<SearchReservationsResponse, SearchReservationsParams>({
       query: ({ keyword, page = 0, size = 10 }) => ({
@@ -210,6 +218,7 @@ export const {
   useCancelReservationMutation,
   useConfirmReservationMutation,
   useGetReservationsByTimeRangeQuery,
+  useGetActiveReservationsByTimeRangeQuery,
   useSearchReservationsQuery,
   useFilterReservationsQuery,
   useTransferTablesMutation

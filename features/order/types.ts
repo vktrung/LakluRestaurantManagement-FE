@@ -11,6 +11,7 @@ export interface Dish {
 }
 
 export interface OrderItem {
+  price: any;
   orderItemId: number;
   orderId: number;
   menuItemId: number;

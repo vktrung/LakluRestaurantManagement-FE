@@ -147,6 +147,18 @@ export const paymentApiSlice = createApi({
                 { type: 'payment', id: paymentId }
             ],
         }),
+
+        // Hoàn thành thanh toán thủ công
+        completePayment: builder.mutation<ApiResponse<null>, number>({
+            query: (paymentId) => ({
+                url: endpoints.PaymentApi + `complete/${paymentId}`,
+                method: 'POST',
+            }),
+            invalidatesTags: (result, error, paymentId) => [
+                'payment-list',
+                { type: 'payment', id: paymentId }
+            ],
+        }),
     }),
 });
 
@@ -161,4 +173,5 @@ export const {
     useCreateOrderItemMutation,
     useGetBillQuery,
     useCancelPaymentMutation,
+    useCompletePaymentMutation,
 } = paymentApiSlice;

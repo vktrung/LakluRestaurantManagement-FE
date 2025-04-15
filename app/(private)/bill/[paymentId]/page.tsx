@@ -14,7 +14,7 @@ export default function BillPage() {
   const searchParams = useSearchParams()
   const isPreview = searchParams.get('preview') === 'true'
   const [autoPrint, setAutoPrint] = useState(searchParams.get('autoPrint') === 'true')
-  
+
   // Fetch bill data
   const { data: billData, isLoading } = useGetBillQuery(Number(paymentId))
 
@@ -37,7 +37,7 @@ export default function BillPage() {
       const printTimer = setTimeout(() => {
         handlePrint(); // Use the dedicated print function
       }, 1000);
-      
+
       return () => clearTimeout(printTimer);
     }
   }, [billData, isLoading, autoPrint, isPreview]);
@@ -304,18 +304,18 @@ export default function BillPage() {
     // Check bill data is available
     if (!billData?.data) return;
     const bill = billData.data;
-    
+
     // Set print-specific CSS variables
     document.documentElement.style.setProperty('--print-width', '72mm');
     document.documentElement.style.setProperty('--print-font-size', '12px');
-    
+
     // Force a layout calculation
     document.body.offsetHeight;
-    
+
     // Lấy nội dung bill
     const billElement = document.querySelector('.print-bill');
     if (!billElement) return;
-    
+
     // Tạo file HTML đầy đủ với style cụ thể
     const fullHtml = `<!DOCTYPE html>
 <html>
@@ -524,18 +524,18 @@ export default function BillPage() {
   </div>
 </body>
 </html>`;
-    
+
     // Tạo Blob và link để download
     const blob = new Blob([fullHtml], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
-    
+
     // Tạo link download
     const link = document.createElement('a');
     link.href = url;
     link.download = `hoa-don-${bill.orderId}.html`;
     document.body.appendChild(link);
     link.click();
-    
+
     // Dọn dẹp
     setTimeout(() => {
       URL.revokeObjectURL(url);
@@ -646,18 +646,18 @@ export default function BillPage() {
           />
           <Label htmlFor="auto-print">Tự động in hóa đơn</Label>
         </div>
-        
+
         <div className="flex justify-center gap-4">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={handlePrint}
             className="min-w-[150px]"
           >
             Xem trước và in
           </Button>
-          
-          <Button 
-            variant="outline" 
+
+          <Button
+            variant="outline"
             onClick={handleExportPDF}
             className="min-w-[150px]"
           >

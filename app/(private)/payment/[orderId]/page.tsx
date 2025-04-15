@@ -902,6 +902,16 @@ export default function IntegratedPaymentPage() {
               .grid > div > div {
                 display: table-cell;
                 padding: 1mm 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              }
+              
+              .grid > div > div.wrap-text {
+                white-space: normal;
+                word-break: break-word;
+                overflow: visible;
+                hyphens: auto;
               }
               
               .font-mono {
@@ -917,14 +927,9 @@ export default function IntegratedPaymentPage() {
               }
               
               .wrap-text {
-                white-space: normal !important;
-                word-break: normal !important;
-                overflow-wrap: break-word !important;
-                hyphens: none !important;
-                overflow: visible !important;
-                text-overflow: initial !important;
-                max-width: 100px !important;
-                display: table-cell !important;
+                white-space: normal;
+                word-break: break-word;
+                hyphens: auto;
               }
               
               .border-t {
@@ -1005,14 +1010,14 @@ export default function IntegratedPaymentPage() {
               <div class="border-t mb-1"></div>
 
               <!-- Items -->
-              ${bill.orderItems.map((item: any, index: number) => `
+              ${bill.orderItems.map((item: { dishName: any; quantity: number; price: number | null | undefined }, index: number) => `
               <div class="grid mb-1">
                 <div>
                   <div class="col-span-1 text-xs">${index + 1}</div>
-                  <div class="col-span-4 text-xs wrap-text" style="white-space: normal; word-break: normal; overflow-wrap: break-word;">${item.dishName}</div>
+                  <div class="col-span-4 text-xs wrap-text">${item.dishName}</div>
                   <div class="col-span-1 text-xs text-center">${item.quantity}</div>
-                  <div class="col-span-3 text-xs text-right font-mono">${formatPrice(item.price, { currency: false, minLength: 8 })}</div>
-                  <div class="col-span-3 text-xs text-right font-mono">${formatPrice(item.price * item.quantity, { currency: false, minLength: 8 })}</div>
+                  <div class="col-span-3 text-xs text-right font-mono">${formatPrice(item.price ?? 0, { currency: false, minLength: 8 })}</div>
+                  <div class="col-span-3 text-xs text-right font-mono">${formatPrice((item.price ?? 0) * item.quantity, { currency: false, minLength: 8 })}</div>
                 </div>
               </div>
               `).join('')}
@@ -1022,7 +1027,8 @@ export default function IntegratedPaymentPage() {
 
               <!-- Payment Summary -->
               <div class="text-right space-y-1 mb-2">
-                <p class="text-xs">Thành tiền: <span class="font-mono ml-2">${formatPrice(bill.totalAmount)}</span></p>
+                <p class="text-xs">Thành tiền: <span class="font-mono ml-2">${formatPrice(bill.totalAmount + (bill.voucherValue || 0))}</span></p>
+                ${bill.voucherValue > 0 ? `<p class="text-xs">Giảm giá voucher: <span class="font-mono ml-2" style="color: red">-${formatPrice(bill.voucherValue)}</span></p>` : ''}
                 <p class="text-xs font-bold">Tổng tiền TT: <span class="font-mono ml-2">${formatPrice(bill.totalAmount)}</span></p>
                 <p class="text-xs">Tiền khách đưa: <span class="font-mono ml-2">${formatPrice(bill.receivedAmount)}</span></p>
                 <p class="text-xs">Tiền trả lại: <span class="font-mono ml-2">${formatPrice(bill.change)}</span></p>
@@ -1051,18 +1057,13 @@ export default function IntegratedPaymentPage() {
         printWindow.document.open();
         printWindow.document.write(printContent);
         printWindow.document.close();
-        
-        // Redirect to order list after printing (with delay)
-        setTimeout(() => {
-          handleNavigation('/cashier-order-2/order');
-        }, 2000);
-      } catch (error: any) {
+      } catch (error) {
         console.error('Error printing bill:', error);
-        setErrorMessage(`Lỗi in hóa đơn: ${error.message}`);
+        setErrorMessage('Có lỗi xảy ra khi in hóa đơn');
       }
     };
 
-    // Gọi hàm fetch và in
+    // Execute the print function
     fetchAndPrintBill();
   };
 

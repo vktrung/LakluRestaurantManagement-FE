@@ -16,6 +16,9 @@ import { FileDown, Receipt, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useState } from "react"
+import { BillDialog } from "./BillDialog"
+import { useGetBillQuery } from "@/features/payment/PaymentApiSlice"
 
 interface PaymentListProps {
   payments: PaymentResponse[]
@@ -26,6 +29,15 @@ interface PaymentListProps {
 }
 
 export function PaymentList({ payments, currentPage, totalPages, totalItems, onPageChange }: PaymentListProps) {
+  const [selectedPayment, setSelectedPayment] = useState<PaymentResponse | null>(null)
+  const [isBillDialogOpen, setIsBillDialogOpen] = useState(false)
+
+  // Fetch bill data when a payment is selected
+  const { data: billData, isLoading: isBillLoading } = useGetBillQuery(
+    selectedPayment?.paymentId || 0,
+    { skip: !selectedPayment?.paymentId }
+  )
+
   // Helper function to render payment status badge
   const renderStatusBadge = (status: string) => {
     const normalizedStatus = status.toLowerCase()
@@ -230,6 +242,43 @@ export function PaymentList({ payments, currentPage, totalPages, totalItems, onP
     return items
   }
 
+  const handleViewBill = (payment: PaymentResponse) => {
+    setSelectedPayment(payment)
+    setIsBillDialogOpen(true)
+  }
+
+  // Transform API data to match BillDialog props
+  const transformBillData = () => {
+    if (!billData?.data) return null;
+
+    const voucherValue = Number(billData.data.voucherValue) || 0;
+
+    return {
+      orderInfo: {
+        orderId: billData.data.orderId?.toString() || "",
+        tableId: `BÀN - ${billData.data.tableNumber || ""}`,
+        checkInTime: new Date(billData.data.timeIn).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        checkOutTime: new Date(billData.data.timeOut).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        date: new Date(billData.data.date).toLocaleDateString('vi-VN')
+      },
+      items: billData.data.orderItems.map(item => ({
+        id: item.id,
+        name: item.dishName,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.price * item.quantity
+      })),
+      payment: {
+        subTotal: billData.data.totalAmount + voucherValue,
+        tax: 0,
+        total: billData.data.totalAmount,
+        receivedAmount: billData.data.receivedAmount,
+        change: billData.data.change,
+        voucherDiscount: voucherValue
+      }
+    }
+  }
+
   if (payments.length === 0) {
     return (
       <Card className="w-full border-dashed animate-in fade-in duration-300">
@@ -250,6 +299,8 @@ export function PaymentList({ payments, currentPage, totalPages, totalItems, onP
     )
   }
 
+  const transformedBillData = transformBillData()
+
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-300">
       <TooltipProvider>
@@ -264,6 +315,7 @@ export function PaymentList({ payments, currentPage, totalPages, totalItems, onP
                   <TableHead className="font-semibold text-sm w-[100px] text-center">Phương thức</TableHead>
                   <TableHead className="font-semibold text-sm w-[200px] text-center">Trạng thái</TableHead>
                   <TableHead className="font-semibold text-sm w-[150px] text-center">Ngày thanh toán</TableHead>
+                  <TableHead className="font-semibold text-sm w-[100px] text-center">Chi tiết</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -304,6 +356,22 @@ export function PaymentList({ payments, currentPage, totalPages, totalItems, onP
                         <span className="text-xs opacity-80">{formatDate(payment.paymentDate).split(",")[1]}</span>
                       </div>
                     </TableCell>
+                    <TableCell className="text-center py-3.5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => handleViewBill(payment)}
+                        disabled={isBillLoading}
+                      >
+                        {isBillLoading && selectedPayment?.paymentId === payment.paymentId ? (
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                        <span className="sr-only">Xem hóa đơn</span>
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -317,6 +385,19 @@ export function PaymentList({ payments, currentPage, totalPages, totalItems, onP
           <PaginationContent>{renderPaginationLinks()}</PaginationContent>
         </Pagination>
       </div>
+
+      {/* Bill Dialog */}
+      {selectedPayment && transformedBillData && (
+        <BillDialog
+          isOpen={isBillDialogOpen}
+          onClose={() => {
+            setIsBillDialogOpen(false)
+            setSelectedPayment(null)
+          }}
+          billData={transformedBillData}
+          paymentId={selectedPayment.paymentId}
+        />
+      )}
     </div>
   )
 }

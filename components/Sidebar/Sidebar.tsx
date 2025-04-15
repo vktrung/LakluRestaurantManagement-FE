@@ -184,6 +184,11 @@ const roleBasedMenuItems = {
           href: "/schedule",
           icon: <CalendarDays className="h-4 w-4" />, // Giữ nguyên
         },
+        {
+          label: "Bảng Lương",
+          href: "/payroll",
+          icon: <ScrollText className="h-4 w-4" />, // Icon bảng lương
+        },
       ],
     },
   ],
@@ -203,6 +208,11 @@ const roleBasedMenuItems = {
           href: "/schedule",
           icon: <CalendarDays className="h-4 w-4" />, // Giữ nguyên
         },
+        {
+          label: "Bảng Lương",
+          href: "/payroll",
+          icon: <ScrollText className="h-4 w-4" />, // Icon bảng lương
+        },
       ],
     },
   ],
@@ -221,6 +231,11 @@ const roleBasedMenuItems = {
           label: "Lịch làm việc",
           href: "/schedule",
           icon: <CalendarDays className="h-4 w-4" />, // Giữ nguyên
+        },
+        {
+          label: "Bảng Lương",
+          href: "/payroll",
+          icon: <ScrollText className="h-4 w-4" />, // Icon bảng lương
         },
       ],
     },

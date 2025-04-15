@@ -47,6 +47,7 @@ interface Props {
     formData: AddShiftRequest | UpdateShiftRequest,
   ) => Promise<void>;
   formError?: any;
+  apiResponse?: any;
 }
 
 // Helper function để hiển thị gợi ý về định dạng thời gian
@@ -70,6 +71,7 @@ export default function EventForm({
   currentDate,
   handleSubmit,
   formError,
+  apiResponse,
 }: Props) {
   const { data: staffData, isLoading: isLoadingStaff } = useGetStaffQuery();
 
@@ -166,7 +168,9 @@ export default function EventForm({
       console.log('Form error received:', formError);
 
       // Hiển thị thông báo lỗi
-      if (formError.error && typeof formError.error === 'object') {
+      if (typeof formError === 'string') {
+        setApiError(formError);
+      } else if (formError.error && typeof formError.error === 'object') {
         // Ưu tiên lỗi manager
         if (formError.error.manager) {
           setApiError(formError.error.manager);
@@ -201,6 +205,30 @@ export default function EventForm({
       }
     }
   }, [formError]);
+
+  // Check API response
+  useEffect(() => {
+    if (apiResponse && apiResponse.httpStatus !== 200) {
+      console.log('API Response Error:', apiResponse);
+
+      // Check for nested error object
+      if (apiResponse.error && typeof apiResponse.error === 'object') {
+        const errorKeys = Object.keys(apiResponse.error);
+        if (errorKeys.length > 0) {
+          // Prioritize manager error if it exists
+          if (apiResponse.error.manager) {
+            setApiError(apiResponse.error.manager);
+          } else {
+            setApiError(apiResponse.error[errorKeys[0]]);
+          }
+          return;
+        }
+      }
+
+      // If no specific error found, use general message
+      setApiError(apiResponse.message || 'Đã xảy ra lỗi khi lưu ca làm');
+    }
+  }, [apiResponse]);
 
   const updateTimeByShiftType = (shiftType: string) => {
     const today = new Date();
@@ -342,54 +370,12 @@ export default function EventForm({
 
     try {
       await handleSubmit(requestData);
-      onClose();
+      // Form will be closed by the parent component if response is successful
     } catch (error: any) {
       console.error('Lỗi khi thêm/cập nhật ca làm:', error);
 
-      // Reset form errors
-      setFormErrors({
-        shiftStart: '',
-        shiftEnd: '',
-        staffs: '',
-      });
-
-      // Xử lý lỗi từ API - đặc biệt chú ý đến error.error
-      if (error && error.error) {
-        // Nếu error.error là object (ví dụ: { manager: "Phải có duy nhất một..." })
-        if (typeof error.error === 'object') {
-          // Ưu tiên lỗi manager
-          if (error.error.manager) {
-            setApiError(error.error.manager);
-          }
-          // Tiếp theo là lỗi shiftType
-          else if (error.error.shiftType) {
-            setApiError(error.error.shiftType);
-          }
-          // Nếu không, lấy thông báo lỗi đầu tiên trong object error
-          else {
-            const firstKey = Object.keys(error.error)[0];
-            if (firstKey && error.error[firstKey]) {
-              setApiError(error.error[firstKey]);
-            } else {
-              setApiError(
-                'Dữ liệu không hợp lệ. Vui lòng kiểm tra thông tin nhập vào.',
-              );
-            }
-          }
-        }
-        // Nếu error.error là string
-        else if (typeof error.error === 'string') {
-          setApiError(error.error);
-        }
-      }
-      // Nếu có error.message
-      else if (error && error.message) {
-        setApiError(error.message);
-      }
-      // Mặc định
-      else {
-        setApiError('Đã xảy ra lỗi khi lưu ca làm. Vui lòng thử lại sau.');
-      }
+      // Error handling is managed by useEffect monitoring formError
+      // So we don't need to handle it here specifically
     } finally {
       setIsSubmitting(false);
     }

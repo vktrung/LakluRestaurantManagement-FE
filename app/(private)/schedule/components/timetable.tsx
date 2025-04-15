@@ -28,6 +28,7 @@ export default function Timetable() {
   const [hasQrCodePermission, setHasQrCodePermission] =
     useState<boolean>(false);
   const [formError, setFormError] = useState<any>(null);
+  const [apiResponse, setApiResponse] = useState<any>(null);
 
   const goToPreviousWeek = () => setCurrentDate(prev => subWeeks(prev, 1));
   const goToNextWeek = () => setCurrentDate(prev => addWeeks(prev, 1));
@@ -75,19 +76,80 @@ export default function Timetable() {
   ): Promise<void> => {
     console.log('Selected Shift ID in Timetable:', selectedShiftId);
     try {
-      await handleSubmit(formData, selectedShiftId);
+      const response = await handleSubmit(formData, selectedShiftId);
 
-      // Chỉ đóng form khi không có lỗi
-      if (isDialogOpen) setIsDialogOpen(false);
-      if (isUpdateDialogOpen) setIsUpdateDialogOpen(false);
+      // Store response for passing to EventForm
+      setApiResponse(response);
 
-      // Xóa lỗi nếu có
-      setFormError(null);
+      // Check if response is successful
+      if (response.httpStatus === 200) {
+        // Chỉ đóng form khi không có lỗi
+        if (isDialogOpen) setIsDialogOpen(false);
+        if (isUpdateDialogOpen) setIsUpdateDialogOpen(false);
+
+        // Xóa lỗi nếu có
+        setFormError(null);
+      } else {
+        // If response has an error object with specific error messages
+        if (response.error && typeof response.error === 'object') {
+          // Get first error message from error object
+          const errorKeys = Object.keys(response.error);
+          if (errorKeys.length > 0) {
+            const firstErrorKey = errorKeys[0];
+            setFormError(response.error[firstErrorKey]);
+            throw response.error[firstErrorKey];
+          }
+        }
+
+        // If no specific error message found, use the general message
+        const errorMessage = response.message || 'Đã xảy ra lỗi khi lưu ca làm';
+        setFormError(errorMessage);
+        throw errorMessage;
+      }
     } catch (error: any) {
       console.error('Lỗi khi lưu ca làm:', error);
 
-      // Lưu lỗi để truyền vào EventForm
-      setFormError(error);
+      // Nếu error là object với error.error object (nested error)
+      if (
+        error &&
+        typeof error === 'object' &&
+        error.error &&
+        typeof error.error === 'object'
+      ) {
+        const errorKeys = Object.keys(error.error);
+        if (errorKeys.length > 0) {
+          // Prioritize manager error if it exists
+          if (error.error.manager) {
+            setFormError(error.error.manager);
+          } else {
+            setFormError(error.error[errorKeys[0]]);
+          }
+        } else {
+          setFormError(error.message || 'Đã xảy ra lỗi khi lưu ca làm');
+        }
+      }
+      // Nếu error là object với httpStatus
+      else if (error && typeof error === 'object' && error.httpStatus) {
+        if (error.error && typeof error.error === 'object') {
+          // Check for nested error messages
+          const errorKeys = Object.keys(error.error);
+          if (errorKeys.length > 0) {
+            setFormError(error.error[errorKeys[0]]);
+          } else {
+            setFormError(error.message || 'Đã xảy ra lỗi khi lưu ca làm');
+          }
+        } else {
+          setFormError(error.message || 'Đã xảy ra lỗi khi lưu ca làm');
+        }
+      }
+      // Nếu error là string
+      else if (typeof error === 'string') {
+        setFormError(error);
+      }
+      // Mặc định
+      else {
+        setFormError('Đã xảy ra lỗi khi lưu ca làm');
+      }
 
       // Không đóng form, để hiển thị lỗi
       throw error;
@@ -179,6 +241,7 @@ export default function Timetable() {
           currentDate={currentDate}
           handleSubmit={wrappedHandleSubmit}
           formError={formError}
+          apiResponse={apiResponse}
         />
       )}
 
@@ -189,6 +252,7 @@ export default function Timetable() {
           currentDate={currentDate}
           handleSubmit={wrappedHandleSubmit}
           formError={formError}
+          apiResponse={apiResponse}
         />
       )}
     </div>

@@ -160,6 +160,8 @@ export default function IntegratedPaymentPage() {
   })
   const [isPaymentCreated, setIsPaymentCreated] = useState(false)
   const [voucherError, setVoucherError] = useState<string | null>(null)
+  const [isPaymentCancelled, setIsPaymentCancelled] = useState(false)
+  const [shouldPrintBill, setShouldPrintBill] = useState(false)
 
   // State cho payment
   const [paymentId, setPaymentId] = useState<number | null>(null)
@@ -461,7 +463,7 @@ export default function IntegratedPaymentPage() {
       clearSavedPaymentData();
       
       // Nếu chọn in hóa đơn tự động và thanh toán ngay
-      if (printBill && result.data?.paymentId && paymentStatus === "PAID") {
+      if (shouldPrintBill && result.data?.paymentId && paymentStatus === "PAID") {
         handleNavigation(`/bill/${result.data.paymentId}`);
       }
     } catch (error: any) {
@@ -1141,6 +1143,7 @@ export default function IntegratedPaymentPage() {
       await cancelPayment(paymentId).unwrap();
       setErrorMessage("Đã hủy thanh toán thành công");
       setPaymentCompleted(false);
+      setIsPaymentCancelled(true);
       // Xóa dữ liệu đã lưu khi hủy thanh toán
       clearSavedPaymentData();
       // Chuyển hướng về trang danh sách đơn hàng sau 2 giây
@@ -1283,7 +1286,7 @@ export default function IntegratedPaymentPage() {
                             onClick={() => addItemToOrder(item)}
                             className="w-full mt-2"
                             size="sm"
-                            disabled={isCreatingNewItem || isUpdatingOrderItem || isPaymentCreated}
+                            disabled={isCreatingNewItem || isUpdatingOrderItem || isPaymentCreated || isPaymentCancelled}
                           >
                             {isCreatingNewItem ? "Đang thêm..." : "Thêm vào order"}
                           </Button>
@@ -1348,7 +1351,7 @@ export default function IntegratedPaymentPage() {
                               }
                               changeItemQuantity(item.id, item.quantity - 1);
                             }}
-                            disabled={isUpdatingOrderItem || isPaymentCreated}
+                            disabled={isUpdatingOrderItem || isPaymentCreated || isPaymentCancelled}
                           >
                             <Minus className="h-4 w-4" />
                           </Button>
@@ -1365,7 +1368,7 @@ export default function IntegratedPaymentPage() {
                               }
                               changeItemQuantity(item.id, item.quantity + 1);
                             }}
-                            disabled={isUpdatingOrderItem || isPaymentCreated}
+                            disabled={isUpdatingOrderItem || isPaymentCreated || isPaymentCancelled}
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
@@ -1375,7 +1378,7 @@ export default function IntegratedPaymentPage() {
                             size="icon" 
                             className="h-7 w-7" 
                             onClick={() => handleDeleteItem(item.orderItemId)}
-                            disabled={isUpdatingOrderItem || isPaymentCreated || isDeletingOrderItem}
+                            disabled={isUpdatingOrderItem || isPaymentCreated || isDeletingOrderItem || isPaymentCancelled}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -1406,54 +1409,32 @@ export default function IntegratedPaymentPage() {
                   error={voucherError}
                 />
               </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="printBill"
+                  checked={shouldPrintBill}
+                  onCheckedChange={(checked) => setShouldPrintBill(checked as boolean)}
+                />
+                <label
+                  htmlFor="printBill"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  In hóa đơn sau khi thanh toán
+                </label>
+              </div>
                   
                   <div className="flex gap-2">
-              <Button
-                      variant="outline"
-                      onClick={() => {
-                        if (existingOrderItemsData?.data?.length ?? 0 > 0) {
-                          // Tạo phiếu tạm tính từ dữ liệu hiện có
-                          const tempBillData: TempBillData = {
-                            orderItems: (existingOrderItemsData?.data || []).map(item => ({
-                              id: item.id ?? 0,
-                              dishName: item.dishName || "Unknown",
-                              quantity: item.quantity,
-                              price: item.price,
-                            })),
-                            subtotal: calculateSubtotal(),
-                            tableNumber: orderIdNumber,
-                            date: new Date().toISOString(),
-                          };
-                          
-                          // In phiếu tạm tính trực tiếp thay vì mở trang mới
-                          handlePrintTempBill(tempBillData);
-                        } else {
-                          setErrorMessage('Vui lòng chọn ít nhất một món để xem phiếu tạm tính');
-                        }
-                      }}
-                      className="flex-1"
-                    >
-                      Xem phiếu tạm tính
-                    </Button>
-                    
                     <Button
                       onClick={handleQuickPayment}
-                      disabled={isCreating || (existingOrderItemsData?.data?.length ?? 0) === 0}
-                      className="flex-1 bg-primary"
+                      disabled={isCreating || (existingOrderItemsData?.data?.length ?? 0) === 0 || isPaymentCancelled}
+                      className="flex-1 bg-primary py-6 text-lg"
                     >
-                      {isCreating ? "Đang xử lý..." : "Thanh toán và in"}
+                      {isCreating ? "Đang xử lý..." : "Thanh toán"}
                     </Button>
                   </div>
-                  
-                  <Button
-                    onClick={handleCreatePayment}
-                    disabled={isCreating || (existingOrderItemsData?.data?.length ?? 0) === 0}
-                    className="w-full py-6 text-lg"
-                  >
-                    {isCreating ? "Đang tạo thanh toán..." : "Tạo thanh toán"}
-              </Button>
-            </div>
-          ) : (
+                </div>
+              ) : (
                 <div className="space-y-4">
                   <div className="bg-green-50 p-4 rounded-lg border border-green-100">
                     <h3 className="text-green-800 font-medium mb-2">
@@ -1501,6 +1482,7 @@ export default function IntegratedPaymentPage() {
                           placeholder="Nhập số tiền nhận được"
                             className="w-full p-2 border rounded"
                           required
+                          disabled={isPaymentCancelled}
                         />
                       {receivedAmount && Number(receivedAmount) >= Number(totalAmount) && (
                         <div className="mt-2 text-sm text-green-600">
@@ -1510,30 +1492,30 @@ export default function IntegratedPaymentPage() {
                     </div>
                         
                         {/* Hiển thị tùy chọn in hóa đơn sau khi đã xử lý tiền mặt thành công */}
-                        {errorMessage && errorMessage.includes("thành công") ? (
+                        {errorMessage && errorMessage.includes("thành công") && shouldPrintBill ? (
                           <div className="space-y-3">
                             <Button
                               onClick={() => {
-                                // In hóa đơn trực tiếp thay vì mở trang mới
                                 if (paymentId) {
                                   handlePrintBill(paymentId);
                                 }
                               }}
                               className="w-full bg-green-600 hover:bg-green-700"
+                              disabled={isPaymentCancelled}
                             >
-                              Hoàn tất thanh toán và in hóa đơn
+                              In hóa đơn
                             </Button>
                           </div>
                         ) : (
-                    <Button
-                      onClick={handleCashPayment}
-                      disabled={
-                        isProcessing || !paymentId || !receivedAmount || Number(receivedAmount) < Number(totalAmount)
-                      }
+                          <Button
+                            onClick={handleCashPayment}
+                            disabled={
+                              isProcessing || !paymentId || !receivedAmount || Number(receivedAmount) < Number(totalAmount) || isPaymentCancelled
+                            }
                             className="w-full"
                           >
                             {isProcessing ? "Đang xử lý..." : "Xác nhận thanh toán"}
-                    </Button>
+                          </Button>
                         )}
                   </div>
                 </div>
@@ -1607,18 +1589,18 @@ export default function IntegratedPaymentPage() {
                             )}
                             
                             {/* Hành động sau khi thanh toán thành công */}
-                            {paymentStatus === "PAID" && (
+                            {paymentStatus === "PAID" && shouldPrintBill && (
                               <div className="mt-4 flex flex-col space-y-3">
                                 <Button
                                   onClick={() => {
-                                    // In hóa đơn trực tiếp thay vì mở trang mới
                                     if (paymentId) {
                                       handlePrintBill(paymentId);
                                     }
                                   }}
                                   className="bg-green-600 hover:bg-green-700"
+                                  disabled={isPaymentCancelled}
                                 >
-                                  Hoàn tất thanh toán và in hóa đơn
+                                  In hóa đơn
                                 </Button>
                               </div>
                             )}

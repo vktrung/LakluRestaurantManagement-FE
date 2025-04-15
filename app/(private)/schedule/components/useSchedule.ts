@@ -217,17 +217,32 @@ export function useSchedule(currentDate: Date) {
     }
   };
 
-  const handleSubmit = async (formData: AddShiftRequest | UpdateShiftRequest, shiftId?: number): Promise<void> => {
+  const handleSubmit = async (formData: AddShiftRequest | UpdateShiftRequest, shiftId?: number): Promise<any> => {
     const id = shiftId ?? selectedShiftId; 
   
     try {
+      let response;
       if (id !== null && id !== undefined) { 
-        await updateShift({ id, body: formData }).unwrap();
+        response = await updateShift({ id, body: formData }).unwrap();
       } else {
-        await createShift(formData).unwrap();
+        response = await createShift(formData).unwrap();
       }
-    } catch (error) {
+
+      // Check response status
+      if (response.httpStatus !== 200) {
+        console.log("API Error Response:", response);
+        throw response;
+      }
+      
+      return response;
+    } catch (error: any) {
       console.error("Lỗi khi xử lý ca làm:", error);
+      
+      // Pass through the raw error to allow proper error handling in parent components
+      if (error.data) {
+        throw error.data;
+      }
+      
       // Ném lại lỗi để component cha có thể xử lý
       throw error;
     }

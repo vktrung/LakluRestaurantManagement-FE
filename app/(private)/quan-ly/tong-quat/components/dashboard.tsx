@@ -16,6 +16,7 @@ import {
 } from "@/features/statistics/statisticsApiSlice";
 import { Dish } from "@/features/statistics/types";
 import TopDishes from "./top-dishes";
+import TopSellingDishes from "./top-selling-dishes";
 
 export default function Dashboard() {
   const [timeFrame, setTimeFrame] = useState("daily");
@@ -150,6 +151,10 @@ export default function Dashboard() {
           />
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-1 gap-6">
+        <TopSellingDishes />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <TopDishes formatCurrency={formatCurrency} />

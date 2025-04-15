@@ -83,3 +83,16 @@ export interface Dish {
     error: string | null;
   }
   
+  export interface HourlyTopDish {
+    hour: number;
+    topDish: Dish;
+  }
+  
+  export interface HourlyTopDishesResponse {
+    data: HourlyTopDish[];
+    message: string;
+    httpStatus: number;
+    timestamp: string;
+    error: string | null;
+  }
+  

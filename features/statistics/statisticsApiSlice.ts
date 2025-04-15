@@ -8,13 +8,14 @@ import {
   LastThreeMonthsRevenueResponse,
   LastThreeYearsRevenueResponse,
   TotalDishSoldResponse,
-  DishDetailResponse
+  DishDetailResponse,
+  HourlyTopDishesResponse
 } from './types';
 
 export const statisticsApiSlice = createApi({
   reducerPath: 'statisticsApi',
   baseQuery,
-  tagTypes: ['top-dishes', 'revenue-today', 'weekly-revenue', 'last-three-months-revenue', 'last-three-years-revenue', 'top-dishes-last-hour', 'total-dish-sold', 'dish-details'],
+  tagTypes: ['top-dishes', 'revenue-today', 'weekly-revenue', 'last-three-months-revenue', 'last-three-years-revenue', 'top-dishes-last-hour', 'total-dish-sold', 'dish-details', 'hourly-top-dishes'],
   endpoints: builder => ({
     getTopSellingDishes: builder.query<TopDishesResponse, void>({
       query: () => ({
@@ -79,6 +80,28 @@ export const statisticsApiSlice = createApi({
       }),
       providesTags: ['last-three-years-revenue'],
     }),
+
+    getHourlyTopDishes: builder.query<HourlyTopDishesResponse, { startDate?: string; endDate?: string }>({
+      query: (params = {}) => {
+        const { startDate, endDate } = params;
+        let url = `${endpoints.StatisticsApi}top-selling-dishes/hourly`;
+        
+        const queryParams = new URLSearchParams();
+        if (startDate) queryParams.append('startDate', startDate);
+        if (endDate) queryParams.append('endDate', endDate);
+        
+        const queryString = queryParams.toString();
+        if (queryString) {
+          url += `?${queryString}`;
+        }
+        
+        return {
+          url,
+          method: 'GET',
+        };
+      },
+      providesTags: ['hourly-top-dishes'],
+    }),
   }),
 });
 
@@ -90,5 +113,6 @@ export const {
   useGetRevenueTodayQuery,
   useGetWeeklyRevenueQuery,
   useGetLastThreeMonthsRevenueQuery,
-  useGetLastThreeYearsRevenueQuery
+  useGetLastThreeYearsRevenueQuery,
+  useGetHourlyTopDishesQuery
 } = statisticsApiSlice;

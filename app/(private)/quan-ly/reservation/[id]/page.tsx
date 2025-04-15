@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { EditTablesDialog } from "./edit-tables-dialog"
 import { TransferTableDialog } from "./transfer-table-dialog"
+import { EditReservationDialog } from "./edit-reservation-dialog"
 import { ReservationResponse } from "@/features/reservation/type"
 import { useGetReservationByIdQuery, useCancelReservationMutation } from "@/features/reservation/reservationApiSlice"
 import { toast } from "sonner"
@@ -47,9 +48,11 @@ export default function ReservationDetailPage({ params }: { params: { id: string
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const [isEditTablesOpen, setIsEditTablesOpen] = useState(false)
   const [isTransferTableOpen, setIsTransferTableOpen] = useState(false)
+  const [isEditReservationOpen, setIsEditReservationOpen] = useState(false)
   // Key độc nhất cho dialog để ép React tạo mới component khi mở lại
   const [dialogKey, setDialogKey] = useState(0)
   const [transferDialogKey, setTransferDialogKey] = useState(0)
+  const [editReservationDialogKey, setEditReservationDialogKey] = useState(0)
   const [isCancelling, setIsCancelling] = useState(false)
   
   // Validate ID
@@ -110,6 +113,21 @@ export default function ReservationDetailPage({ params }: { params: { id: string
   // Xử lý đóng dialog chuyển bàn và refresh dữ liệu
   const handleCloseTransferTable = useCallback(() => {
     setIsTransferTableOpen(false)
+    // Refetch dữ liệu sau khi đóng dialog
+    setTimeout(() => {
+      refetch()
+    }, 100)
+  }, [refetch])
+
+  // Xử lý mở dialog chỉnh sửa thông tin và tạo key mới
+  const handleOpenEditReservation = useCallback(() => {
+    setEditReservationDialogKey(prev => prev + 1) // Tạo key mới
+    setIsEditReservationOpen(true)
+  }, [])
+
+  // Xử lý đóng dialog chỉnh sửa thông tin và refresh dữ liệu
+  const handleCloseEditReservation = useCallback(() => {
+    setIsEditReservationOpen(false)
     // Refetch dữ liệu sau khi đóng dialog
     setTimeout(() => {
       refetch()
@@ -273,101 +291,113 @@ export default function ReservationDetailPage({ params }: { params: { id: string
           </Card>
         </div>
 
-        <div className="md:w-1/3">
+        <div className="md:w-1/3 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Thao tác</CardTitle>
               <CardDescription>Quản lý đặt bàn này</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-
-              <Button className="w-full" variant="outline">
+            <CardContent className="space-y-2">
+              {/* Nút chỉnh sửa thông tin */}
+              <Button
+                className="w-full justify-start"
+                onClick={handleOpenEditReservation}
+                disabled={reservation.detail.status === "CANCELLED" || reservation.detail.status === "COMPLETED"}
+              >
                 <Edit className="mr-2 h-4 w-4" />
-                Sửa đặt bàn
+                Chỉnh sửa thông tin
               </Button>
-
-              {reservation.detail.status !== "CANCELLED" && reservation.detail.status !== "COMPLETED" && (
-                <>
-                  <Button 
-                    className="w-full bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800" 
-                    variant="outline"
-                    onClick={handleOpenEditTables}
-                  >
-                    <Table className="mr-2 h-4 w-4" />
-                    Gộp/Tách bàn
-                  </Button>
-                  
-                  <Button 
-                    className="w-full bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800" 
-                    variant="outline"
-                    onClick={handleOpenTransferTable}
-                  >
-                    <ArrowRight className="mr-2 h-4 w-4" />
-                    Chuyển bàn
-                  </Button>
-                  
-                  <Button
-                    className="w-full bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800"
-                    variant="outline"
-                    onClick={() => setCancelDialogOpen(true)}
-                  >
-                    <X className="mr-2 h-4 w-4" />
-                    Hủy đặt bàn
-                  </Button>
-                </>
-              )}
+              
+              {/* Nút quản lý bàn */}
+              <Button
+                className="w-full justify-start" 
+                onClick={handleOpenEditTables}
+                disabled={reservation.detail.status === "CANCELLED" || reservation.detail.status === "COMPLETED"}
+              >
+                <Table className="mr-2 h-4 w-4" />
+                Quản lý bàn (Gộp/Tách)
+              </Button>
+              
+              {/* Nút chuyển bàn */}
+              <Button
+                className="w-full justify-start"
+                onClick={handleOpenTransferTable}
+                disabled={
+                  reservation.detail.status === "CANCELLED" || 
+                  reservation.detail.status === "COMPLETED" ||
+                  !reservation.detail.tables || 
+                  reservation.detail.tables.length === 0
+                }
+                variant="outline"
+              >
+                <ArrowRight className="mr-2 h-4 w-4" />
+                Chuyển bàn
+              </Button>
+              
+              {/* Nút huỷ đặt bàn */}
+              <Button
+                className="w-full justify-start"
+                onClick={() => setCancelDialogOpen(true)}
+                disabled={reservation.detail.status === "CANCELLED" || reservation.detail.status === "COMPLETED"}
+                variant="destructive"
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                Huỷ đặt bàn
+              </Button>
             </CardContent>
-            <CardFooter>
-              <p className="text-xs text-muted-foreground">Cập nhật lần cuối: {format(new Date(), "dd MMM yyyy, HH:mm", { locale: vi })}</p>
-            </CardFooter>
           </Card>
         </div>
       </div>
+      
+      {/* Dialog chỉnh sửa bàn */}
+      {isEditTablesOpen && reservation && (
+        <EditTablesDialog
+          key={`edit-tables-${dialogKey}`}
+          reservation={reservation}
+          isOpen={isEditTablesOpen}
+          onClose={handleCloseEditTables}
+        />
+      )}
 
-      {/* Alert Dialog Hủy đặt bàn */}
+      {/* Dialog chuyển bàn */}
+      {isTransferTableOpen && reservation && (
+        <TransferTableDialog
+          key={`transfer-table-${transferDialogKey}`}
+          reservation={reservation}
+          isOpen={isTransferTableOpen}
+          onClose={handleCloseTransferTable}
+        />
+      )}
+
+      {/* Dialog chỉnh sửa thông tin đặt bàn */}
+      {isEditReservationOpen && reservation && (
+        <EditReservationDialog
+          key={`edit-reservation-${editReservationDialogKey}`}
+          reservation={reservation}
+          isOpen={isEditReservationOpen}
+          onClose={handleCloseEditReservation}
+          onSuccess={() => refetch()}
+        />
+      )}
+
+      {/* Dialog xác nhận huỷ đặt bàn */}
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Hủy đặt bàn</AlertDialogTitle>
+            <AlertDialogTitle>Bạn có chắc muốn huỷ đặt bàn này?</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn hủy đặt bàn này? Hành động này không thể hoàn tác.
+              Thao tác này không thể hoàn tác. Đặt bàn sẽ bị huỷ và các bàn sẽ được mở khoá để có thể sử dụng cho đặt bàn khác.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Không, giữ lại</AlertDialogCancel>
-            <AlertDialogAction 
-              className="bg-red-600 hover:bg-red-700"
-              onClick={handleCancelReservation}
-              disabled={isCancelling}
-            >
+            <AlertDialogCancel disabled={isCancelling}>Huỷ bỏ</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancelReservation} disabled={isCancelling}>
               {isCancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Có, hủy đặt bàn
+              Xác nhận huỷ
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Dialog gộp/tách bàn - Với key để tạo mới component mỗi khi mở */}
-      {isEditTablesOpen && reservation && (
-        <div key={dialogKey}>
-          <EditTablesDialog
-            reservation={reservation}
-            isOpen={isEditTablesOpen}
-            onClose={handleCloseEditTables}
-          />
-        </div>
-      )}
-
-      {/* Dialog chuyển bàn - Với key để tạo mới component mỗi khi mở */}
-      {isTransferTableOpen && reservation && (
-        <div key={transferDialogKey}>
-          <TransferTableDialog
-            reservation={reservation}
-            isOpen={isTransferTableOpen}
-            onClose={handleCloseTransferTable}
-          />
-        </div>
-      )}
     </div>
   )
 }

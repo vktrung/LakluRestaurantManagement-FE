@@ -321,7 +321,13 @@ export default function ScheduleWeekView({
   const isShiftPastCheckoutTime = (shift: Shift) => {
     const currentTime = currentDate;
     const timeOut = parseISO(shift.timeOut);
-    return isAfter(currentTime, timeOut);
+    const isPast = isAfter(currentTime, timeOut);
+    console.log(
+      `Shift ${
+        shift.id
+      }: isPastCheckout=${isPast}, timeOut=${timeOut.toISOString()}, currentTime=${currentTime.toISOString()}`,
+    );
+    return isPast;
   };
 
   return (
@@ -399,24 +405,26 @@ export default function ScheduleWeekView({
                                   )}
                                 </div>
                                 <div className="flex gap-1">
-                                  {!isShiftPastCheckoutTime(shift) && (
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7 text-gray-500 hover:text-blue-600"
-                                      onClick={() => handleOpenDialog(shift)}
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                  )}
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7 text-gray-500 hover:text-red-600"
-                                    onClick={() => confirmDelete(shift.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+                                  {!isShiftPastCheckoutTime(shift) ? (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 text-gray-500 hover:text-blue-600"
+                                        onClick={() => handleOpenDialog(shift)}
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 text-gray-500 hover:text-red-600"
+                                        onClick={() => confirmDelete(shift.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </>
+                                  ) : null}
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -514,11 +522,16 @@ export default function ScheduleWeekView({
           </DialogHeader>
           <div className="flex flex-col items-center space-y-4">
             {qrImageUrlCheckIn ? (
-              <img
-                src={qrImageUrlCheckIn || '/placeholder.svg'}
-                alt="QR Code Check-in"
-                className="w-48 h-48 object-contain"
-              />
+              <>
+                <p className="text-red-600 text-sm font-medium mb-2">
+                  Lưu ý: Vui lòng đăng nhập trước khi quét mã QR này!
+                </p>
+                <img
+                  src={qrImageUrlCheckIn || '/placeholder.svg'}
+                  alt="QR Code Check-in"
+                  className="w-48 h-48 object-contain"
+                />
+              </>
             ) : (
               <p className="text-slate-600">Không thể tải mã QR check-in.</p>
             )}
@@ -564,11 +577,16 @@ export default function ScheduleWeekView({
           </DialogHeader>
           <div className="flex flex-col items-center space-y-4">
             {qrImageUrlCheckOut ? (
-              <img
-                src={qrImageUrlCheckOut || '/placeholder.svg'}
-                alt="QR Code Check-out"
-                className="w-48 h-48 object-contain"
-              />
+              <>
+                <p className="text-red-600 text-sm font-medium mb-2">
+                  Lưu ý: Vui lòng đăng nhập trước khi quét mã QR này!
+                </p>
+                <img
+                  src={qrImageUrlCheckOut || '/placeholder.svg'}
+                  alt="QR Code Check-out"
+                  className="w-48 h-48 object-contain"
+                />
+              </>
             ) : (
               <p className="text-slate-600">Không thể tải mã QR check-out.</p>
             )}

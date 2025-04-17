@@ -173,7 +173,7 @@ export default function Timetable() {
   }
 
   return (
-    <div className="container mx-auto py-6 px-4">
+    <div className="p-6 ">
       <ScheduleHeader
         selectedMonth={selectedMonth}
         setSelectedMonth={setSelectedMonth}

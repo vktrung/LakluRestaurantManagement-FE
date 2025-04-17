@@ -12,6 +12,9 @@ import {
   GetShiftsByDateRangeRequest,
   CheckinResponse,
   GetShiftsByStaffAndDateRangeRequest,
+  DeleteShiftsResponse,
+  CloneScheduleBetweenWeeksRequest,
+  CloneScheduleResponse,
 } from './types';
 
 export const scheduleApiSlice = createApi({
@@ -42,18 +45,21 @@ export const scheduleApiSlice = createApi({
     }),
 
     getShiftsByStaffAndDateRange: builder.query<
-    GetShiftsByDateRangeResponse,
-    GetShiftsByStaffAndDateRangeRequest
-  >({
-    query: ({ staffId, startDate, endDate }) => ({
-      url: `${endpoints.ScheduleApi}staff/${staffId}/date-range`,
-      params: { startDate, endDate },
+      GetShiftsByDateRangeResponse,
+      GetShiftsByStaffAndDateRangeRequest
+    >({
+      query: ({ staffId, startDate, endDate }) => ({
+        url: `${endpoints.ScheduleApi}staff/${staffId}/date-range`,
+        params: { startDate, endDate },
+      }),
+      providesTags: (result, error, arg) => [
+        {
+          type: 'schedule-list',
+          id: `${arg.staffId}_${arg.startDate}_${arg.endDate}`,
+        },
+      ],
+      keepUnusedDataFor: 0,
     }),
-    providesTags: (result, error, arg) => [
-      { type: 'schedule-list', id: `${arg.staffId}_${arg.startDate}_${arg.endDate}` },
-    ],
-    keepUnusedDataFor: 0,
-  }),
 
     getShiftById: builder.query<GetShiftById, number>({
       query: id => ({
@@ -91,7 +97,7 @@ export const scheduleApiSlice = createApi({
         responseHandler: async response => {
           const contentType = response.headers.get('Content-Type');
           if (contentType && contentType.includes('image/png')) {
-            return response.blob(); 
+            return response.blob();
           } else {
             return response.json();
           }
@@ -165,10 +171,27 @@ export const scheduleApiSlice = createApi({
       invalidatesTags: ['schedule-list', 'schedule'],
     }),
 
-    deleteShift: builder.mutation<GetAllShiftsResponse, number>({
+    deleteShift: builder.mutation<DeleteShiftsResponse, number>({
       query: id => ({
         url: `${endpoints.ScheduleApi}${id.toString()}`,
         method: 'DELETE',
+      }),
+      invalidatesTags: ['schedule-list'],
+    }),
+
+    cloneScheduleBetweenWeeks: builder.mutation<
+      CloneScheduleResponse,
+      CloneScheduleBetweenWeeksRequest
+    >({
+      query: params => ({
+        url: endpoints.ScheduleApi + 'clone-between-weeks',
+        method: 'POST',
+        params: {
+          sourceWeek: params.sourceWeek,
+          targetWeek: params.targetWeek,
+          updateShiftType: params.updateShiftType,
+          overwriteExisting: params.overwriteExisting,
+        },
       }),
       invalidatesTags: ['schedule-list'],
     }),
@@ -184,7 +207,8 @@ export const {
   useCreateShiftAttendMutation,
   useCreateQrMutation,
   useCreateShiftCheckoutMutation,
-  useCreateQrCheckoutMutation, 
+  useCreateQrCheckoutMutation,
   useUpdateShiftMutation,
   useDeleteShiftMutation,
+  useCloneScheduleBetweenWeeksMutation,
 } = scheduleApiSlice;

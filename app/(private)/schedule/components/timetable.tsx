@@ -15,6 +15,7 @@ import {
   UpdateShiftRequest,
   Shift,
 } from '@/features/schedule/types';
+import { toast } from 'sonner';
 
 export default function Timetable() {
   const [selectedMonth, setSelectedMonth] = useState<string>(
@@ -39,6 +40,7 @@ export default function Timetable() {
     handleOpenAddDialog,
     handleOpenUpdateDialog,
     handleDelete,
+    handleCloneSchedule,
     isDialogOpen,
     isUpdateDialogOpen,
     setIsDialogOpen,
@@ -156,6 +158,74 @@ export default function Timetable() {
     }
   };
 
+  const wrappedHandleDelete = async (id: number): Promise<void> => {
+    try {
+      const response = await handleDelete(id);
+
+      // Success case
+      if (response && response.httpStatus === 200) {
+        toast.success(response.message || 'Xóa ca làm thành công', {
+          position: 'top-right',
+          duration: 3000,
+        });
+      }
+    } catch (error: any) {
+      let errorMessage =
+        typeof error === 'string'
+          ? error
+          : 'Không thể xóa ca làm. Vui lòng thử lại sau.';
+
+      toast.error(errorMessage, {
+        position: 'top-right',
+        duration: 3000,
+        style: {
+          backgroundColor: '#FEF2F2',
+          color: '#DC2626',
+          border: '1px solid #FCA5A5',
+        },
+      });
+    }
+  };
+
+  const wrappedHandleCloneSchedule = async (
+    sourceWeek: Date,
+    targetWeek: Date,
+    updateShiftType: boolean,
+    overwriteExisting: boolean,
+  ): Promise<void> => {
+    try {
+      const response = await handleCloneSchedule(
+        sourceWeek,
+        targetWeek,
+        updateShiftType,
+        overwriteExisting,
+      );
+
+      // Success case
+      if (response && response.httpStatus === 200) {
+        toast.success(response.message || 'Sao chép lịch làm việc thành công', {
+          position: 'top-right',
+          duration: 3000,
+        });
+      }
+    } catch (error: any) {
+      let errorMessage =
+        typeof error === 'string'
+          ? error
+          : 'Không thể sao chép lịch làm việc. Vui lòng thử lại sau.';
+
+      toast.error(errorMessage, {
+        position: 'top-right',
+        duration: 3000,
+        style: {
+          backgroundColor: '#FEF2F2',
+          color: '#DC2626',
+          border: '1px solid #FCA5A5',
+        },
+      });
+    }
+  };
+
   // Hiển thị trạng thái tải hoặc lỗi khi lấy thông tin người dùng
   if (isLoadingUserMe) {
     return (
@@ -186,7 +256,11 @@ export default function Timetable() {
       />
 
       {hasQrCodePermission && (
-        <ScheduleActions handleOpenAddDialog={handleOpenAddDialog} />
+        <ScheduleActions
+          handleOpenAddDialog={handleOpenAddDialog}
+          handleCloneSchedule={wrappedHandleCloneSchedule}
+          currentDate={currentDate}
+        />
       )}
 
       <Tabs
@@ -218,7 +292,7 @@ export default function Timetable() {
               handleGetQrCodeCheckout={handleGetQrCodeCheckout}
               formattedSchedule={formattedSchedule}
               handleOpenDialog={handleOpenUpdateDialogWithId}
-              handleDelete={handleDelete}
+              handleDelete={wrappedHandleDelete}
             />
           </TabsContent>
         )}
@@ -229,7 +303,7 @@ export default function Timetable() {
             handleOpenDialog={
               hasQrCodePermission ? handleOpenUpdateDialogWithId : () => {}
             }
-            handleDelete={hasQrCodePermission ? handleDelete : () => {}}
+            handleDelete={hasQrCodePermission ? wrappedHandleDelete : () => {}}
           />
         </TabsContent>
       </Tabs>

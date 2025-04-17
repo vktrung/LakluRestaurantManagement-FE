@@ -16,6 +16,7 @@ import { vi } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface ScheduleWeekViewProps {
   formattedSchedule: {
@@ -255,9 +256,15 @@ export default function ScheduleWeekView({
 
   const executeDelete = () => {
     if (shiftToDelete !== null) {
-      handleDelete(shiftToDelete);
-      setIsDeleteConfirmOpen(false);
-      setShiftToDelete(null);
+      try {
+        handleDelete(shiftToDelete);
+        setIsDeleteConfirmOpen(false);
+        setShiftToDelete(null);
+      } catch (error) {
+        // Errors are now handled in the wrapped handler in timetable.tsx
+        setIsDeleteConfirmOpen(false);
+        setShiftToDelete(null);
+      }
     }
   };
 
@@ -322,11 +329,6 @@ export default function ScheduleWeekView({
     const currentTime = currentDate;
     const timeOut = parseISO(shift.timeOut);
     const isPast = isAfter(currentTime, timeOut);
-    console.log(
-      `Shift ${
-        shift.id
-      }: isPastCheckout=${isPast}, timeOut=${timeOut.toISOString()}, currentTime=${currentTime.toISOString()}`,
-    );
     return isPast;
   };
 
@@ -406,25 +408,23 @@ export default function ScheduleWeekView({
                                 </div>
                                 <div className="flex gap-1">
                                   {!isShiftPastCheckoutTime(shift) ? (
-                                    <>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-7 w-7 text-gray-500 hover:text-blue-600"
-                                        onClick={() => handleOpenDialog(shift)}
-                                      >
-                                        <Edit className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-7 w-7 text-gray-500 hover:text-red-600"
-                                        onClick={() => confirmDelete(shift.id)}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-gray-500 hover:text-blue-600"
+                                      onClick={() => handleOpenDialog(shift)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
                                   ) : null}
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-gray-500 hover:text-red-600"
+                                    onClick={() => confirmDelete(shift.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -773,35 +773,24 @@ export default function ScheduleWeekView({
 
       {/* Delete confirmation dialog */}
       <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-        <DialogContent className="sm:max-w-md rounded-xl shadow-xl">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <Trash2 className="h-5 w-5" />
-              Xác nhận xóa ca làm
-            </DialogTitle>
+            <DialogTitle>Xác Nhận Xóa</DialogTitle>
           </DialogHeader>
-          <div className="py-4 text-slate-700">
-            <p>
-              Bạn có chắc chắn muốn xóa ca làm này? Hành động này không thể hoàn
-              tác.
-            </p>
+          <div className="space-y-4">
+            <p>Bạn có chắc muốn xóa ca làm này không?</p>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteConfirmOpen(false)}
+              >
+                Hủy
+              </Button>
+              <Button variant="destructive" onClick={executeDelete}>
+                Xóa
+              </Button>
+            </div>
           </div>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              className="bg-white hover:bg-gray-100 text-slate-700"
-              onClick={() => setIsDeleteConfirmOpen(false)}
-            >
-              Hủy
-            </Button>
-            <Button
-              variant="destructive"
-              className="bg-red-600 hover:bg-red-700 text-white"
-              onClick={executeDelete}
-            >
-              Xóa
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

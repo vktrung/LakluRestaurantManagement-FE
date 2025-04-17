@@ -30,7 +30,13 @@ export type GetShiftsByDateRangeResponse = {
   timestamp: string;
   error?: any;
 };
-
+export type DeleteShiftsResponse = {
+  data:   [];
+  message: string;
+  httpStatus: number;
+  timestamp: string;
+  error?: any;
+};
 export type GetAllShiftsResponse = {
   data: Shift[];
   message: string;
@@ -87,3 +93,26 @@ export type CheckinSuccessResponse = {
 export type CheckinResponse =
   | { url: string }
   | { message: string; httpStatus: number; timestamp?: string; error?: any };
+
+export type CloneScheduleBetweenWeeksRequest = {
+  sourceWeek: string; // format: dd/MM/yyyy
+  targetWeek: string; // format: dd/MM/yyyy
+  updateShiftType?: boolean;
+  overwriteExisting?: boolean;
+};
+
+export type CloneScheduleResponse = {
+  data: {
+    id: number;
+    staffs: Staff[];
+    attendances: any[];
+    shiftStart: string;
+    shiftEnd: string;
+    shiftType: string;
+    note: string;
+  }[];
+  message: string;
+  httpStatus: number;
+  timestamp: string;
+  error: any;
+};

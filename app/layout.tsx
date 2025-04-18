@@ -14,6 +14,11 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: 'Laklu Restaurant Management',
   description: 'Laklu Restaurant Management System',
+  other: {
+    'Cache-Control': 'no-store, max-age=0, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+  },
 };
 
 export default function RootLayout({
@@ -23,6 +28,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="white" data-theme="white">
+      <head>
+        <meta httpEquiv="Cache-Control" content="no-store, max-age=0, must-revalidate" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
+      </head>
       <body className={inter.className}>
         <div
           id="header-secondary-portal"

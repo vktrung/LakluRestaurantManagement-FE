@@ -99,7 +99,10 @@ export async function middleware(request: NextRequest) {
       }
     }
     // Nếu không có token hoặc token không hợp lệ, cho phép truy cập trang login
-    return NextResponse.next();
+    const response = NextResponse.next();
+    // Thêm header để không cache trên trang login
+    response.headers.set('Cache-Control', 'no-store, max-age=0');
+    return response;
   }
 
   // Xử lý các route khác (route được bảo vệ)
@@ -117,6 +120,7 @@ export async function middleware(request: NextRequest) {
       {
         headers: {
           Authorization: `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store',
         },
       },
     );
@@ -164,11 +168,19 @@ export async function middleware(request: NextRequest) {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set('x-user-data', base64UserData);
 
-    return NextResponse.next({
+    // Thêm headers Cache-Control để đảm bảo không cache trang sau khi xác thực
+    const response = NextResponse.next({
       request: {
         headers: requestHeaders,
       },
     });
+    
+    // Thêm header Cache-Control vào response để ngăn cache
+    response.headers.set('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    
+    return response;
   } catch (error) {
     console.error('[Middleware] Authentication middleware error:', error);
     // Redirect về trang login nếu có lỗi

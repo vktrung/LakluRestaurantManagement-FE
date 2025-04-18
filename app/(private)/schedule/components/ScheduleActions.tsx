@@ -17,7 +17,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { format, addWeeks, subWeeks, startOfWeek, setDay } from 'date-fns';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -217,10 +216,12 @@ export default function ScheduleActions({
               <Label htmlFor="updateShiftType" className="cursor-pointer">
                 Cập nhật loại ca làm
               </Label>
-              <Switch
+              <input
+                type="checkbox"
                 id="updateShiftType"
                 checked={updateShiftType}
-                onCheckedChange={setUpdateShiftType}
+                onChange={e => setUpdateShiftType(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
             </div>
 
@@ -228,10 +229,12 @@ export default function ScheduleActions({
               <Label htmlFor="overwriteExisting" className="cursor-pointer">
                 Ghi đè ca làm hiện có
               </Label>
-              <Switch
+              <input
+                type="checkbox"
                 id="overwriteExisting"
                 checked={overwriteExisting}
-                onCheckedChange={setOverwriteExisting}
+                onChange={e => setOverwriteExisting(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
             </div>
           </div>

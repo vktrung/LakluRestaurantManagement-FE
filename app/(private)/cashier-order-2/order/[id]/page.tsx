@@ -340,6 +340,45 @@ export default function ReservationOrdersPage() {
     }
   }, [refetch, reservationId])
 
+  // Thêm xử lý lỗi ChunkLoadError - tự động tải lại trang khi gặp lỗi
+  useEffect(() => {
+    // Kiểm tra xem đã refresh trước đó chưa
+    const hasRefreshed = JSON.parse(
+      window.sessionStorage.getItem('chunk-error-refreshed') || 'false'
+    );
+
+    // Hàm xử lý lỗi
+    const handleChunkError = (event: ErrorEvent) => {
+      // Kiểm tra lỗi có phải là ChunkLoadError không
+      if (event.error && event.error.name === 'ChunkLoadError') {
+        console.error('Lỗi tải chunk:', event.error);
+        
+        if (!hasRefreshed) {
+          // Đánh dấu đã refresh
+          window.sessionStorage.setItem('chunk-error-refreshed', 'true');
+          // Tải lại trang
+          window.location.reload();
+        } else {
+          // Đã thử tải lại rồi mà vẫn lỗi, reset trạng thái để lần sau còn thử lại
+          window.sessionStorage.setItem('chunk-error-refreshed', 'false');
+        }
+      }
+    };
+
+    // Đăng ký sự kiện lỗi
+    window.addEventListener('error', handleChunkError);
+
+    // Reset trạng thái refresh nếu trang tải thành công
+    if (hasRefreshed) {
+      window.sessionStorage.setItem('chunk-error-refreshed', 'false');
+    }
+
+    // Hủy đăng ký khi unmount
+    return () => {
+      window.removeEventListener('error', handleChunkError);
+    };
+  }, []);
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "Đang chờ":
@@ -737,17 +776,42 @@ export default function ReservationOrdersPage() {
                     variant="outline"
                     size="sm"
                     className="w-full border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100 flex items-center justify-center gap-2"
-                    onClick={() => handlePrintTempBill({
-                      orderItems: order.orderItems.map((item) => ({
-                        id: item.orderItemId,
-                        dishName: item.dish.name,
-                        quantity: item.quantity,
-                        price: item.dish.price,
-                      })),
-                      subtotal: order.orderItems.reduce((total, item) => total + (item.dish.price * item.quantity), 0),
-                      tableNumber: order.tableNumber || reservationId,
-                      date: order.updatedAt,
-                    })}
+                    onClick={() => {
+                      // Đảm bảo dữ liệu hợp lệ trước khi in
+                      try {
+                        const validOrderItems = order.orderItems.filter(item => 
+                          item && item.dish && item.dish.name && item.quantity
+                        );
+                        
+                        if (!validOrderItems.length) {
+                          toast.error("Không thể in phiếu tạm tính", {
+                            description: "Không có món ăn hợp lệ trong đơn hàng"
+                          });
+                          return;
+                        }
+                        
+                        const tempBillData: TempBillData = {
+                          orderItems: validOrderItems.map((item) => ({
+                            id: item.orderItemId,
+                            dishName: item.dish.name,
+                            quantity: item.quantity,
+                            price: item.dish.price,
+                          })),
+                          subtotal: validOrderItems.reduce((total, item) => 
+                            total + (item.dish.price * item.quantity), 0
+                          ),
+                          tableNumber: order.tableNumber || reservationId,
+                          date: order.updatedAt,
+                        };
+                        
+                        handlePrintTempBill(tempBillData);
+                      } catch (error) {
+                        console.error("Lỗi khi chuẩn bị dữ liệu in:", error);
+                        toast.error("Không thể in phiếu tạm tính", {
+                          description: "Đã xảy ra lỗi khi chuẩn bị dữ liệu"
+                        });
+                      }
+                    }}
                   >
                     <Printer className="h-4 w-4" />
                     In phiếu tạm tính

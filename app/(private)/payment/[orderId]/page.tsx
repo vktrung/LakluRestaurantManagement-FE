@@ -22,6 +22,7 @@ import { useCreateNewItemByOrderIdMutation, useDeleteOrderItemByIdMutation } fro
 import { formatPrice } from "@/lib/utils"
 import { getTokenFromCookie } from "@/utils/token"
 import { PaymentStatus } from "@/features/payment/types"
+import { toast, Toaster } from "sonner"
 
 import { PaymentMethod } from "../components/PaymentMethod"
 import { VatInput } from "../components/VatInput"
@@ -36,7 +37,6 @@ import type { OrderItem, PaymentResponse } from "@/features/payment/types"
 import type { Menu, MenuItem } from '@/features/menu/types'
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { toast } from "sonner"
 
 // Extended MenuItem interface with additional properties needed for our component
 interface ExtendedMenuItem extends MenuItem {
@@ -123,10 +123,10 @@ export default function IntegratedPaymentPage() {
   const orderIdNumber = Number(orderIdValue)
 
   // Lấy danh sách món ăn có sẵn trong order
-  const { data: existingOrderItemsData, isLoading: isExistingOrderItemsLoading, refetch: refetchOrderItems } = 
+  const { data: existingOrderItemsData, isLoading: isExistingOrderItemsLoading, refetch: refetchOrderItems } =
     useGetOrderItemsInOrderQuery(orderIdNumber, {
-    skip: !orderIdNumber || isNaN(orderIdNumber)
-  })
+      skip: !orderIdNumber || isNaN(orderIdNumber)
+    })
 
   // === MENU SELECTION SECTION ===
   const { data: menusData, isLoading: isMenusLoading } = useGetMenusQuery()
@@ -186,19 +186,19 @@ export default function IntegratedPaymentPage() {
 
   // Tạo một phiên bản tùy chỉnh của router để chặn navigation
   const originalPush = useRef(router.push).current;
-  
+
   // Hàm push tùy chỉnh
   const customRouterPush = useCallback((href: string) => {
     // Các URLs cho phép chuyển hướng ngay mà không cần xác nhận
     const allowedUrls = [pendingNavigation];
-    
+
     // Kiểm tra nếu cần hiển thị dialog xác nhận
     if (!paymentCompleted && (existingOrderItemsData?.data?.length ?? 0) > 0 && !allowedUrls.includes(href)) {
       setPendingNavigation(href);
       setIsModalOpen(true);
       return Promise.resolve(false);
     }
-    
+
     // Nếu không cần xác nhận, thực hiện navigation bình thường
     return originalPush(href);
   }, [originalPush, paymentCompleted, existingOrderItemsData?.data, pendingNavigation]);
@@ -238,7 +238,7 @@ export default function IntegratedPaymentPage() {
   useEffect(() => {
     // @ts-ignore - Override router method temporarily
     router.push = customRouterPush;
-    
+
     return () => {
       // @ts-ignore - Restore original method when unmounting
       router.push = originalPush;
@@ -269,7 +269,7 @@ export default function IntegratedPaymentPage() {
       originalPush(path);
       return;
     }
-    
+
     if (selectedMenuId) {
       // Hiển thị modal xác nhận
       setPendingNavigation(path);
@@ -296,7 +296,7 @@ export default function IntegratedPaymentPage() {
     if (existingOrderItemsData?.data && !isExistingOrderItemsLoading) {
       // Directly use the fetched data structure if OrderSummary is compatible
       // Or map if needed, e.g.:
-      const itemsForSummary: OrderItem[] = existingOrderItemsData.data.map(item => ({ 
+      const itemsForSummary: OrderItem[] = existingOrderItemsData.data.map(item => ({
         id: item.id, // Use id
         dishName: item.dishName || "Unknown", // Use dishName
         quantity: item.quantity,
@@ -317,19 +317,19 @@ export default function IntegratedPaymentPage() {
       // Không hiển thị thông báo
       return;
     }
-    
+
     // Backend handles merging/incrementing, so always call create
     try {
       await createNewItemByOrderId({ // Use the new hook
-        orderId: orderIdNumber, 
+        orderId: orderIdNumber,
         newOrderItemRequest: { // Pass the request body
           menuItemId: item.id,
           quantity: 1 // Always add 1, backend handles logic
         }
       }).unwrap()
-      
+
       // Refetch after successful add/update
-      refetchOrderItems() 
+      refetchOrderItems()
     } catch (error) {
       console.error('Failed to add item to order', error)
       setErrorMessage('Không thể thêm món ăn vào đơn hàng. Vui lòng thử lại.')
@@ -338,14 +338,14 @@ export default function IntegratedPaymentPage() {
 
   // Thay đổi số lượng món và cập nhật lên server
   const changeItemQuantity = async (itemId: number, newQuantity: number) => {
-    if (isPaymentCreated) return; 
-    
+    if (isPaymentCreated) return;
+
     // Kiểm tra itemId có tồn tại không
     if (!itemId) {
       console.error('ItemId is undefined or null');
       return;
     }
-    
+
     // No need to find item in local state
     console.log(`Requesting update for item id=${itemId}, newQuantity=${newQuantity}`);
 
@@ -357,9 +357,9 @@ export default function IntegratedPaymentPage() {
           id: itemId,
           data: { quantity: 0 }
         }).unwrap();
-        
+
         console.log("Update response:", response);
-        
+
         refetchOrderItems(); // Refetch after update
       } else {
         // Nếu số lượng > 0, cập nhật số lượng mới
@@ -367,14 +367,14 @@ export default function IntegratedPaymentPage() {
           id: itemId,
           data: { quantity: newQuantity }
         });
-        
+
         const response = await updateOrderItemQuantity({
           id: itemId,
           data: { quantity: newQuantity }
         }).unwrap();
-        
+
         console.log("Update response:", response);
-        
+
         refetchOrderItems(); // Refetch after update
       }
     } catch (error) {
@@ -455,7 +455,7 @@ export default function IntegratedPaymentPage() {
         vat: vatRate,
         voucherCode: voucherCode || undefined,
       }).unwrap()
-      
+
       if (result.data?.paymentId) {
         setPaymentId(result.data.paymentId)
       }
@@ -465,22 +465,31 @@ export default function IntegratedPaymentPage() {
       setVat(String(result.data?.vat || "0"))
       setVoucherValue(result.data?.voucherValue || null)
       setIsPaymentCreated(true)
-      
+
       // Xóa dữ liệu đã lưu khi tạo thanh toán thành công
       clearSavedPaymentData();
-      
+
       // Nếu chọn in hóa đơn tự động và thanh toán ngay
       if (shouldPrintBill && result.data?.paymentId && paymentStatus === "PAID") {
         handleNavigation(`/bill/${result.data.paymentId}`);
       }
     } catch (error: any) {
       const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định."
-      if (message.includes("voucher") || message.includes("Voucher") || message.includes("không tìm thấy")) {
+      if (message.includes("foreign key constraint fails") || message.includes("Cannot delete or update a parent row")) {
+        toast.error("Đơn hàng đã được thanh toán, không thể thanh toán lại!")
+        setPaymentCompleted(true)
+        setIsCancelButtonDisabled(true)
+      } else if (message.includes("voucher") || message.includes("Voucher") || message.includes("không tìm thấy")) {
         setVoucherError("Mã giảm giá không hợp lệ hoặc không tồn tại")
         setErrorMessage(null)
       } else {
-        setErrorMessage(`Lỗi tạo thanh toán: ${message}`)
-        setVoucherError(null)
+        if (message.includes("foreign key constraint fails") || message.includes("Cannot delete or update a parent row")) {
+          toast.error("Đơn hàng đã được thanh toán, không thể thanh toán lại!")
+          setPaymentCompleted(true)
+        } else {
+          toast.error(`Lỗi tạo thanh toán: ${message}`)
+          setVoucherError(null)
+        }
       }
     }
   }
@@ -495,36 +504,20 @@ export default function IntegratedPaymentPage() {
         vat: vatRate,
         voucherCode: voucherCode || undefined,
       }).unwrap()
-      
+
       if (result.data?.paymentId) {
         setPaymentId(result.data.paymentId)
         setTotalAmount(String(result.data?.amountPaid || "0"))
         setVat(String(result.data?.vat || "0"))
         setVoucherValue(result.data?.voucherValue || null)
         setIsPaymentCreated(true)
-        
-        // Sau đó xử lý thanh toán ngay
+
+        // Remove auto payment logic for cash
         if (paymentMethod === "CASH") {
-          try {
-            // Giả định khách trả đúng số tiền
-            const payResult = await processCashPayment({
-              paymentId: result.data.paymentId,
-              receivedAmount: Number(result.data.amountPaid),
-            }).unwrap()
-            
-            setErrorMessage(`Thanh toán thành công: Tiền thối: ${payResult.data?.change || "0"}`)
-            // Đánh dấu thanh toán đã hoàn tất
-            setPaymentCompleted(true)
-            
-            // In hóa đơn trực tiếp thay vì mở trang mới
-            handlePrintBill(result.data.paymentId);
-          } catch (error: any) {
-            const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định."
-            setErrorMessage(`Thanh toán thất bại: ${message}`)
-          }
+          // Set received amount to total amount for convenience
+          setReceivedAmount(String(result.data.amountPaid))
         } else {
-          // Đối với chuyển khoản, chúng ta vẫn hiển thị QR code
-          setErrorMessage("Đã tạo yêu cầu thanh toán. Vui lòng quét mã QR để thanh toán.")
+          toast.info("Đã tạo yêu cầu thanh toán. Vui lòng quét mã QR để thanh toán.")
         }
       }
     } catch (error: any) {
@@ -533,8 +526,13 @@ export default function IntegratedPaymentPage() {
         setVoucherError("Mã giảm giá không hợp lệ hoặc không tồn tại")
         setErrorMessage(null)
       } else {
-        setErrorMessage(`Lỗi tạo thanh toán: ${message}`)
-        setVoucherError(null)
+        if (message.includes("foreign key constraint fails") || message.includes("Đơn hàng đã được thanh toán")) {
+          toast.error("Đơn hàng đã được thanh toán, không thể thanh toán lại!")
+          setPaymentCompleted(true)
+        } else {
+          toast.error(`Lỗi tạo thanh toán: ${message}`)
+          setVoucherError(null)
+        }
       }
     }
   }
@@ -552,237 +550,20 @@ export default function IntegratedPaymentPage() {
       setErrorMessage(`Thanh toán thành công: Tiền thối: ${result.data?.change || "0"}`)
       // Đánh dấu thanh toán đã hoàn tất
       setPaymentCompleted(true)
+      // Only print bill if shouldPrintBill is true
+      if (shouldPrintBill) {
+        handlePrintBill(paymentId)
+      }
     } catch (error: any) {
       const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định."
-      setErrorMessage(`Thanh toán thất bại: ${message}`)
+      if (message.includes("foreign key constraint fails") || message.includes("Cannot delete or update a parent row")) {
+        toast.error("Đơn hàng đã được thanh toán, không thể thanh toán lại!")
+        setPaymentCompleted(true)
+      } else {
+        setErrorMessage(`Thanh toán thất bại: ${message}`)
+      }
     }
   }
-
-  // Hàm in phiếu tạm tính trực tiếp
-  const handlePrintTempBill = (tempBillData: TempBillData): void => {
-    // Use tempBillData directly passed to the function
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Phiếu tạm tính - Bàn ${tempBillData.tableNumber}</title>
-        <style>
-          @page {
-            size: 72mm auto;
-            margin: 0;
-          }
-          
-          body {
-            font-family: monospace;
-            width: 72mm;
-            max-width: 72mm;
-            margin: 0 auto;
-            padding: 0;
-            background-color: white;
-            color: black;
-            font-size: 12px;
-          }
-          
-          .print-bill {
-            width: 72mm;
-            max-width: 72mm;
-            padding: 2mm;
-            font-size: 12px;
-            box-sizing: border-box;
-            margin: 0 auto;
-          }
-          
-          h1 { 
-            font-size: 14px; 
-            margin: 5px 0; 
-            text-align: center;
-            font-weight: bold;
-          }
-          
-          h2 { 
-            font-size: 13px; 
-            margin: 4px 0; 
-            text-align: center;
-            font-weight: semibold;
-          }
-          
-          p { 
-            font-size: 11px; 
-            margin: 2px 0; 
-          }
-          
-          .text-center { text-align: center; }
-          .text-right { text-align: right; }
-          
-          .grid {
-            display: table;
-            width: 100%;
-            table-layout: fixed;
-            border-collapse: collapse;
-          }
-          
-          .grid > div {
-            display: table-row;
-          }
-          
-          .grid > div > div {
-            display: table-cell;
-            padding: 1mm 0;
-          }
-          
-          .font-mono {
-            font-family: monospace;
-            font-size: 11px;
-            letter-spacing: -0.5px;
-          }
-          
-          .truncate {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-          
-          .wrap-text {
-            white-space: normal !important;
-            word-break: normal !important;
-            overflow-wrap: break-word !important;
-            hyphens: none !important;
-            overflow: visible !important;
-            text-overflow: initial !important;
-            max-width: 100px !important;
-            display: table-cell !important;
-          }
-          
-          .border-t {
-            border-top: 1px solid black;
-            margin: 2mm 0;
-            display: block;
-            width: 100%;
-          }
-          
-          .border-dashed {
-            border-top: 1px dashed black;
-            margin: 2mm 0;
-            display: block;
-            width: 100%;
-          }
-          
-          .col-span-1 { width: 8%; }
-          .col-span-3 { width: 24%; }
-          .col-span-4 { width: 32%; }
-          .col-span-5 { width: 40%; }
-          
-          .space-y-1 > * + * {
-            margin-top: 0.25rem;
-          }
-          
-          .mb-1 { margin-bottom: 0.25rem; }
-          .mb-2 { margin-bottom: 0.5rem; }
-          .mb-3 { margin-bottom: 0.75rem; }
-          .mt-2 { margin-top: 0.5rem; }
-          .mt-3 { margin-top: 0.75rem; }
-          .mt-4 { margin-top: 1rem; }
-          .ml-2 { margin-left: 0.5rem; }
-          
-          .gap-1 { gap: 0.25rem; }
-          
-          .font-bold { font-weight: bold; }
-          .font-semibold { font-weight: 600; }
-          
-          .text-sm { font-size: 0.875rem; }
-          .text-xs { font-size: 0.75rem; }
-          .text-md { font-size: 1rem; }
-        </style>
-      </head>
-      <body>
-        <div class="print-bill">
-          <!-- Header -->
-          <div class="text-center mb-3">
-            <h1 class="text-md font-bold">LAKLU - BIA KHÔ MỰC</h1>
-            <h2 class="text-sm font-semibold mt-2 mb-3">PHIẾU TẠM TÍNH</h2>
-          </div>
-
-          <!-- Order Info -->
-          <div class="grid gap-1 mb-3">
-            <div>
-              <div style="width: 50%;">
-                <p class="text-xs">HÓA ĐƠN: ${tempBillData.tableNumber || "—"}</p>
-              </div>
-              <div style="width: 50%; text-align: right;">
-                <p class="text-xs">NGÀY: ${new Date(tempBillData.date).toLocaleDateString()}</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Table Header -->
-          <div class="grid mb-1">
-            <div>
-              <div class="col-span-1 text-xs font-semibold">TT</div>
-              <div class="col-span-4 text-xs font-semibold">Tên món</div>
-              <div class="col-span-1 text-xs font-semibold text-center">SL</div>
-              <div class="col-span-3 text-xs font-semibold text-right">Đơn giá</div>
-              <div class="col-span-3 text-xs font-semibold text-right">T.Tiền</div>
-            </div>
-          </div>
-
-          <!-- Divider -->
-          <div class="border-t mb-1"></div>
-
-          <!-- Items -->
-          ${tempBillData.orderItems.map((item: TempOrderItem, index: number) => `
-          <div class="grid mb-1">
-            <div>
-              <div class="col-span-1 text-xs">${index + 1}</div>
-              <div class="col-span-4 text-xs wrap-text" style="white-space: normal; word-break: normal; overflow-wrap: break-word;">${item.dishName}</div>
-              <div class="col-span-1 text-xs text-center">${item.quantity}</div>
-              <div class="col-span-3 text-xs text-right font-mono">${formatPrice(Number(item.price), { currency: false, minLength: 8 })}</div>
-              <div class="col-span-3 text-xs text-right font-mono">${formatPrice(Number(item.price) * item.quantity, { currency: false, minLength: 8 })}</div>
-            </div>
-          </div>
-          `).join('')}
-
-          <!-- Divider -->
-          <div class="border-t border-dashed mt-2 mb-2"></div>
-
-          <!-- Payment Summary -->
-          <div class="text-right space-y-1 mb-3">
-            <p class="text-xs font-bold">Tổng tạm tính: <span class="font-mono ml-2">${formatPrice(tempBillData.subtotal)} VND</span></p>
-          </div>
-
-          <!-- Footer -->
-          <div class="text-center mt-4">
-            <p class="text-xs">Phiếu tạm tính - Chưa thanh toán</p>
-            <p class="text-xs mt-2">Cảm ơn quý khách!</p>
-          </div>
-        </div>
-        <script>
-          // Auto print when loaded
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-              // Optional: Close the window after printing
-              // setTimeout(function() { window.close(); }, 500);
-            }, 500);
-          };
-        </script>
-      </body>
-      </html>
-    `;
-
-    // Create a new window with only the bill content
-    const printWindow = window.open('', '_blank', 'width=400,height=600');
-    if (!printWindow) {
-      alert('Vui lòng cho phép cửa sổ pop-up để in phiếu tạm tính');
-      return;
-    }
-
-    // Write to the new window and print
-    printWindow.document.open();
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-  };
 
   // Hàm in hóa đơn trực tiếp tại trang hiện tại
   const handlePrintBill = (paymentId: number): void => {
@@ -803,11 +584,11 @@ export default function IntegratedPaymentPage() {
             'Authorization': `Bearer ${getTokenFromCookie()}`,
           }
         });
-        
+
         if (!response.ok) {
           throw new Error('Không thể lấy thông tin hóa đơn');
         }
-        
+
         const billResponse = await response.json();
         const bill = billResponse.data;
 
@@ -1111,11 +892,11 @@ export default function IntegratedPaymentPage() {
       // Bắt sự kiện click trên thẻ <a>
       const target = e.target as HTMLElement;
       const linkElement = target.closest('a');
-      
+
       if (linkElement && pageRef.current?.contains(linkElement)) {
         // Lấy href từ link
         const href = linkElement.getAttribute('href');
-        
+
         // Bỏ qua nếu là các links đặc biệt
         if (href && href !== '#' && !href.startsWith('tel:') && !href.startsWith('mailto:')) {
           e.preventDefault();
@@ -1144,7 +925,7 @@ export default function IntegratedPaymentPage() {
   // Thêm hàm xử lý hủy thanh toán
   const handleCancelPayment = async () => {
     if (!paymentId) return;
-    
+
     try {
       setIsCancelButtonDisabled(true);
       await cancelPayment(paymentId).unwrap();
@@ -1159,15 +940,21 @@ export default function IntegratedPaymentPage() {
       }, 2000);
     } catch (error: any) {
       const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định.";
-      setErrorMessage(`Lỗi hủy thanh toán: ${message}`);
-      setIsCancelButtonDisabled(false);
+      if (message.includes("foreign key constraint fails") || message.includes("Cannot delete or update a parent row")) {
+        toast.error("Đơn hàng đã được thanh toán, không thể hủy thanh toán!");
+        setPaymentCompleted(true);
+        setIsCancelButtonDisabled(true);
+      } else {
+        setErrorMessage(`Lỗi hủy thanh toán: ${message}`);
+        setIsCancelButtonDisabled(false);
+      }
     }
   };
 
   // Thêm hàm xử lý hoàn thành thanh toán
   const handleCompletePayment = async () => {
     if (!paymentId) return;
-    
+
     try {
       setIsCompletingPayment(true);
       await completePayment(paymentId).unwrap();
@@ -1185,13 +972,14 @@ export default function IntegratedPaymentPage() {
 
   return (
     <div className="container mx-auto p-4" ref={pageRef}>
+      <Toaster position="top-center" richColors />
       {/* Modal xác nhận rời trang */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Xác nhận rời khỏi trang</h3>
-              <button 
+              <button
                 onClick={cancelNavigation}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -1202,13 +990,13 @@ export default function IntegratedPaymentPage() {
               <p className="text-gray-700">Bạn có chắc chắn muốn rời khỏi trang thanh toán? Thông tin thanh toán có thể bị mất.</p>
             </div>
             <div className="flex gap-2 justify-end">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={cancelNavigation}
               >
                 Ở lại
               </Button>
-              <Button 
+              <Button
                 variant="destructive"
                 onClick={confirmNavigation}
               >
@@ -1225,7 +1013,7 @@ export default function IntegratedPaymentPage() {
           <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Xác nhận hoàn thành thanh toán</h3>
-              <button 
+              <button
                 onClick={() => setIsCompletePaymentModalOpen(false)}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -1236,13 +1024,13 @@ export default function IntegratedPaymentPage() {
               <p className="text-gray-700">Bạn có chắc chắn muốn hoàn thành thanh toán này? Hành động này không thể hoàn tác.</p>
             </div>
             <div className="flex gap-2 justify-end">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setIsCompletePaymentModalOpen(false)}
               >
                 Hủy
               </Button>
-              <Button 
+              <Button
                 variant="default"
                 onClick={handleCompletePayment}
                 disabled={isCompletingPayment}
@@ -1285,7 +1073,7 @@ export default function IntegratedPaymentPage() {
           {errorMessage}
         </div>
       )}
-      
+
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Menu Selection Column */}
         <div className="lg:w-2/3">
@@ -1350,7 +1138,7 @@ export default function IntegratedPaymentPage() {
                         <CardContent className="p-3">
                           <h3 className="font-medium">{item.dish?.name || 'Không có tên'}</h3>
                           <p className="text-sm text-gray-500 mt-1">{item.price.toLocaleString('vi-VN')} VND</p>
-                          <Button 
+                          <Button
                             onClick={() => addItemToOrder(item)}
                             className="w-full mt-2"
                             size="sm"
@@ -1407,9 +1195,9 @@ export default function IntegratedPaymentPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
+                          <Button
+                            variant="outline"
+                            size="icon"
                             className="h-7 w-7"
                             onClick={() => {
                               if (!item.id) {
@@ -1424,9 +1212,9 @@ export default function IntegratedPaymentPage() {
                             <Minus className="h-4 w-4" />
                           </Button>
                           <span className="w-8 text-center">{item.quantity}</span>
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
+                          <Button
+                            variant="outline"
+                            size="icon"
                             className="h-7 w-7"
                             onClick={() => {
                               if (!item.id) {
@@ -1440,10 +1228,10 @@ export default function IntegratedPaymentPage() {
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="destructive" 
-                            size="icon" 
-                            className="h-7 w-7" 
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="h-7 w-7"
                             onClick={() => handleDeleteItem(item.orderItemId)}
                             disabled={isUpdatingOrderItem || isPaymentCreated || isDeletingOrderItem || isPaymentCancelled}
                           >
@@ -1467,12 +1255,12 @@ export default function IntegratedPaymentPage() {
                   <PaymentMethod selectedMethod={paymentMethod} onChange={setPaymentMethod} />
                   <div className="grid md:grid-cols-2 gap-4">
                     <VatInput vatRate={vatRate} vatAmount={vat} onChange={setVatRate} />
-                    <VoucherInput 
-                      voucherCode={voucherCode} 
+                    <VoucherInput
+                      voucherCode={voucherCode}
                       onChange={(code) => {
                         setVoucherCode(code)
                         setVoucherError(null)
-                      }} 
+                      }}
                       error={voucherError}
                     />
                   </div>
@@ -1490,7 +1278,7 @@ export default function IntegratedPaymentPage() {
                       In hóa đơn sau khi thanh toán
                     </label>
                   </div>
-                  
+
                   <div className="flex gap-2">
                     <Button
                       onClick={handleQuickPayment}
@@ -1523,7 +1311,7 @@ export default function IntegratedPaymentPage() {
                     <Button
                       variant="destructive"
                       onClick={handleCancelPayment}
-                      disabled={isCancelling || isCancelButtonDisabled}
+                      disabled={isCancelling || isCancelButtonDisabled || paymentCompleted}
                       className="w-full"
                     >
                       {isCancelling ? "Đang hủy..." : "Hủy thanh toán"}
@@ -1548,7 +1336,7 @@ export default function IntegratedPaymentPage() {
                             placeholder="Nhập số tiền nhận được"
                             className="w-full p-2 border rounded"
                             required
-                            disabled={isPaymentCancelled}
+                            disabled={isPaymentCancelled || paymentCompleted}
                           />
                           {receivedAmount && Number(receivedAmount) >= Number(totalAmount) && (
                             <div className="mt-2 text-sm text-green-600">
@@ -1556,7 +1344,7 @@ export default function IntegratedPaymentPage() {
                             </div>
                           )}
                         </div>
-                        
+
                         {errorMessage && errorMessage.includes("thành công") && shouldPrintBill ? (
                           <div className="space-y-3">
                             <Button
@@ -1575,7 +1363,12 @@ export default function IntegratedPaymentPage() {
                           <Button
                             onClick={handleCashPayment}
                             disabled={
-                              isProcessing || !paymentId || !receivedAmount || Number(receivedAmount) < Number(totalAmount) || isPaymentCancelled
+                              isProcessing ||
+                              !paymentId ||
+                              !receivedAmount ||
+                              Number(receivedAmount) < Number(totalAmount) ||
+                              isPaymentCancelled ||
+                              paymentCompleted
                             }
                             className="w-full"
                           >
@@ -1620,7 +1413,7 @@ export default function IntegratedPaymentPage() {
                                 Hoàn thành thanh toán
                               </Button>
                             )}
-                            
+
                             <div className="mt-4 py-2 px-4 rounded-full flex items-center justify-center gap-2">
                               {paymentStatus === "PENDING" && (
                                 <div className="bg-yellow-50 text-yellow-700 py-2 px-4 rounded-full flex items-center">
@@ -1676,7 +1469,7 @@ export default function IntegratedPaymentPage() {
                   )}
                 </div>
               )}
-              
+
               <Button
                 variant="outline"
                 onClick={() => handleNavigation('/cashier-order-2/order')}

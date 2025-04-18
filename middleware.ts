@@ -172,14 +172,5 @@ export async function middleware(request: NextRequest) {
 
 // Áp dụng middleware cho tất cả các routes
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next (static files)
-     * - api (API routes)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next|api|favicon\\.ico).*)',
-  ],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };

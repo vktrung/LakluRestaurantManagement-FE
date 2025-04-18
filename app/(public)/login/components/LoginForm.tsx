@@ -63,6 +63,7 @@ export default function LoginForm() {
             height={150}
             priority
             className="h-auto"
+            style={{ width: "auto", height: "auto" }}
           />
         </div>
       </div>
@@ -79,6 +80,7 @@ export default function LoginForm() {
               height={100}
               priority
               className="h-auto"
+              style={{ width: "auto", height: "auto" }}
             />
           </div>
 

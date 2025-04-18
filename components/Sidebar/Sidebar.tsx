@@ -300,10 +300,15 @@ export function Sidebar({ className, ...props }: SidebarProps) {
     refetchOnMountOrArgChange: true
   });
   
-  // Force refetch khi component được mount
+  // Kiểm tra đường dẫn hiện tại
+  const isLoginPage = typeof window !== 'undefined' && window.location.pathname.includes('/login');
+  
+  // Force refetch khi component được mount nhưng chỉ khi không ở trang login
   React.useEffect(() => {
-    refetch();
-  }, [refetch]);
+    if (!isLoginPage) {
+      refetch();
+    }
+  }, [refetch, isLoginPage]);
   
   // Determine which menu items to show based on user role
   const userRoles = data?.data?.roleNames || [];

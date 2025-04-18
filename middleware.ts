@@ -58,6 +58,7 @@ export async function middleware(request: NextRequest) {
   // Bỏ qua các route public
   if (
     pathname.startsWith('/_next') ||
+    pathname.includes('/_next/') ||
     pathname.startsWith('/api') ||
     pathname.includes('.')
   ) {
@@ -171,5 +172,14 @@ export async function middleware(request: NextRequest) {
 
 // Áp dụng middleware cho tất cả các routes
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next (static files)
+     * - api (API routes)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next|api|favicon\\.ico).*)',
+  ],
 };

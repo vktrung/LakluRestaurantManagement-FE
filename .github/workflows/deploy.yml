@@ -96,8 +96,8 @@ jobs:
               echo "],"
               echo "---"
               
-              # Khởi động lại ứng dụng
-              pm2 restart cmslaklu || pm2 start ecosystem.config.js
+              # Khởi động lại ứng dụng bằng reload để giảm thiểu downtime
+              pm2 reload cmslaklu || pm2 start ecosystem.config.js
               
               echo "Deployment successful!"
               echo "Build ID: $BUILD_ID"

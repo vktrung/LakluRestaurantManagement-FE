@@ -339,7 +339,6 @@ export default function ReservationOrdersPage() {
       window.removeEventListener("focus", handleFocus)
     }
   }, [refetch, reservationId])
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "Đang chờ":
@@ -748,7 +747,7 @@ export default function ReservationOrdersPage() {
                       tableNumber: order.tableNumber || reservationId,
                       date: order.updatedAt,
                     })}
-                  >
+                    >
                     <Printer className="h-4 w-4" />
                     In phiếu tạm tính
                   </Button>

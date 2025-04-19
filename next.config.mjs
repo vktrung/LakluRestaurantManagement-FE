@@ -89,9 +89,11 @@ const nextConfig = {
   experimental: {
     // Tắt các tính năng thử nghiệm không cần thiết
     serverActions: true,
-    // Cho phép component client được tải theo trình tự hợp lý
-    optimizeCss: true,
+    // Tắt optimizeCss để tránh lỗi critters
+    optimizeCss: false,
   },
+  // Tắt việc tạo trang tĩnh cho các trang lỗi mặc định
+  output: 'standalone',  // Sử dụng standalone output để đóng gói dependencies
 };
 
 export default nextConfig;

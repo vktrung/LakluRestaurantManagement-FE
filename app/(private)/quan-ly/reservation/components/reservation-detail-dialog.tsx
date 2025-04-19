@@ -18,6 +18,8 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { ReservationResponse, ReservationStatus } from "@/features/reservation/type"
 import { useRouter } from "next/navigation"
+import { useUpdateReservationMutation } from "@/features/reservation/reservationApiSlice"
+import { toast } from "sonner"
 
 // Function to get status badge color
 const getStatusColor = (status: ReservationStatus) => {
@@ -65,6 +67,7 @@ interface ReservationDetailDialogProps {
 export function ReservationDetailDialog({ reservation, isOpen, onClose }: ReservationDetailDialogProps) {
   const router = useRouter()
   const [isNavigating, setIsNavigating] = useState(false)
+  const [updateReservation, { isLoading: isUpdating }] = useUpdateReservationMutation()
 
   // Xử lý chuyển hướng sau khi đóng dialog - sử dụng useCallback để tránh tạo hàm mới
   const handleEdit = useCallback(() => {
@@ -78,6 +81,33 @@ export function ReservationDetailDialog({ reservation, isOpen, onClose }: Reserv
     onClose()
     router.push(`/quan-ly/reservation/${reservation.id}`)
   }, [onClose, router, reservation.id])
+
+  // Xử lý cập nhật thông tin reservation
+  const handleUpdateReservation = useCallback(async () => {
+    try {
+      // Tạo dữ liệu cập nhật theo định dạng API mong đợi
+      const updateData = {
+        customerName: reservation.detail.customerName,
+        customerPhone: reservation.detail.customerPhone,
+        reservationTime: reservation.detail.reservationTime,
+        checkIn: reservation.detail.checkIn,
+        numberOfPeople: reservation.detail.numberOfPeople,
+        tableIds: reservation.detail.tables?.map(table => table.id) || []
+      }
+      
+      // Gọi API cập nhật
+      await updateReservation({ id: reservation.id, data: updateData }).unwrap()
+      
+      // Hiển thị thông báo thành công
+      toast.success("Cập nhật thông tin đặt bàn thành công!")
+      
+      // Đóng dialog
+      onClose()
+    } catch (error) {
+      // Hiển thị thông báo lỗi
+      toast.error("Không thể cập nhật thông tin đặt bàn. Vui lòng thử lại!")
+    }
+  }, [reservation, updateReservation, onClose])
 
   // Reset trạng thái khi dialog đóng hoặc mở
   useEffect(() => {
@@ -181,16 +211,16 @@ export function ReservationDetailDialog({ reservation, isOpen, onClose }: Reserv
               </Button>
             )}
             {reservation.detail.status === "PENDING" && (
-              <Button variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800">
-                Xác nhận
+              <Button 
+                variant="outline" 
+                className="bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+                onClick={handleUpdateReservation}
+                disabled={isUpdating}
+              >
+                {isUpdating ? "Đang cập nhật..." : "Cập nhật"}
               </Button>
             )}
-            {!reservation.detail.timeOut && reservation.detail.status !== "CANCELLED" && (
-              <Button variant="outline" className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800">
-                Check Out
-              </Button>
-            )}
-            <Button onClick={handleEdit}>
+            <Button onClick={handleEdit} disabled={isUpdating}>
               Chỉnh sửa
             </Button>
           </div>

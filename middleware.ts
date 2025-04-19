@@ -66,12 +66,14 @@ export async function middleware(request: NextRequest) {
 
   // Kiểm tra xem có token không
   const token = request.cookies.get('auth_token')?.value;
+  console.log('[Middleware] Checking auth token for path:', pathname, 'Token exists:', !!token);
 
   // Xử lý trường hợp đặc biệt cho trang login
   if (pathname === '/login') {
     // Nếu đã có token, kiểm tra xem token có hợp lệ không
     if (token) {
       try {
+        console.log('[Middleware] Validating token for login page redirect');
         const userDataResponse = await fetch(
           `${process.env.NEXT_PUBLIC_SERVER_URL}${endpoints.authMe}`,
           {
@@ -83,10 +85,13 @@ export async function middleware(request: NextRequest) {
 
         // Nếu token hợp lệ, chuyển hướng về trang dashboard
         if (userDataResponse.ok) {
+          console.log('[Middleware] Token valid, redirecting to dashboard');
           return NextResponse.redirect(new URL('/', request.url));
+        } else {
+          console.log('[Middleware] Token invalid, allowing access to login page');
         }
       } catch (error) {
-        console.error('Error checking auth for login page:', error);
+        console.error('[Middleware] Error checking auth for login page:', error);
         // Nếu có lỗi khi kiểm tra token, xóa token và cho phép truy cập trang login
         const response = NextResponse.next();
         response.cookies.delete('auth_token');
@@ -94,35 +99,42 @@ export async function middleware(request: NextRequest) {
       }
     }
     // Nếu không có token hoặc token không hợp lệ, cho phép truy cập trang login
-    return NextResponse.next();
+    const response = NextResponse.next();
+    // Thêm header để không cache trên trang login
+    response.headers.set('Cache-Control', 'no-store, max-age=0');
+    return response;
   }
 
   // Xử lý các route khác (route được bảo vệ)
   if (!token) {
     // Redirect về trang login nếu không có token
+    console.log('[Middleware] No token found, redirecting to login page');
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
   try {
     // Thực hiện request để lấy thông tin người dùng
+    console.log('[Middleware] Fetching user data with token');
     const userDataResponse = await fetch(
       `${process.env.NEXT_PUBLIC_SERVER_URL}/api/v1/auth/me`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store',
         },
       },
     );
 
     if (!userDataResponse.ok) {
       // Token không hợp lệ hoặc đã hết hạn
+      console.log('[Middleware] Token invalid or expired, redirecting to login page', userDataResponse.status);
       const response = NextResponse.redirect(new URL('/login', request.url));
       response.cookies.delete('auth_token');
       return response;
     }
 
     const userData: AuthResponse = await userDataResponse.json();
-    console.log('userData', userData);
+    console.log('[Middleware] User data fetched successfully');
 
     // Kiểm tra quyền hạn
     const isProtectedRoute = PROTECTED_ROUTES.some(route =>
@@ -142,6 +154,7 @@ export async function middleware(request: NextRequest) {
 
       if (!hasPermission) {
         // Redirect về trang dashboard nếu không có quyền
+        console.log('[Middleware] User does not have required permissions, redirecting to dashboard');
         return NextResponse.redirect(new URL('/', request.url));
       }
     }
@@ -155,13 +168,21 @@ export async function middleware(request: NextRequest) {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set('x-user-data', base64UserData);
 
-    return NextResponse.next({
+    // Thêm headers Cache-Control để đảm bảo không cache trang sau khi xác thực
+    const response = NextResponse.next({
       request: {
         headers: requestHeaders,
       },
     });
+    
+    // Thêm header Cache-Control vào response để ngăn cache
+    response.headers.set('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    
+    return response;
   } catch (error) {
-    console.error('Authentication middleware error:', error);
+    console.error('[Middleware] Authentication middleware error:', error);
     // Redirect về trang login nếu có lỗi
     const response = NextResponse.redirect(new URL('/login', request.url));
     response.cookies.delete('auth_token');

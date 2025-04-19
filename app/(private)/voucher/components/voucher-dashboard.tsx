@@ -15,10 +15,11 @@ import {
   useDeleteVoucherMutation
 } from "@/features/voucher/voucherApiSlice"
 import type { Voucher, VoucherRequest } from "@/features/voucher/type"
+import { toast } from "sonner"
 
 export default function VoucherDashboard() {
   // Queries & Mutations
-  const { data: vouchers = [], isLoading } = useGetAllVouchersQuery()
+  const { data: vouchers = [], isLoading, refetch } = useGetAllVouchersQuery()
   const [createVoucher] = useCreateVoucherMutation()
   const [updateVoucher] = useUpdateVoucherMutation()
   const [deleteVoucher] = useDeleteVoucherMutation()
@@ -48,10 +49,13 @@ export default function VoucherDashboard() {
     try {
       await createVoucher(data).unwrap()
       setIsAddDialogOpen(false)
+      await refetch()
+      toast.success("Tạo voucher thành công")
     } catch (error) {
       console.error('Failed to create voucher:', error)
+      toast.error("Không thể tạo voucher. Vui lòng thử lại.")
     }
-  }, [createVoucher])
+  }, [createVoucher, refetch])
 
   const handleEdit = useCallback((voucher: Voucher) => {
     setSelectedVoucher(voucher)

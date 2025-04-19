@@ -14,18 +14,14 @@ export const metadata: Metadata = {
   description: 'Hệ thống quản lý nhà hàng Laklu',
 };
 
-export default function RootLayout({
+export default function PrivateLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>
-        <SidebarProvider>
-          <ClientLayout>{children}</ClientLayout>
-        </SidebarProvider>
-      </body>
-    </html>
+    <SidebarProvider>
+      <ClientLayout>{children}</ClientLayout>
+    </SidebarProvider>
   );
 }

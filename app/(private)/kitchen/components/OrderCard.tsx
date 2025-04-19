@@ -292,34 +292,54 @@ export default function OrderCard({
                 <div className="flex space-x-1">
                   {item.statusLabel === 'Đang chờ' && (
                     <>
-                      <Toggle
-                        aria-label="Bắt đầu làm món"
-                        className="h-6 w-6 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
-                        onClick={() =>
-                          handleUpdateItemStatus(
-                            item.orderItemId,
-                            'DOING',
-                            item.statusLabel,
-                          )
-                        }
-                        disabled={isLoading}
-                      >
-                        <ChefHat className="h-3.5 w-3.5" />
-                      </Toggle>
-                      <Toggle
-                        aria-label="Hủy món"
-                        className="h-6 w-6 text-gray-600 hover:text-gray-700 hover:bg-gray-50"
-                        onClick={() =>
-                          handleUpdateItemStatus(
-                            item.orderItemId,
-                            'CANCELLED',
-                            item.statusLabel,
-                          )
-                        }
-                        disabled={isLoading}
-                      >
-                        <Ban className="h-3.5 w-3.5" />
-                      </Toggle>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Toggle
+                              aria-label="Bắt đầu làm món"
+                              className="h-6 w-6 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
+                              onClick={() =>
+                                handleUpdateItemStatus(
+                                  item.orderItemId,
+                                  'DOING',
+                                  item.statusLabel,
+                                )
+                              }
+                              disabled={isLoading}
+                            >
+                              <ChefHat className="h-3.5 w-3.5" />
+                            </Toggle>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">
+                            <p className="text-xs">Bắt đầu làm món</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Toggle
+                              aria-label="Hủy món"
+                              className="h-6 w-6 text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                              onClick={() =>
+                                handleUpdateItemStatus(
+                                  item.orderItemId,
+                                  'CANCELLED',
+                                  item.statusLabel,
+                                )
+                              }
+                              disabled={isLoading}
+                            >
+                              <Ban className="h-3.5 w-3.5" />
+                            </Toggle>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">
+                            <p className="text-xs">Hủy món</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -343,20 +363,30 @@ export default function OrderCard({
                   )}
                   {item.statusLabel === 'Đang làm' && (
                     <>
-                      <Toggle
-                        aria-label="Hoàn thành món"
-                        className="h-6 w-6 text-green-600 hover:text-green-700 hover:bg-green-50"
-                        onClick={() =>
-                          handleUpdateItemStatus(
-                            item.orderItemId,
-                            'COMPLETED',
-                            item.statusLabel,
-                          )
-                        }
-                        disabled={isLoading}
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                      </Toggle>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Toggle
+                              aria-label="Hoàn thành món"
+                              className="h-6 w-6 text-green-600 hover:text-green-700 hover:bg-green-50"
+                              onClick={() =>
+                                handleUpdateItemStatus(
+                                  item.orderItemId,
+                                  'COMPLETED',
+                                  item.statusLabel,
+                                )
+                              }
+                              disabled={isLoading}
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                            </Toggle>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">
+                            <p className="text-xs">Hoàn thành món</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>

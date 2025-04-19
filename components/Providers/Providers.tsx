@@ -17,7 +17,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <LoadingProvider>
       <Loading />
       <Provider store={store}>
-        <NotificationWrapper>{children}</NotificationWrapper>
+        <NotificationWrapper>
+          {children}
+        </NotificationWrapper>
       </Provider>
     </LoadingProvider>
   );

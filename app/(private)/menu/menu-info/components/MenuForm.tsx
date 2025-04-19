@@ -28,6 +28,7 @@ import { vi } from 'date-fns/locale';
 import { format } from 'date-fns';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from 'sonner';
 
 export const MenuForm = ({
   menu,
@@ -103,9 +104,18 @@ export const MenuForm = ({
 
     try {
       if (menu?.id) {
-        await updateMenu({ id: menu.id, body: updatedMenu }).unwrap();
+        const response = await updateMenu({
+          id: menu.id,
+          body: updatedMenu,
+        }).unwrap();
+        if (response.httpStatus === 200) {
+          toast.success('Cập nhật thực đơn thành công');
+        }
       } else {
-        await createMenu(updatedMenu).unwrap();
+        const response = await createMenu(updatedMenu).unwrap();
+        if (response.httpStatus === 200) {
+          toast.success('Tạo mới thực đơn thành công');
+        }
       }
 
       onOpenChange(false); // Close dialog
@@ -116,6 +126,10 @@ export const MenuForm = ({
       // Handle API error response
       if (error?.data) {
         const { message, httpStatus, error: errorCode } = error.data;
+
+        // Show toast with error message
+        const errorMessage = message || 'Đã xảy ra lỗi khi lưu thực đơn';
+        toast.error(errorMessage);
 
         if (httpStatus === 400) {
           if (message) {
@@ -135,6 +149,9 @@ export const MenuForm = ({
           setApiError('Đã xảy ra lỗi khi lưu thực đơn. Vui lòng thử lại sau.');
         }
       } else {
+        const errorMessage = 'Đã xảy ra lỗi khi kết nối đến máy chủ';
+        toast.error(errorMessage);
+
         setApiError(
           'Đã xảy ra lỗi khi kết nối đến máy chủ. Vui lòng thử lại sau.',
         );

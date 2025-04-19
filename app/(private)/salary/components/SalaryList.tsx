@@ -6,7 +6,7 @@ import AddSalaryModal from './AddSalaryModal';
 import { useState } from 'react';
 import { EmployeeSalaryResponse } from '@/features/salary/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -34,7 +34,6 @@ export default function SalaryList() {
   );
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isAdding, setIsAdding] = useState(false);
-  // Added search functionality similar to StaffTable
   const [searchTerm, setSearchTerm] = useState('');
 
   if (isLoading) return <div className="text-gray-700">Đang tải...</div>;
@@ -43,7 +42,6 @@ export default function SalaryList() {
 
   const salaries = data?.data || [];
 
-  // Filter salaries based on search term
   const filteredSalaries = salaries.filter(
     salary =>
       salary.levelName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -51,80 +49,81 @@ export default function SalaryList() {
   );
 
   return (
-    <div className="space-y-4">
-      {/* Tiêu đề ngoài Card - consistent with StaffTable */}
-      <h1 className="text-2xl font-bold">Quản Lý Mức Lương</h1>
+    <div className="container mx-auto py-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Quản lý mức lương</h1>
+          <p className="text-muted-foreground mt-1">Tạo và quản lý các mức lương trong hệ thống</p>
+        </div>
+        <Button
+          onClick={() => setIsAdding(true)}
+          className="bg-black hover:bg-gray-800 text-white"
+        >
+          <IoAddCircleSharp className="mr-2 h-5 w-5" />
+          Tạo mức lương mới
+        </Button>
+      </div>
 
       <Card>
-        {/* Header styling consistent with StaffTable */}
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="Tìm kiếm mức lương..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Button
-              onClick={() => setIsAdding(true)}
-              className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white"
-            >
-              <IoAddCircleSharp className="text-xl" />
-              <span>Thêm Mức Lương</span>
-            </Button>
-          </div>
+        <CardHeader className="pb-3">
+          <CardTitle>Danh sách mức lương</CardTitle>
+          <CardDescription>Quản lý các mức lương và phân loại trong hệ thống</CardDescription>
         </CardHeader>
-
-        {/* Bảng với styling thống nhất */}
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Tên Cấp Bậc</TableHead>
-                <TableHead>Lương</TableHead>
-                <TableHead>Loại</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredSalaries.map(salary => (
-                <TableRow key={salary.id}>
-                  <TableCell>{salary.id}</TableCell>
-                  <TableCell>{salary.levelName}</TableCell>
-                  <TableCell>{salary.amount}</TableCell>
-                  <TableCell>{salaryTypeMapping[salary.type]}</TableCell>
 
-                  <TableCell>
-                    <div className="flex gap-2">
-                      {/* Nút Update có nền màu vàng và icon màu trắng - consistent with StaffTable */}
-                      <Button
-                        onClick={() => setEditSalary(salary)}
-                        className="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600 text-white"
-                        size="sm"
-                      >
-                        <GrUpdate className="text-xl text-white" />
-                      </Button>
-
-                      {/* Nút Delete giữ nguyên variant destructive - consistent with StaffTable */}
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => setDeleteId(salary.id)}
-                      >
-                        <MdDeleteOutline />
-                      </Button>
-                    </div>
-                  </TableCell>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50px]">ID</TableHead>
+                  <TableHead>Tên cấp bậc</TableHead>
+                  <TableHead>Lương</TableHead>
+                  <TableHead>Loại</TableHead>
+                  <TableHead className="text-right">Thao tác</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredSalaries.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      Không tìm thấy mức lương nào
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredSalaries.map(salary => (
+                    <TableRow key={salary.id}>
+                      <TableCell>{salary.id}</TableCell>
+                      <TableCell>{salary.levelName}</TableCell>
+                      <TableCell>{salary.amount.toLocaleString('vi-VN')} VNĐ</TableCell>
+                      <TableCell>{salaryTypeMapping[salary.type]}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            onClick={() => setEditSalary(salary)}
+                            className="flex items-center gap-1"
+                            size="sm"
+                            variant="outline"
+                          >
+                            <GrUpdate className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setDeleteId(salary.id)}
+                          >
+                            <MdDeleteOutline className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
-      {/* MODALS */}
       {editSalary && (
         <EditSalaryModal
           salary={editSalary}

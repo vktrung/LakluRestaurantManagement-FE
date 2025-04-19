@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['qr.sepay.vn'], // Thêm hostname của URL hình ảnh
+    domains: ['qr.sepay.vn', 'api.laklu.com'], // Thêm hostname của URL hình ảnh
   },
   async rewrites() {
     return [
@@ -34,8 +34,66 @@ const nextConfig = {
           },
         ],
       },
+      // Cấu hình riêng cho các tệp tĩnh và chunks
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          }
+        ],
+      },
+      {
+        source: '/_next/image/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=60, stale-while-revalidate=300',
+          }
+        ],
+      },
+      {
+        source: '/_next/data/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, max-age=0, must-revalidate',
+          }
+        ],
+      },
+      {
+        source: '/.next/static/chunks/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          }
+        ],
+      },
     ];
   },
+  // Tăng cường xử lý lỗi trong môi trường production
+  productionBrowserSourceMaps: true, // Bật source maps cho việc debug trong production
+  poweredByHeader: false, // Tắt header 'X-Powered-By' vì lý do bảo mật
+  // Đảm bảo không có caching cho dữ liệu động
+  onDemandEntries: {
+    // Thời gian (tính bằng ms) trước khi phần bộ nhớ cache của compiler bị xóa
+    maxInactiveAge: 15 * 1000,
+    // Số lượng trang giữ trong bộ nhớ
+    pagesBufferLength: 2,
+  },
+  // Thêm cấu hình React Strict Mode để dễ phát hiện lỗi
+  reactStrictMode: false, // Tắt strict mode trong production để tránh gọi API hai lần
+  // Cấu hình các tùy chọn runtime để giảm kích thước bundle
+  experimental: {
+    // Tắt các tính năng thử nghiệm không cần thiết
+    serverActions: true,
+    // Tắt optimizeCss để tránh lỗi critters
+    optimizeCss: false,
+  },
+  // Tắt việc tạo trang tĩnh cho các trang lỗi mặc định
+  output: 'standalone',  // Sử dụng standalone output để đóng gói dependencies
 };
 
 export default nextConfig;

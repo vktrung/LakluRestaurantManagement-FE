@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { format, addDays, isToday, isBefore, parse } from "date-fns"
 import { CalendarIcon, Loader2 } from "lucide-react"
 import { vi } from "date-fns/locale"
+import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,6 +23,33 @@ import { toast } from "sonner"
 import { useGetTablesByDateQuery, useCreateReservationMutation } from "@/features/reservation/reservationApiSlice"
 import { Reservation } from "@/features/reservation/type"
 
+const reservationSchema = z.object({
+  customerName: z.string()
+    .min(2, "Tên khách hàng phải có ít nhất 2 ký tự")
+    .max(50, "Tên khách hàng không được vượt quá 50 ký tự")
+    .refine(value => /^[a-zA-ZÀ-ỹ\s]+$/.test(value), {
+      message: "Tên khách hàng chỉ được chứa chữ cái và khoảng trắng"
+    }),
+  customerPhone: z.string()
+    .min(10, "Số điện thoại phải có ít nhất 10 chữ số")
+    .max(11, "Số điện thoại không được vượt quá 11 chữ số")
+    .refine(value => /^[0-9]+$/.test(value), {
+      message: "Số điện thoại chỉ được chứa chữ số"
+    }),
+  numberOfPeople: z.number()
+    .int("Số người phải là số nguyên")
+    .positive("Số người phải lớn hơn 0")
+    .max(100, "Số người không được vượt quá 100 người"),
+  tableIds: z.array(z.number())
+    .min(1, "Vui lòng chọn ít nhất một bàn"),
+  checkInDate: z.date({
+    required_error: "Vui lòng chọn ngày đặt bàn",
+    invalid_type_error: "Ngày không hợp lệ",
+  }),
+  checkInTime: z.string()
+    .min(1, "Vui lòng chọn thời gian đặt bàn")
+})
+
 export default function NewReservationPage() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -33,6 +61,16 @@ export default function NewReservationPage() {
   const [checkInTime, setCheckInTime] = useState("")
   const [numberOfPeople, setNumberOfPeople] = useState<number>(2)
   const [selectedTables, setSelectedTables] = useState<number[]>([])
+  
+  // Error state
+  const [errors, setErrors] = useState<{
+    customerName?: string
+    customerPhone?: string
+    numberOfPeople?: string
+    tableIds?: string
+    checkInDate?: string
+    checkInTime?: string
+  }>({})
 
   // Tính ngày hiện tại và ngày tối đa có thể chọn (7 ngày từ hôm nay)
   const today = new Date()
@@ -95,6 +133,11 @@ export default function NewReservationPage() {
 
   const toggleTableSelection = (tableId: number) => {
     setSelectedTables((prev) => (prev.includes(tableId) ? prev.filter((id) => id !== tableId) : [...prev, tableId]))
+    
+    // Clear error when user selects a table
+    if (errors.tableIds) {
+      setErrors((prev) => ({ ...prev, tableIds: undefined }))
+    }
   }
 
   const getTableStatusClass = (isAvailable: boolean) => {
@@ -103,20 +146,127 @@ export default function NewReservationPage() {
       : "bg-red-100 border-red-300 cursor-not-allowed opacity-70"
   }
 
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: 'customerName' | 'customerPhone' | 'numberOfPeople'
+  ) => {
+    const value = e.target.value
+    
+    // Handle different field types
+    if (field === 'customerName') {
+      setCustomerName(value)
+      // Clear error when user types
+      if (errors.customerName) {
+        setErrors(prev => ({ ...prev, customerName: undefined }))
+      }
+      
+      // Validate name format
+      if (value && !/^[a-zA-ZÀ-ỹ\s]+$/.test(value)) {
+        setErrors(prev => ({ 
+          ...prev, 
+          customerName: "Tên khách hàng chỉ được chứa chữ cái và khoảng trắng" 
+        }))
+      }
+    } else if (field === 'customerPhone') {
+      // Only allow numbers
+      if (value === '' || /^\d+$/.test(value)) {
+        setCustomerPhone(value)
+        
+        // Clear error when user types
+        if (errors.customerPhone) {
+          setErrors(prev => ({ ...prev, customerPhone: undefined }))
+        }
+        
+        // Validate phone length immediately
+        if (value.length > 0 && (value.length < 10 || value.length > 11)) {
+          setErrors(prev => ({ 
+            ...prev, 
+            customerPhone: "Số điện thoại phải có 10 đến 11 chữ số" 
+          }))
+        }
+      }
+    } else if (field === 'numberOfPeople') {
+      const numberValue = parseInt(value || '0')
+      setNumberOfPeople(numberValue)
+      
+      // Clear error when user types
+      if (errors.numberOfPeople) {
+        setErrors(prev => ({ ...prev, numberOfPeople: undefined }))
+      }
+      
+      // Validate number of people
+      if (numberValue <= 0) {
+        setErrors(prev => ({ 
+          ...prev, 
+          numberOfPeople: "Số người phải lớn hơn 0" 
+        }))
+      } else if (numberValue > 100) {
+        setErrors(prev => ({ 
+          ...prev, 
+          numberOfPeople: "Số người không được vượt quá 100 người" 
+        }))
+      }
+    }
+  }
+
+  const handleDateChange = (date: Date | undefined) => {
+    setCheckInDate(date || null)
+    
+    // Clear error when user selects a date
+    if (errors.checkInDate) {
+      setErrors(prev => ({ ...prev, checkInDate: undefined }))
+    }
+  }
+
+  const handleTimeChange = (time: string) => {
+    setCheckInTime(time)
+    
+    // Clear error when user selects a time
+    if (errors.checkInTime) {
+      setErrors(prev => ({ ...prev, checkInTime: undefined }))
+    }
+  }
+
+  const validateForm = () => {
+    try {
+      reservationSchema.parse({
+        customerName,
+        customerPhone,
+        numberOfPeople,
+        tableIds: selectedTables,
+        checkInDate: checkInDate as Date,
+        checkInTime
+      })
+      setErrors({})
+      return true
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const newErrors: { [key: string]: string } = {}
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            newErrors[err.path[0].toString()] = err.message
+          }
+        })
+        setErrors(newErrors)
+      }
+      return false
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!customerName || !customerPhone || selectedTables.length === 0 || !checkInDate || !checkInTime) {
-      toast.error("Vui lòng điền đầy đủ thông tin và chọn ít nhất một bàn.")
+    if (!validateForm()) {
+      toast.error("Vui lòng kiểm tra lại thông tin đặt bàn")
       return
     }
 
     setIsSubmitting(true)
 
     // Format the date and time for the API - Đảm bảo ngày không bị ảnh hưởng bởi múi giờ
-    const year = checkInDate.getFullYear()
-    const month = String(checkInDate.getMonth() + 1).padStart(2, '0')
-    const day = String(checkInDate.getDate()).padStart(2, '0')
+    const year = checkInDate!.getFullYear()
+    const month = String(checkInDate!.getMonth() + 1).padStart(2, '0')
+    const day = String(checkInDate!.getDate()).padStart(2, '0')
     const dateStr = `${year}-${month}-${day}`
     const timeStr = checkInTime + ":00"
     const checkInDateTime = `${dateStr}T${timeStr}.000Z`
@@ -168,9 +318,17 @@ export default function NewReservationPage() {
                   id="name"
                   placeholder="Nhập họ tên"
                   value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
+                  onChange={(e) => handleInputChange(e, 'customerName')}
                   required
+                  className={errors.customerName ? "border-red-500" : ""}
+                  maxLength={50}
                 />
+                {errors.customerName && (
+                  <p className="text-sm text-red-500">{errors.customerName}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {customerName.length}/50 ký tự
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">
@@ -180,9 +338,14 @@ export default function NewReservationPage() {
                   id="phone"
                   placeholder="Nhập số điện thoại"
                   value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  onChange={(e) => handleInputChange(e, 'customerPhone')}
                   required
+                  className={errors.customerPhone ? "border-red-500" : ""}
+                  maxLength={11}
                 />
+                {errors.customerPhone && (
+                  <p className="text-sm text-red-500">{errors.customerPhone}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="people">
@@ -192,11 +355,16 @@ export default function NewReservationPage() {
                   id="people"
                   type="number"
                   min="1"
+                  max="100"
                   placeholder="Nhập số người"
                   value={numberOfPeople}
-                  onChange={(e) => setNumberOfPeople(Number.parseInt(e.target.value) || 1)}
+                  onChange={(e) => handleInputChange(e, 'numberOfPeople')}
                   required
+                  className={errors.numberOfPeople ? "border-red-500" : ""}
                 />
+                {errors.numberOfPeople && (
+                  <p className="text-sm text-red-500">{errors.numberOfPeople}</p>
+                )}
               </div>
               <Separator />
               <div className="grid grid-cols-2 gap-4">
@@ -211,6 +379,7 @@ export default function NewReservationPage() {
                         className={cn(
                           "w-full justify-start text-left font-normal",
                           !checkInDate && "text-muted-foreground",
+                          errors.checkInDate && "border-red-500"
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -221,7 +390,7 @@ export default function NewReservationPage() {
                       <Calendar
                         mode="single"
                         selected={checkInDate || undefined}
-                        onSelect={(date) => setCheckInDate(date ? date : null)}
+                        onSelect={handleDateChange}
                         initialFocus
                         locale={vi}
                         disabled={(date) => {
@@ -230,13 +399,20 @@ export default function NewReservationPage() {
                       />
                     </PopoverContent>
                   </Popover>
+                  {errors.checkInDate && (
+                    <p className="text-sm text-red-500">{errors.checkInDate}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>
                     Thời gian <span className="text-red-500">*</span>
                   </Label>
-                  <Select value={checkInTime} onValueChange={setCheckInTime} disabled={!checkInDate || availableTimes.length === 0}>
-                    <SelectTrigger>
+                  <Select 
+                    value={checkInTime} 
+                    onValueChange={handleTimeChange} 
+                    disabled={!checkInDate || availableTimes.length === 0}
+                  >
+                    <SelectTrigger className={errors.checkInTime ? "border-red-500" : ""}>
                       <SelectValue placeholder={availableTimes.length ? "Chọn thời gian" : "Không có thời gian khả dụng"} />
                     </SelectTrigger>
                     <SelectContent>
@@ -247,6 +423,9 @@ export default function NewReservationPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {errors.checkInTime && (
+                    <p className="text-sm text-red-500">{errors.checkInTime}</p>
+                  )}
                   {checkInDate && isToday(checkInDate) && availableTimes.length === 0 && (
                     <p className="text-xs text-red-500 mt-1">Không có khung giờ khả dụng cho ngày hôm nay</p>
                   )}
@@ -299,7 +478,10 @@ export default function NewReservationPage() {
                       <p className="text-muted-foreground">Không có bàn khả dụng cho ngày đã chọn</p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className={cn(
+                      "grid grid-cols-4 gap-2",
+                      errors.tableIds && "border-red-500 p-2 rounded-md"
+                    )}>
                       {availableTables.map((table) => {
                         const isSelected = selectedTables.includes(table.id)
                         // Bàn chỉ khả dụng nếu status là AVAILABLE
@@ -332,6 +514,10 @@ export default function NewReservationPage() {
                     </div>
                   )}
 
+                  {errors.tableIds && (
+                    <p className="text-sm text-red-500 mt-2">{errors.tableIds}</p>
+                  )}
+
                   <div className="mt-4">
                     <p className="text-sm">
                       Đã chọn:{" "}
@@ -354,7 +540,7 @@ export default function NewReservationPage() {
               </Button>
               <Button 
                 type="submit" 
-                disabled={isSubmitting || isCreating || !checkInDate || selectedTables.length === 0 || !checkInTime}
+                disabled={isSubmitting || isCreating}
               >
                 {(isSubmitting || isCreating) ? (
                   <>

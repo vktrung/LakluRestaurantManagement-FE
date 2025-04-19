@@ -152,14 +152,28 @@ export default function RolesPage() {
       // Call API to delete role
       await deleteRole(id).unwrap()
       toast.success("Vai trò đã được xóa thành công")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to delete role:", error)
-      toast.error("Không thể xóa vai trò. Vui lòng thử lại sau.")
+      let errorMessage = "Không thể xóa vai trò. "
+      
+      if (error?.data?.message) {
+        errorMessage += error.data.message
+      } else if (error?.status === 403) {
+        errorMessage += "Bạn không có quyền thực hiện thao tác này."
+      } else if (error?.status === 404) {
+        errorMessage += "Vai trò không tồn tại."
+      } else if (error?.status === 400) {
+        errorMessage += "Yêu cầu không hợp lệ."
+      } else {
+        errorMessage += "Vui lòng thử lại sau."
+      }
+      
+      toast.error(errorMessage)
     }
   }
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Quản lý vai trò</h1>

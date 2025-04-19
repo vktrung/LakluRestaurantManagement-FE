@@ -23,6 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 interface MenuItemFormProps {
   selectedItem: number | null;
@@ -216,10 +217,16 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
           body: formData,
         }).unwrap();
         console.log('Update response:', response);
+        if (response.httpStatus === 200) {
+          toast.success('Cập nhật món ăn trong thực đơn thành công');
+        }
         onSuccess(response.data[0]);
       } else {
         response = await createMenuItem(formData).unwrap();
         console.log('Create response:', response);
+        if (response.httpStatus === 200) {
+          toast.success('Thêm món ăn vào thực đơn thành công');
+        }
         onSuccess(response.data[0]);
       }
       onClose();
@@ -228,6 +235,8 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
 
       if (error?.data) {
         const { message, httpStatus, error: errorCode } = error.data;
+        const errorMessage = message || 'Đã xảy ra lỗi khi lưu món ăn thực đơn';
+        toast.error(errorMessage);
 
         if (httpStatus === 400) {
           if (message) {
@@ -249,6 +258,7 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
           );
         }
       } else {
+        toast.error('Đã xảy ra lỗi khi kết nối đến máy chủ');
         setApiError(
           'Đã xảy ra lỗi khi kết nối đến máy chủ. Vui lòng thử lại sau.',
         );
@@ -277,6 +287,11 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
 
       console.log('Status toggle response:', response);
 
+      if (response.httpStatus === 200) {
+        const newStatus = !formData.isActive ? 'hoạt động' : 'vô hiệu hóa';
+        toast.success(`Đã chuyển trạng thái món ăn sang ${newStatus}`);
+      }
+
       // Update the local state to reflect the change
       setFormData(prev => ({
         ...prev,
@@ -295,8 +310,13 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
           onSuccess(updatedItem);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error toggling status:', error);
+      if (error?.data?.message) {
+        toast.error(error.data.message);
+      } else {
+        toast.error('Không thể thay đổi trạng thái. Vui lòng thử lại sau.');
+      }
       setApiError('Không thể thay đổi trạng thái. Vui lòng thử lại sau.');
     }
   };

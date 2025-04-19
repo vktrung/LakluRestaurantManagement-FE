@@ -11,21 +11,16 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { IoAddCircleSharp } from 'react-icons/io5';
 import { GrUpdate } from 'react-icons/gr';
 import { MdDeleteOutline } from 'react-icons/md';
 import { Category } from '@/features/category/types';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import CategoryForm from './CategoryForm';
-import DeleteConfirmation from './DeleteConfirmation';
 import { AlertCircle } from 'lucide-react';
+import AddCategoryModal from './AddCategoryModal';
+import EditCategoryModal from './EditCategoryModal';
+import DeleteCategoryConfirm from './DeleteCategoryConfirm';
 
 export default function DanhSachDanhMuc() {
   const [danhMuc, setDanhMuc] = useState<Category[]>([]);
@@ -41,9 +36,7 @@ export default function DanhSachDanhMuc() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
-    null,
-  );
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
   useEffect(() => {
     if (danhMucResponse?.data) {
@@ -59,41 +52,6 @@ export default function DanhSachDanhMuc() {
     setSearchTerm(e.target.value);
   };
 
-  // Open add dialog
-  const handleAdd = () => {
-    setIsAddDialogOpen(true);
-  };
-
-  // Open edit dialog
-  const handleEdit = (category: Category) => {
-    setSelectedCategory(category);
-    setIsEditDialogOpen(true);
-  };
-
-  // Open delete dialog
-  const handleDelete = (category: Category) => {
-    setSelectedCategory(category);
-    setIsDeleteDialogOpen(true);
-  };
-
-  // Success handlers for CRUD operations
-  const handleAddSuccess = () => {
-    setIsAddDialogOpen(false);
-    refetch();
-  };
-
-  const handleEditSuccess = () => {
-    setIsEditDialogOpen(false);
-    setSelectedCategory(null);
-    refetch();
-  };
-
-  const handleDeleteSuccess = () => {
-    setIsDeleteDialogOpen(false);
-    setSelectedCategory(null);
-    refetch();
-  };
-
   // Filter categories based on search term
   const filteredCategories = danhMuc.filter(
     category =>
@@ -103,7 +61,7 @@ export default function DanhSachDanhMuc() {
   );
 
   if (isLoading)
-    return <div className="container mx-auto p-6">Đang tải...</div>;
+    return <div className="p-6">Đang tải...</div>;
 
   if (isError)
     return (
@@ -116,145 +74,138 @@ export default function DanhSachDanhMuc() {
     );
 
   return (
-    <div className="space-y-4">
-      {/* Title outside Card */}
-      <h1 className="text-2xl font-bold">Quản Lý Danh Mục</h1>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Quản Lý Danh Mục</h1>
+          <p className="text-muted-foreground">
+            Quản lý các danh mục món ăn trong nhà hàng
+          </p>
+        </div>
+        <Button
+          onClick={() => setIsAddDialogOpen(true)}
+          className="bg-black hover:bg-black/90"
+        >
+          <IoAddCircleSharp className="mr-2 h-4 w-4" />
+          Tạo danh mục mới
+        </Button>
+      </div>
 
       <Card>
-        {/* Card Header */}
         <CardHeader>
-          {/* Search and Add button row */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="Tìm kiếm danh mục..."
-                value={searchTerm}
-                onChange={handleSearchChange}
-              />
-            </div>
-            {/* Add button with green color */}
-            <Button
-              onClick={handleAdd}
-              className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white"
-            >
-              <IoAddCircleSharp className="text-xl" />
-              <span>Thêm Danh Mục</span>
-            </Button>
+          <CardTitle>Danh sách danh mục</CardTitle>
+          <CardDescription>
+            Danh sách tất cả các danh mục món ăn trong nhà hàng
+          </CardDescription>
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Tìm kiếm danh mục..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              className="max-w-sm"
+            />
           </div>
         </CardHeader>
 
-        {/* Card Content - Table */}
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tên</TableHead>
-                <TableHead>Mô Tả</TableHead>
-                <TableHead>Ngày Tạo</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCategories.length > 0 ? (
-                filteredCategories.map(category => (
-                  <TableRow key={category.id}>
-                    <TableCell>{category.name}</TableCell>
-                    <TableCell>
-                      {category.description || 'Không có mô tả'}
-                    </TableCell>
-                    <TableCell>
-                      {category.createdAt
-                        ? new Date(category.createdAt).toLocaleDateString()
-                        : 'Không có thông tin'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        {/* Update button with yellow background */}
-                        <Button
-                          onClick={() => handleEdit(category)}
-                          className="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600 text-white"
-                          size="sm"
-                        >
-                          <GrUpdate className="text-xl text-white" />
-                        </Button>
-
-                        {/* Delete button with destructive variant */}
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDelete(category)}
-                        >
-                          <MdDeleteOutline />
-                        </Button>
-                      </div>
+          <div className="border rounded-md">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[100px]">ID</TableHead>
+                  <TableHead>Tên danh mục</TableHead>
+                  <TableHead>Mô tả</TableHead>
+                  <TableHead>Ngày tạo</TableHead>
+                  <TableHead className="text-right">Thao tác</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredCategories.length > 0 ? (
+                  filteredCategories.map(category => (
+                    <TableRow key={category.id}>
+                      <TableCell className="font-medium">{category.id}</TableCell>
+                      <TableCell>{category.name}</TableCell>
+                      <TableCell>
+                        {category.description || 'Không có mô tả'}
+                      </TableCell>
+                      <TableCell>
+                        {category.createdAt
+                          ? new Date(category.createdAt).toLocaleDateString('vi-VN')
+                          : 'Không có thông tin'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            onClick={() => {
+                              setSelectedCategory(category);
+                              setIsEditDialogOpen(true);
+                            }}
+                            variant="outline"
+                            size="icon"
+                          >
+                            <GrUpdate className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setSelectedCategory(category);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                            variant="destructive"
+                            size="icon"
+                          >
+                            <MdDeleteOutline className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center">
+                      {searchTerm
+                        ? 'Không tìm thấy danh mục nào.'
+                        : 'Chưa có danh mục nào.'}
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center">
-                    {searchTerm
-                      ? 'Không tìm thấy danh mục nào.'
-                      : 'Không có danh mục nào.'}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Add Category Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Thêm Danh Mục Mới</DialogTitle>
-          </DialogHeader>
-          <CategoryForm
-            onSuccess={handleAddSuccess}
-            onCancel={() => setIsAddDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Modals */}
+      {isAddDialogOpen && (
+        <AddCategoryModal
+          isOpen={isAddDialogOpen}
+          onClose={() => {
+            setIsAddDialogOpen(false);
+            refetch();
+          }}
+        />
+      )}
 
-      {/* Edit Category Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Chỉnh Sửa Danh Mục</DialogTitle>
-          </DialogHeader>
-          {selectedCategory && (
-            <CategoryForm
-              category={selectedCategory}
-              isEdit
-              onSuccess={handleEditSuccess}
-              onCancel={() => {
-                setIsEditDialogOpen(false);
-                setSelectedCategory(null);
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {isEditDialogOpen && selectedCategory && (
+        <EditCategoryModal
+          category={selectedCategory}
+          onClose={() => {
+            setIsEditDialogOpen(false);
+            setSelectedCategory(null);
+            refetch();
+          }}
+        />
+      )}
 
-      {/* Delete Category Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[450px]">
-          <DialogHeader>
-            <DialogTitle>Xóa Danh Mục</DialogTitle>
-          </DialogHeader>
-          {selectedCategory && (
-            <DeleteConfirmation
-              category={selectedCategory}
-              onSuccess={handleDeleteSuccess}
-              onCancel={() => {
-                setIsDeleteDialogOpen(false);
-                setSelectedCategory(null);
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {isDeleteDialogOpen && selectedCategory && (
+        <DeleteCategoryConfirm
+          category={selectedCategory}
+          onClose={() => {
+            setIsDeleteDialogOpen(false);
+            setSelectedCategory(null);
+            refetch();
+          }}
+        />
+      )}
     </div>
   );
 }

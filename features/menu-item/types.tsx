@@ -30,7 +30,42 @@ export interface Dish {
   createdAt: string;
   updatedAt: string;
   price: number;
+  requiresPreparation?: boolean;
   images: Image[];
+}
+export interface Category {
+  id: number;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+  isDeleted: boolean;
+}
+export interface MenuItemWithCategory {
+  id: number;
+  menuId: number;
+  price: number;
+  isActive: boolean;
+  dish: Dish;
+  category: Category;
+}
+export interface Pagination {
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+}
+export interface GetMenuItemsByMenuIdResponse {
+  data: {
+    content: MenuItemWithCategory[];
+    pagination: Pagination;
+  };
+  message: string;
+  httpStatus: number;
+  timestamp: string;
+  error: null | string;
 }
 export interface Menu {
   id: number;

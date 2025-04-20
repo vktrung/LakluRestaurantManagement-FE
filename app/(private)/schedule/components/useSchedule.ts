@@ -17,6 +17,7 @@ import {
 import { startOfWeek, endOfWeek, format, addMinutes, subWeeks, addWeeks } from "date-fns";
 import { Shift, AddShiftRequest, UpdateShiftRequest, CheckinSuccessResponse, CheckInSuccessRequest, GetShiftsByStaffAndDateRangeRequest, CloneScheduleBetweenWeeksRequest } from "@/features/schedule/types";
 import { vi } from 'date-fns/locale';
+import { toast } from "sonner";
 
 export function useSchedule(currentDate: Date) {
   const weekStart = format(startOfWeek(currentDate, { weekStartsOn: 1 }), "dd/MM/yyyy");
@@ -254,11 +255,31 @@ export function useSchedule(currentDate: Date) {
   const handleDelete = async (id: number) => {
     try {
       const response = await deleteShift(id).unwrap();
+      toast.success("Xóa ca làm thành công", {
+        position: "top-right",
+        duration: 3000,
+      });
       return response;
     } catch (err: any) {
       console.error("Lỗi khi xóa ca làm:", err);
       
-      let errorMessage =  err.data.error;
+      // Extract error message - priority order
+      let errorMessage = "Đã xảy ra lỗi khi xóa ca làm";
+      
+      if (err.data && err.data.error) {
+        errorMessage = err.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
+      // Show error toast
+      toast.error(errorMessage, {
+        position: "top-right",
+        duration: 3000,
+      });
+      
       throw errorMessage;
     }
   };

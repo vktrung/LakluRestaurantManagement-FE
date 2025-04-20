@@ -1,8 +1,6 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { MenuItem } from '@/features/menu/types';
-import { useGetDishByIdQuery } from '@/features/dish/dishApiSlice';
-import { useGetCategoryByIdQuery } from '@/features/category/categoryApiSlice';
+import React, { useState } from 'react';
+import { MenuItemWithCategory } from '@/features/menu-item/types';
 import { useGetMenuByIdQuery } from '@/features/menu/menuApiSlice';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,38 +17,24 @@ import { MenuItemForm } from './MenuItemForm';
 import { useDeleteMenuItemMutation } from '@/features/menu-item/menuItemApiSlice';
 import DeleteConfirmation from './DeleteConfirmation';
 import { Badge } from '@/components/ui/badge';
+
 interface MenuItemListProps {
-  items: MenuItem[];
-  onDelete: () => void;
-  onSelect: (id: number) => void;
   menuId: number;
-  onAddSuccess: () => void;
+  items: MenuItemWithCategory[];
+  onRefresh?: () => void;
 }
 
 export const MenuItemList: React.FC<MenuItemListProps> = ({
-  items,
   menuId,
-  onDelete,
-  onAddSuccess,
+  items,
+  onRefresh,
 }) => {
-  const [isMounted, setIsMounted] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(items);
   const [deleteMenuItem] = useDeleteMenuItemMutation();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteItemId, setDeleteItemId] = useState<number | null>(null);
   const [deleteItemName, setDeleteItemName] = useState<string>('');
-
-  useEffect(() => {
-    setMenuItems(items);
-  }, [items]);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  if (!isMounted) return null;
 
   const handleDeleteClick = (id: number, name: string) => {
     setDeleteItemId(id);
@@ -62,10 +46,9 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
     if (deleteItemId !== null) {
       try {
         await deleteMenuItem(deleteItemId).unwrap();
-        setMenuItems(prevItems =>
-          prevItems.filter(item => item.id !== deleteItemId),
-        );
-        onDelete();
+        if (onRefresh) {
+          onRefresh();
+        }
       } catch (error) {
         console.error('Lỗi khi xóa menu item:', error);
       }
@@ -85,9 +68,10 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
     setIsFormOpen(true);
   };
 
-  const handleFormSuccess = (newItem: MenuItem) => {
-    setMenuItems(prevItems => [...prevItems, newItem]);
-    onAddSuccess();
+  const handleFormSuccess = () => {
+    if (onRefresh) {
+      onRefresh();
+    }
   };
 
   const handleFormClose = () => {
@@ -96,7 +80,7 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
   };
 
   const renderContent = () => {
-    if (menuItems.length === 0) {
+    if (items.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-16 px-4 bg-gray-50 rounded-lg border border-gray-200">
           <CalendarIcon className="h-12 w-12 text-gray-400 mb-4" />
@@ -109,7 +93,7 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {menuItems
+        {items
           .filter(item => item !== undefined && item !== null)
           .map(item => (
             <MenuItemCard
@@ -124,8 +108,8 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4">
-      <div className="flex justify-end mt-6 mb-4">
+    <div className="w-full max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
         <Button
           onClick={handleAdd}
           className="bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors"
@@ -136,10 +120,10 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
       </div>
 
       <div className="mb-8">
-        <Separator className="mt-4 bg-gray-200" />
+        <Separator className="bg-gray-200" />
       </div>
 
-      <div className="ml-auto">{renderContent()}</div>
+      {renderContent()}
 
       {/* MenuItemForm Modal */}
       {isFormOpen && (
@@ -162,16 +146,28 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
 };
 
 const MenuItemCard: React.FC<{
-  item: MenuItem;
+  item: MenuItemWithCategory;
   onDelete: (id: number, name: string) => void;
   onSelect: (id: number) => void;
 }> = ({ item, onDelete, onSelect }) => {
-  const { data: dishData } = useGetDishByIdQuery(item.dishId);
-  const { data: categoryData } = useGetCategoryByIdQuery(item.categoryId);
+  // Fetch menu data to display menu name
   const { data: menuData } = useGetMenuByIdQuery(item.menuId);
-  const dish = dishData?.data;
-  const category = categoryData?.data;
   const menu = menuData?.data;
+
+  // We already have dish and category data in the item
+  const dish = item.dish;
+  const category = item.category;
+
+  // Status badge
+  const statusBadge = item.isActive ? (
+    <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-200">
+      Hoạt động
+    </Badge>
+  ) : (
+    <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-200">
+      Vô hiệu hóa
+    </Badge>
+  );
 
   return (
     <Card className="overflow-hidden border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex flex-col h-full">
@@ -191,6 +187,9 @@ const MenuItemCard: React.FC<{
             <span className="sr-only">Không có ảnh</span>
           </div>
         )}
+        <div className="absolute top-2 right-2">
+          {statusBadge}
+        </div>
       </div>
       <CardHeader className="pb-2 pt-4">
         <CardTitle className="text-xl font-semibold text-gray-900 line-clamp-1">
@@ -215,11 +214,11 @@ const MenuItemCard: React.FC<{
               Giá: {item.price.toLocaleString('vi-VN')} VND
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 mt-2">
             {typeof dish?.requiresPreparation === 'boolean' && (
               <Badge
                 variant={dish.requiresPreparation ? 'secondary' : 'outline'}
-                className={`mt-1 text-xs ${
+                className={`text-xs ${
                   dish.requiresPreparation
                     ? 'bg-yellow-100 text-yellow-800'
                     : 'bg-green-100 text-green-800'

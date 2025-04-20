@@ -431,11 +431,13 @@ export const MenuItemForm: React.FC<MenuItemFormProps> = ({
               disabled={isLoading}
             >
               <option value={0}>Chọn danh mục</option>
-              {categories?.data.map(category => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
+              {categories?.data
+                .filter(category => !category.isDeleted)
+                .map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
             </select>
             {formErrors.categoryId && (
               <p className="text-red-500 text-xs mt-1">

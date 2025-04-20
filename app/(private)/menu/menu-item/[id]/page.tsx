@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useGetMenuByIdQuery } from '@/features/menu/menuApiSlice';
 import { useGetMenuItemsByMenuIdQuery } from '@/features/menu-item/menuItemApiSlice';
 import { useGetCategoriesQuery } from '@/features/category/categoryApiSlice';
@@ -16,26 +16,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CalendarIcon, FilterIcon, RefreshCw } from 'lucide-react';
+import { CalendarIcon, RefreshCw } from 'lucide-react';
 
 export default function MenuItemPage() {
   const params = useParams();
   const router = useRouter();
-  const navigation = useRouter();
-  const searchParams = useSearchParams();
   const menuId = Number(params.id);
 
-  // Get search params
-  const categoryIdParam = searchParams.get('categoryId');
-  const activeOnlyParam = searchParams.get('activeOnly');
-
   // Filter state
-  const [categoryId, setCategoryId] = useState<number | undefined>(
-    categoryIdParam ? parseInt(categoryIdParam) : undefined,
-  );
-  const [activeOnly, setActiveOnly] = useState<boolean | undefined>(
-    activeOnlyParam ? activeOnlyParam === 'true' : undefined,
-  );
+  const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
+  const [activeOnly, setActiveOnly] = useState<boolean | undefined>(undefined);
+  const [pageSize, setPageSize] = useState(10);
 
   // Get menu data
   const {
@@ -47,9 +38,6 @@ export default function MenuItemPage() {
 
   // Get categories for filter
   const { data: categoriesData } = useGetCategoriesQuery();
-  // Filter out deleted categories
-  const activeCategories =
-    categoriesData?.data?.filter(category => !category.isDeleted) || [];
 
   // Fetch menu items with filters
   const {
@@ -62,6 +50,7 @@ export default function MenuItemPage() {
       id: menuId,
       categoryId,
       activeOnly,
+      size: pageSize,
     },
     {
       refetchOnMountOrArgChange: true,
@@ -70,34 +59,16 @@ export default function MenuItemPage() {
 
   const menuItems = menuItemsData?.data?.content || [];
 
-  // Update URL when filters change
-  useEffect(() => {
-    // Create new URLSearchParams object
-    const params = new URLSearchParams();
-
-    // Add optional filters if they exist
-    if (categoryId !== undefined) {
-      params.set('categoryId', categoryId.toString());
-    }
-
-    if (activeOnly !== undefined) {
-      params.set('activeOnly', activeOnly.toString());
-    }
-
-    // Update URL without reloading the page
-    const url = `${window.location.pathname}?${params.toString()}`;
-    navigation.replace(url);
-  }, [categoryId, activeOnly, navigation]);
-
   // Function to apply filters
   const applyFilters = () => {
-    // Just apply filters directly - no need to reset page since pagination was removed
+    // Apply filters without changing page
   };
 
   // Function to reset filters
   const resetFilters = () => {
     setCategoryId(undefined);
     setActiveOnly(undefined);
+    setPageSize(10);
   };
 
   if (isMenuLoading) {
@@ -168,7 +139,7 @@ export default function MenuItemPage() {
       {/* Filter section */}
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="text-sm font-medium mb-1 block">Danh mục</label>
               <Select
@@ -186,14 +157,16 @@ export default function MenuItemPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả danh mục</SelectItem>
-                  {activeCategories.map(category => (
-                    <SelectItem
-                      key={category.id}
-                      value={category.id.toString()}
-                    >
-                      {category.name}
-                    </SelectItem>
-                  ))}
+                  {categoriesData?.data
+                    ?.filter(category => !category.isDeleted)
+                    .map(category => (
+                      <SelectItem
+                        key={category.id}
+                        value={category.id.toString()}
+                      >
+                        {category.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -225,6 +198,25 @@ export default function MenuItemPage() {
                   <SelectItem value="all">Tất cả trạng thái</SelectItem>
                   <SelectItem value="true">Hoạt động</SelectItem>
                   <SelectItem value="false">Vô hiệu hóa</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-1 block">
+                Số món mỗi trang
+              </label>
+              <Select
+                value={pageSize.toString()}
+                onValueChange={value => setPageSize(Number(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="10" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -173,14 +173,20 @@ export default function MenuItemPage() {
             <div>
               <label className="text-sm font-medium mb-1 block">Danh mục</label>
               <Select
-                value={categoryId?.toString() || ""}
-                onValueChange={(value) => setCategoryId(value ? Number(value) : undefined)}
+                value={categoryId?.toString() || "all"}
+                onValueChange={(value) => {
+                  if (value === "all") {
+                    setCategoryId(undefined);
+                  } else {
+                    setCategoryId(Number(value));
+                  }
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Tất cả danh mục" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tất cả danh mục</SelectItem>
+                  <SelectItem value="all">Tất cả danh mục</SelectItem>
                   {categoriesData?.data?.map((category) => (
                     <SelectItem key={category.id} value={category.id.toString()}>
                       {category.name}
@@ -193,9 +199,9 @@ export default function MenuItemPage() {
             <div>
               <label className="text-sm font-medium mb-1 block">Trạng thái</label>
               <Select
-                value={activeOnly === undefined ? "" : activeOnly ? "true" : "false"}
+                value={activeOnly === undefined ? "all" : activeOnly ? "true" : "false"}
                 onValueChange={(value) => {
-                  if (value === "") {
+                  if (value === "all") {
                     setActiveOnly(undefined);
                   } else {
                     setActiveOnly(value === "true");
@@ -206,7 +212,7 @@ export default function MenuItemPage() {
                   <SelectValue placeholder="Tất cả trạng thái" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tất cả trạng thái</SelectItem>
+                  <SelectItem value="all">Tất cả trạng thái</SelectItem>
                   <SelectItem value="true">Hoạt động</SelectItem>
                   <SelectItem value="false">Vô hiệu hóa</SelectItem>
                 </SelectContent>

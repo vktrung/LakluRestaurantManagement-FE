@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -9,8 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import MenuItemList from '../components/MenuItemList';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { CalendarIcon, FilterIcon, RefreshCw } from 'lucide-react';
 
 export default function MenuItemPage() {
@@ -19,21 +24,17 @@ export default function MenuItemPage() {
   const navigation = useRouter();
   const searchParams = useSearchParams();
   const menuId = Number(params.id);
-  
+
   // Get search params
-  const pageParam = searchParams.get('page');
-  const pageSizeParam = searchParams.get('pageSize');
   const categoryIdParam = searchParams.get('categoryId');
   const activeOnlyParam = searchParams.get('activeOnly');
 
-  // Filter and pagination state
-  const [page, setPage] = useState(pageParam ? parseInt(pageParam) - 1 : 0);
-  const [pageSize, setPageSize] = useState(pageSizeParam ? parseInt(pageSizeParam) : 10);
+  // Filter state
   const [categoryId, setCategoryId] = useState<number | undefined>(
-    categoryIdParam ? parseInt(categoryIdParam) : undefined
+    categoryIdParam ? parseInt(categoryIdParam) : undefined,
   );
   const [activeOnly, setActiveOnly] = useState<boolean | undefined>(
-    activeOnlyParam ? activeOnlyParam === 'true' : undefined
+    activeOnlyParam ? activeOnlyParam === 'true' : undefined,
   );
 
   // Get menu data
@@ -46,6 +47,9 @@ export default function MenuItemPage() {
 
   // Get categories for filter
   const { data: categoriesData } = useGetCategoriesQuery();
+  // Filter out deleted categories
+  const activeCategories =
+    categoriesData?.data?.filter(category => !category.isDeleted) || [];
 
   // Fetch menu items with filters
   const {
@@ -53,60 +57,47 @@ export default function MenuItemPage() {
     isLoading: isMenuItemsLoading,
     isFetching: isMenuItemsFetching,
     refetch: refetchMenuItems,
-  } = useGetMenuItemsByMenuIdQuery({
-    id: menuId,
-    page,
-    size: pageSize,
-    categoryId,
-    activeOnly
-  }, {
-    refetchOnMountOrArgChange: true,
-  });
+  } = useGetMenuItemsByMenuIdQuery(
+    {
+      id: menuId,
+      categoryId,
+      activeOnly,
+    },
+    {
+      refetchOnMountOrArgChange: true,
+    },
+  );
 
   const menuItems = menuItemsData?.data?.content || [];
-  const pagination = menuItemsData?.data?.pagination || { totalPages: 1, pageNumber: 0, pageSize: 10, totalElements: 0 };
-  const totalPages = pagination?.totalPages || 1;
 
   // Update URL when filters change
   useEffect(() => {
     // Create new URLSearchParams object
     const params = new URLSearchParams();
-    
-    // Add page and pageSize
-    params.set('page', (page + 1).toString());
-    params.set('pageSize', pageSize.toString());
-    
+
     // Add optional filters if they exist
     if (categoryId !== undefined) {
       params.set('categoryId', categoryId.toString());
     }
-    
+
     if (activeOnly !== undefined) {
       params.set('activeOnly', activeOnly.toString());
     }
-    
+
     // Update URL without reloading the page
     const url = `${window.location.pathname}?${params.toString()}`;
     navigation.replace(url);
-  }, [page, pageSize, categoryId, activeOnly, navigation]);
+  }, [categoryId, activeOnly, navigation]);
 
   // Function to apply filters
   const applyFilters = () => {
-    // Reset to first page when applying new filters
-    setPage(0);
+    // Just apply filters directly - no need to reset page since pagination was removed
   };
 
   // Function to reset filters
   const resetFilters = () => {
     setCategoryId(undefined);
     setActiveOnly(undefined);
-    setPage(0);
-    setPageSize(10);
-  };
-
-  // Handle pagination
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
   };
 
   if (isMenuLoading) {
@@ -149,33 +140,41 @@ export default function MenuItemPage() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={() => refetchMenuItems()}
             disabled={isMenuItemsFetching}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isMenuItemsFetching ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${
+                isMenuItemsFetching ? 'animate-spin' : ''
+              }`}
+            />
             Làm mới
           </Button>
-          <Button variant="outline" size="sm" onClick={() => router.push('/menu/menu-info')}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push('/menu/menu-info')}
+          >
             Quay lại
           </Button>
         </div>
       </div>
 
       <Separator className="my-4" />
-      
+
       {/* Filter section */}
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium mb-1 block">Danh mục</label>
               <Select
-                value={categoryId?.toString() || "all"}
-                onValueChange={(value) => {
-                  if (value === "all") {
+                value={categoryId?.toString() || 'all'}
+                onValueChange={value => {
+                  if (value === 'all') {
                     setCategoryId(undefined);
                   } else {
                     setCategoryId(Number(value));
@@ -187,24 +186,35 @@ export default function MenuItemPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả danh mục</SelectItem>
-                  {categoriesData?.data?.map((category) => (
-                    <SelectItem key={category.id} value={category.id.toString()}>
+                  {activeCategories.map(category => (
+                    <SelectItem
+                      key={category.id}
+                      value={category.id.toString()}
+                    >
                       {category.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
-              <label className="text-sm font-medium mb-1 block">Trạng thái</label>
+              <label className="text-sm font-medium mb-1 block">
+                Trạng thái
+              </label>
               <Select
-                value={activeOnly === undefined ? "all" : activeOnly ? "true" : "false"}
-                onValueChange={(value) => {
-                  if (value === "all") {
+                value={
+                  activeOnly === undefined
+                    ? 'all'
+                    : activeOnly
+                    ? 'true'
+                    : 'false'
+                }
+                onValueChange={value => {
+                  if (value === 'all') {
                     setActiveOnly(undefined);
                   } else {
-                    setActiveOnly(value === "true");
+                    setActiveOnly(value === 'true');
                   }
                 }}
               >
@@ -218,32 +228,13 @@ export default function MenuItemPage() {
                 </SelectContent>
               </Select>
             </div>
-            
-            <div>
-              <label className="text-sm font-medium mb-1 block">Số món mỗi trang</label>
-              <Select
-                value={pageSize.toString()}
-                onValueChange={(value) => setPageSize(Number(value))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="10" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
-          
+
           <div className="flex justify-end mt-4 space-x-2">
             <Button variant="outline" onClick={resetFilters}>
               Đặt lại
             </Button>
-            <Button onClick={applyFilters}>
-              Áp dụng
-            </Button>
+            <Button onClick={applyFilters}>Áp dụng</Button>
           </div>
         </CardContent>
       </Card>
@@ -255,121 +246,13 @@ export default function MenuItemPage() {
         </div>
       )}
 
-      {/* Pagination top */}
-      {!isMenuItemsLoading && !isMenuItemsFetching && pagination && pagination.totalPages > 1 && (
-        <div className="mb-6 flex justify-between items-center">
-          <div className="text-sm text-gray-500">
-            Hiển thị {pagination.pageNumber * pagination.pageSize + 1} - {Math.min((pagination.pageNumber + 1) * pagination.pageSize, pagination.totalElements)} trong tổng số {pagination.totalElements} món
-          </div>
-          
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious 
-                  onClick={() => handlePageChange(Math.max(0, page - 1))}
-                  className={page === 0 ? "pointer-events-none opacity-50" : "cursor-pointer"} 
-                />
-              </PaginationItem>
-              
-              {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-                // Show current page and surrounding pages
-                let pageNum;
-                if (totalPages <= 5) {
-                  pageNum = i;
-                } else if (page < 2) {
-                  pageNum = i;
-                } else if (page > totalPages - 3) {
-                  pageNum = totalPages - 5 + i;
-                } else {
-                  pageNum = page - 2 + i;
-                }
-                
-                if (pageNum >= 0 && pageNum < totalPages) {
-                  return (
-                    <PaginationItem key={pageNum}>
-                      <PaginationLink
-                        isActive={pageNum === page}
-                        onClick={() => handlePageChange(pageNum)}
-                        className="cursor-pointer"
-                      >
-                        {pageNum + 1}
-                      </PaginationLink>
-                    </PaginationItem>
-                  );
-                }
-                return null;
-              })}
-              
-              <PaginationItem>
-                <PaginationNext 
-                  onClick={() => handlePageChange(Math.min(totalPages - 1, page + 1))}
-                  className={page >= totalPages - 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} 
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
-
       {/* Menu item list */}
       {!isMenuItemsLoading && !isMenuItemsFetching && (
-        <MenuItemList 
+        <MenuItemList
           menuId={menuId}
           items={menuItems}
           onRefresh={refetchMenuItems}
         />
-      )}
-
-      {/* Pagination bottom */}
-      {!isMenuItemsLoading && !isMenuItemsFetching && pagination && pagination.totalPages > 1 && (
-        <div className="mt-6 flex justify-center">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious 
-                  onClick={() => handlePageChange(Math.max(0, page - 1))}
-                  className={page === 0 ? "pointer-events-none opacity-50" : "cursor-pointer"} 
-                />
-              </PaginationItem>
-              
-              {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-                // Show current page and surrounding pages
-                let pageNum;
-                if (totalPages <= 5) {
-                  pageNum = i;
-                } else if (page < 2) {
-                  pageNum = i;
-                } else if (page > totalPages - 3) {
-                  pageNum = totalPages - 5 + i;
-                } else {
-                  pageNum = page - 2 + i;
-                }
-                
-                if (pageNum >= 0 && pageNum < totalPages) {
-                  return (
-                    <PaginationItem key={pageNum}>
-                      <PaginationLink
-                        isActive={pageNum === page}
-                        onClick={() => handlePageChange(pageNum)}
-                        className="cursor-pointer"
-                      >
-                        {pageNum + 1}
-                      </PaginationLink>
-                    </PaginationItem>
-                  );
-                }
-                return null;
-              })}
-              
-              <PaginationItem>
-                <PaginationNext 
-                  onClick={() => handlePageChange(Math.min(totalPages - 1, page + 1))}
-                  className={page >= totalPages - 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} 
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
       )}
     </div>
   );

@@ -16,6 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { CalendarIcon, RefreshCw } from 'lucide-react';
 
 export default function MenuItemPage() {
@@ -23,10 +31,11 @@ export default function MenuItemPage() {
   const router = useRouter();
   const menuId = Number(params.id);
 
-  // Filter state
+  // Filter and pagination state
   const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
   const [activeOnly, setActiveOnly] = useState<boolean | undefined>(undefined);
   const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(0);
 
   // Get menu data
   const {
@@ -51,6 +60,7 @@ export default function MenuItemPage() {
       categoryId,
       activeOnly,
       size: pageSize,
+      page,
     },
     {
       refetchOnMountOrArgChange: true,
@@ -58,10 +68,18 @@ export default function MenuItemPage() {
   );
 
   const menuItems = menuItemsData?.data?.content || [];
+  const pagination = menuItemsData?.data?.pagination || {
+    totalPages: 1,
+    pageNumber: 0,
+    pageSize: 10,
+    totalElements: 0,
+  };
+  const totalPages = pagination?.totalPages || 1;
 
   // Function to apply filters
   const applyFilters = () => {
-    // Apply filters without changing page
+    // Reset to first page when applying new filters
+    setPage(0);
   };
 
   // Function to reset filters
@@ -69,6 +87,12 @@ export default function MenuItemPage() {
     setCategoryId(undefined);
     setActiveOnly(undefined);
     setPageSize(10);
+    setPage(0);
+  };
+
+  // Handle pagination
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
   };
 
   if (isMenuLoading) {
@@ -246,6 +270,71 @@ export default function MenuItemPage() {
           onRefresh={refetchMenuItems}
         />
       )}
+
+      {/* Pagination bottom */}
+      {!isMenuItemsLoading &&
+        !isMenuItemsFetching &&
+        pagination &&
+        pagination.totalPages > 1 && (
+          <div className="mt-6 flex justify-center">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => handlePageChange(Math.max(0, page - 1))}
+                    className={
+                      page === 0
+                        ? 'pointer-events-none opacity-50'
+                        : 'cursor-pointer'
+                    }
+                  />
+                </PaginationItem>
+
+                {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                  // Show current page and surrounding pages
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i;
+                  } else if (page < 2) {
+                    pageNum = i;
+                  } else if (page > totalPages - 3) {
+                    pageNum = totalPages - 5 + i;
+                  } else {
+                    pageNum = page - 2 + i;
+                  }
+
+                  if (pageNum >= 0 && pageNum < totalPages) {
+                    return (
+                      <PaginationItem key={pageNum}>
+                        <PaginationLink
+                          isActive={pageNum === page}
+                          onClick={() => handlePageChange(pageNum)}
+                          className="cursor-pointer"
+                        >
+                          {pageNum + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  }
+                  return null;
+                })}
+
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() =>
+                      handlePageChange(Math.min(totalPages - 1, page + 1))
+                    }
+                    className={
+                      page >= totalPages - 1
+                        ? 'pointer-events-none opacity-50'
+                        : 'cursor-pointer'
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
     </div>
   );
 }

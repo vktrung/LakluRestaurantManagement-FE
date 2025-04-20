@@ -1,14 +1,22 @@
 import { useDeleteSalaryRateMutation } from '@/features/salary/salaryApiSlice';
 import { toast } from 'sonner';
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface DeleteSalaryConfirmProps {
   id: number;
   onClose: () => void;
 }
 
-export default function DeleteSalaryConfirm({ id, onClose }: DeleteSalaryConfirmProps) {
+export default function DeleteSalaryConfirm({
+  id,
+  onClose,
+}: DeleteSalaryConfirmProps) {
   const [deleteSalaryRate] = useDeleteSalaryRateMutation();
 
   const handleDelete = async () => {
@@ -17,11 +25,12 @@ export default function DeleteSalaryConfirm({ id, onClose }: DeleteSalaryConfirm
       await deleteSalaryRate(id).unwrap();
     } catch (err: any) {
       let errorMessage = 'Không thể xóa mức lương. ';
-      
+
       if (err?.data?.message) {
         errorMessage = err.data.message;
       } else if (err?.status === 403) {
-        errorMessage = 'Không thể xóa mức lương. Mức lương đang được sử dụng bởi một hoặc nhiều người dùng';
+        errorMessage =
+          'Không thể xóa mức lương. Mức lương đang được sử dụng bởi một hoặc nhiều người dùng';
       } else if (err?.status === 404) {
         errorMessage = 'Mức lương không tồn tại.';
       } else if (err?.status === 400) {
@@ -29,15 +38,15 @@ export default function DeleteSalaryConfirm({ id, onClose }: DeleteSalaryConfirm
       } else {
         errorMessage = 'Lỗi khi xóa mức lương: undefined';
       }
-      
+
       toast.error(errorMessage, {
         position: 'top-right',
         duration: 3000,
         style: {
           backgroundColor: '#FEF2F2',
           color: '#DC2626',
-          border: '1px solid #FCA5A5'
-        }
+          border: '1px solid #FCA5A5',
+        },
       });
     }
   };

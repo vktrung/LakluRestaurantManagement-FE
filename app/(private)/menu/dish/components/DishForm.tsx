@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/card';
 import { Upload, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from 'sonner';
 
 interface DishFormProps {
   dishId?: number | null;
@@ -101,16 +102,24 @@ const DishForm: React.FC<DishFormProps> = ({
       const response = await uploadFile(formData).unwrap();
       const imageId = response.data.id;
       setImageIds(prev => [...prev, imageId]);
+
+      if (response.httpStatus === 200) {
+        toast.success('Tải ảnh lên thành công');
+      }
     } catch (error: any) {
       console.error('Failed to upload image:', error);
       if (error?.data) {
         const { message, httpStatus } = error.data;
+        const errorMessage = message || 'Lỗi khi tải ảnh lên';
+        toast.error(errorMessage);
+
         if (message) {
           setApiError(`Lỗi khi tải ảnh lên: ${message}`);
         } else {
           setApiError('Lỗi khi tải ảnh lên. Vui lòng thử lại.');
         }
       } else {
+        toast.error('Lỗi khi tải ảnh lên');
         setApiError('Lỗi khi tải ảnh lên. Vui lòng thử lại.');
       }
     }
@@ -127,28 +136,35 @@ const DishForm: React.FC<DishFormProps> = ({
       description,
       imageIds,
       price,
-      requiresPreparation, // Thêm requiresPreparation vào dữ liệu gửi đi
+      requiresPreparation,
     };
 
-    console.log('Submitting dish data:', dishData);
-
     try {
+      let response;
       if (dishId && dishId > 0) {
-        await updateDish({ id: dishId, body: dishData }).unwrap();
+        response = await updateDish({ id: dishId, body: dishData }).unwrap();
+        if (response.httpStatus === 200) {
+          toast.success('Cập nhật món ăn thành công');
+        }
       } else {
-        await createDish(dishData).unwrap();
+        response = await createDish(dishData).unwrap();
+        if (response.httpStatus === 200) {
+          toast.success('Tạo mới món ăn thành công');
+        }
       }
       setName('');
       setDescription('');
       setPrice(0);
       setImageIds([]);
-      setRequiresPreparation(false); // Reset về false sau khi submit
+      setRequiresPreparation(false);
       if (onClose) onClose();
     } catch (error: any) {
       console.error('Failed to save dish:', error);
 
       if (error?.data) {
         const { message, httpStatus, error: errorCode } = error.data;
+        const errorMessage = message || 'Đã xảy ra lỗi khi lưu món ăn';
+        toast.error(errorMessage);
 
         if (httpStatus === 400) {
           if (message) {
@@ -166,6 +182,7 @@ const DishForm: React.FC<DishFormProps> = ({
           setApiError('Đã xảy ra lỗi khi lưu món ăn. Vui lòng thử lại sau.');
         }
       } else {
+        toast.error('Đã xảy ra lỗi khi kết nối đến máy chủ');
         setApiError(
           'Đã xảy ra lỗi khi kết nối đến máy chủ. Vui lòng thử lại sau.',
         );

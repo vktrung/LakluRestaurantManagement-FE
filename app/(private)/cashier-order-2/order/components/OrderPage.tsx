@@ -11,6 +11,7 @@ import { toast } from "sonner"
 import { useGetOrdersByReservationIdQuery } from "@/features/order/orderApiSlice"
 import type { ReservationResponse, TableInfo } from "@/features/reservation/type"
 import { Clock, Users, Phone, User, ShoppingBag, Eye } from "lucide-react"
+import OrderBadge from "./OrderBadge"
 
 interface OrderPageProps {
   reservations: ReservationResponse[]
@@ -26,7 +27,7 @@ interface OrderQueryResult {
 export default function OrderPage({ reservations }: OrderPageProps) {
   const router = useRouter()
 
-  // Fetch all orders data at once for active reservations
+  // Filter active reservations
   const activeReservations = useMemo(
     () =>
       reservations.filter(
@@ -38,13 +39,34 @@ export default function OrderPage({ reservations }: OrderPageProps) {
   // Create an array of reservation IDs
   const reservationIds = useMemo(() => activeReservations.map((reservation) => reservation.id), [activeReservations])
 
-  // Fetch orders for all active reservations
-  const { data: ordersData, isLoading: isOrdersLoading } = useGetOrdersByReservationIdQuery(
-    reservationIds[0] || 0, // Use the first reservation ID or 0 if none
-    {
-      skip: reservationIds.length === 0,
-    },
+  console.log('Active Reservations:', activeReservations)
+  console.log('Reservation IDs:', reservationIds)
+
+  // Create individual queries for each reservation
+  const queries = reservationIds.map(id => 
+    useGetOrdersByReservationIdQuery(id, {
+      skip: !id,
+      refetchOnMountOrArgChange: true,
+    })
   )
+
+  // Create a map of reservation IDs to their orders
+  const ordersMap = useMemo(() => {
+    console.log('Building orders map from queries')
+    const map = new Map<number, any[]>()
+    queries.forEach((query, index) => {
+      const reservationId = reservationIds[index]
+      console.log('Query result for reservation', reservationId, ':', query)
+      // Always set an entry in the map, even if no data or error
+      if (query.data?.data) {
+        map.set(reservationId, query.data.data) // Set orders if data exists
+      } else {
+        map.set(reservationId, []) // Set empty array for no data or error
+      }
+    })
+    console.log('Final orders map:', Array.from(map.entries()))
+    return map
+  }, [queries, reservationIds])
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -115,7 +137,7 @@ export default function OrderPage({ reservations }: OrderPageProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {activeReservations.map((reservation) => {
-        const orders = ordersData?.data || []
+        const orders = ordersMap.get(reservation.id) || []
         const hasOrders = orders.length > 0
 
         return (

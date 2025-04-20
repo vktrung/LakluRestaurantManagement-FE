@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useGetUserMeQuery } from '@/features/auth/authApiSlice';
+import { toast } from 'sonner';
 
 // Client component để sử dụng useSearchParams
 function CheckInForm() {
@@ -139,34 +140,73 @@ function CheckInForm() {
         password,
       });
 
-      const response = await handleCheckInFromQR(
+      const result = await handleCheckInFromQR(
         scheduleIdNum,
         expiryNum,
         signatureParam,
         username,
         password,
       );
+      
+      if (result.error) {
+        setCheckInStatus('error');
+        const errorMsg = result.error.message || 'Đã xảy ra lỗi khi check-in';
+        setErrorMessage(errorMsg);
+        
+        // Hiển thị toast thông báo lỗi
+        if (errorMsg.toLowerCase().includes('cấm truy cập')) {
+          toast.error('Cấm truy cập: Bạn không có trong danh sách ca làm việc này', {
+            position: 'top-right',
+            duration: 5000,
+          });
+        } else {
+          toast.error(errorMsg, {
+            position: 'top-right',
+            duration: 3000,
+          });
+        }
+        return;
+      }
+      
+      // If successful
       setCheckInStatus('success');
-      setErrorMessage(response.message || 'Check-in thành công!');
+      setErrorMessage(result.data?.message || 'Check-in thành công!');
+      toast.success(result.data?.message || 'Check-in thành công!', {
+        position: 'top-right',
+        duration: 3000,
+      });
       setHasCheckedIn(true);
 
       // Delay redirect for animation
       setTimeout(() => {
         router.push('/schedule');
       }, 1500);
-    } catch (error: any) {
+    } catch (err: any) {
       setCheckInStatus('error');
-      console.error('Check-in error:', error);
-
-      if (error.status === 500 && error.data?.message === 'Bad credentials') {
-        setErrorMessage('Người dùng nhập sai password');
-      } else if (
-        error.status === 400 &&
-        error.data?.error === 'Yêu cầu không hợp lệ'
-      ) {
-        setErrorMessage('QR đã hết hiệu lực, vui lòng quét lại QR mới');
+      console.error('Chi tiết lỗi trong component:', err);
+      
+      // Truy cập đúng thông báo lỗi từ API
+      let errorMsg = 'Đã xảy ra lỗi khi check-in';
+      
+      if (err.data && err.data.error) {
+        errorMsg = err.data.error;
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      
+      setErrorMessage(errorMsg);
+      
+      // Hiển thị toast thông báo lỗi
+      if (errorMsg.toLowerCase().includes('cấm truy cập')) {
+        toast.error('Cấm truy cập: Bạn không có trong danh sách ca làm việc này', {
+          position: 'top-right',
+          duration: 5000,
+        });
       } else {
-        setErrorMessage(error.message || 'Đã xảy ra lỗi khi check-in');
+        toast.error(errorMsg, {
+          position: 'top-right',
+          duration: 3000,
+        });
       }
     }
   };

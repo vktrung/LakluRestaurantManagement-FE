@@ -9,13 +9,15 @@ import {
   useCreateShiftAttendMutation,
   useCreateQrCheckoutMutation,
   useGetShiftsByStaffAndDateRangeQuery,
+  useCloneScheduleBetweenWeeksMutation,
 } from "@/features/schedule/scheduleApiSlice";
 import {
   useGetUserMeQuery, 
 } from "@/features/auth/authApiSlice";
-import { startOfWeek, endOfWeek, format, addMinutes } from "date-fns";
-import { Shift, AddShiftRequest, UpdateShiftRequest, CheckinSuccessResponse, CheckInSuccessRequest, GetShiftsByStaffAndDateRangeRequest } from "@/features/schedule/types";
+import { startOfWeek, endOfWeek, format, addMinutes, subWeeks, addWeeks } from "date-fns";
+import { Shift, AddShiftRequest, UpdateShiftRequest, CheckinSuccessResponse, CheckInSuccessRequest, GetShiftsByStaffAndDateRangeRequest, CloneScheduleBetweenWeeksRequest } from "@/features/schedule/types";
 import { vi } from 'date-fns/locale';
+import { toast } from "sonner";
 
 export function useSchedule(currentDate: Date) {
   const weekStart = format(startOfWeek(currentDate, { weekStartsOn: 1 }), "dd/MM/yyyy");
@@ -116,6 +118,7 @@ export function useSchedule(currentDate: Date) {
   const [createQr] = useCreateQrMutation(); 
   const [createQrCheckout] = useCreateQrCheckoutMutation(); // Hook cho check-out
   const [createShiftAttend] = useCreateShiftAttendMutation();
+  const [cloneScheduleBetweenWeeks] = useCloneScheduleBetweenWeeksMutation();
   
   const [selectedShiftId, setSelectedShiftId] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -250,7 +253,86 @@ export function useSchedule(currentDate: Date) {
 
   // Hàm xóa ca làm
   const handleDelete = async (id: number) => {
-    await deleteShift(id);
+    try {
+      const response = await deleteShift(id).unwrap();
+      toast.success("Xóa ca làm thành công", {
+        position: "top-right",
+        duration: 3000,
+      });
+      return response;
+    } catch (err: any) {
+      console.error("Lỗi khi xóa ca làm:", err);
+      
+      // Extract error message - priority order
+      let errorMessage = "Đã xảy ra lỗi khi xóa ca làm";
+      
+      if (err.data && err.data.error) {
+        errorMessage = err.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
+      // Show error toast
+      toast.error(errorMessage, {
+        position: "top-right",
+        duration: 3000,
+      });
+      
+      throw errorMessage;
+    }
+  };
+
+  // Hàm sao chép lịch giữa các tuần
+  const handleCloneSchedule = async (sourceWeek: Date, targetWeek: Date, updateShiftType: boolean = true, overwriteExisting: boolean = false) => {
+    try {
+      // Ensure we use the start of week and correct format
+      const sourceWeekStart = startOfWeek(sourceWeek, { weekStartsOn: 1 });
+      const targetWeekStart = startOfWeek(targetWeek, { weekStartsOn: 1 });
+      
+      // Use dd/MM/yyyy format as shown in the URL example
+      const sourceWeekFormatted = format(sourceWeekStart, "dd/MM/yyyy");
+      const targetWeekFormatted = format(targetWeekStart, "dd/MM/yyyy");
+      
+      console.log(`Cloning from ${sourceWeekFormatted} to ${targetWeekFormatted}`);
+      
+      const request: CloneScheduleBetweenWeeksRequest = {
+        sourceWeek: sourceWeekFormatted,
+        targetWeek: targetWeekFormatted,
+        updateShiftType,
+        overwriteExisting
+      };
+      
+      console.log("Request payload:", JSON.stringify(request));
+      
+      try {
+        const response = await cloneScheduleBetweenWeeks(request).unwrap();
+        console.log("Clone API response:", response);
+        return response;
+      } catch (apiError: any) {
+        console.error("API Error:", apiError);
+        if (apiError.status === 400 && apiError.data) {
+          console.error("API 400 Error Data:", apiError.data);
+          throw apiError.data.message || "Bad request format";
+        }
+        throw apiError;
+      }
+    } catch (err: any) {
+      console.error("Lỗi khi sao chép lịch:", err);
+      
+      let errorMessage = 'Không thể sao chép lịch làm việc.';
+      
+      if (err?.data?.message) {
+        errorMessage = err.data.message;
+      } else if (err?.data?.error) {
+        errorMessage = err.data.error;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
+      throw errorMessage;
+    }
   };
 
   return {
@@ -260,6 +342,7 @@ export function useSchedule(currentDate: Date) {
     handleOpenUpdateDialog,
     handleDelete,
     handleSubmit,
+    handleCloneSchedule,
     isDialogOpen,
     isUpdateDialogOpen,
     setIsDialogOpen,
@@ -275,5 +358,6 @@ export function useSchedule(currentDate: Date) {
     isLoadingUserMe, 
     userMeError, 
     userMeData,
+    currentDate,
   };
 }

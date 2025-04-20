@@ -7,6 +7,7 @@ import {
   MenuItemResponse,
   MenuByIdResponse,
   UpdateMenuItemStatusResponse,
+  GetMenuItemsByMenuIdResponse,
 } from './types';
 
 export const menuItemApiSlice = createApi({
@@ -28,6 +29,35 @@ export const menuItemApiSlice = createApi({
         method: 'GET',
       }),
       providesTags: ['menu-item'],
+    }),
+
+    getMenuItemsByMenuId: builder.query<
+      GetMenuItemsByMenuIdResponse,
+      { id: number; categoryId?: number; activeOnly?: boolean; page?: number; size?: number }
+    >({
+      query: ({ id, categoryId, activeOnly, page = 0, size = 10 }) => {
+        const params: Record<string, string | number | boolean> = {
+          page,
+          size,
+        };
+        
+        if (categoryId !== undefined) {
+          params.categoryId = categoryId;
+        }
+        
+        if (activeOnly !== undefined) {
+          params.activeOnly = activeOnly;
+        }
+        
+        return {
+          url: `${endpoints.MenuApi}${id.toString()}/dishes`,
+          method: 'GET',
+          params,
+        };
+      },
+      providesTags: (result, error, arg) => [
+        { type: 'menu-item-list', id: `menu_${arg.id}` },
+      ],
     }),
 
     createMenuItem: builder.mutation<MenuItemResponse, MenuItemRequest>({
@@ -73,6 +103,7 @@ export const menuItemApiSlice = createApi({
 export const {
   useGetAllMenuItemsQuery,
   useGetMenuItemByIdQuery,
+  useGetMenuItemsByMenuIdQuery,
   useCreateMenuItemMutation,
   useUpdateMenuItemMutation,
   useDeleteMenuItemMutation,

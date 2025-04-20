@@ -1,67 +1,376 @@
 "use client";
 
-import { useGetMenuByIdQuery } from "@/features/menu/menuApiSlice";
-import { MenuItemList } from "@/app/(private)/menu/menu-item/components/MenuItemList";
-import { useParams } from "next/navigation";
-import { Menu, MenuItem } from "@/features/menu/types";
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useGetMenuByIdQuery } from '@/features/menu/menuApiSlice';
+import { useGetMenuItemsByMenuIdQuery } from '@/features/menu-item/menuItemApiSlice';
+import { useGetCategoriesQuery } from '@/features/category/categoryApiSlice';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import MenuItemList from '../components/MenuItemList';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { CalendarIcon, FilterIcon, RefreshCw } from 'lucide-react';
 
-export default function Page() {
+export default function MenuItemPage() {
   const params = useParams();
+  const router = useRouter();
+  const navigation = useRouter();
+  const searchParams = useSearchParams();
   const menuId = Number(params.id);
   
-  const [refreshKey, setRefreshKey] = useState(0);
-  
-  const { data, isLoading, error, refetch } = useGetMenuByIdQuery(menuId, {
-    skip: isNaN(menuId),
-    refetchOnMountOrArgChange: true
+  // Get search params
+  const pageParam = searchParams.get('page');
+  const pageSizeParam = searchParams.get('pageSize');
+  const categoryIdParam = searchParams.get('categoryId');
+  const activeOnlyParam = searchParams.get('activeOnly');
+
+  // Filter and pagination state
+  const [page, setPage] = useState(pageParam ? parseInt(pageParam) - 1 : 0);
+  const [pageSize, setPageSize] = useState(pageSizeParam ? parseInt(pageSizeParam) : 10);
+  const [categoryId, setCategoryId] = useState<number | undefined>(
+    categoryIdParam ? parseInt(categoryIdParam) : undefined
+  );
+  const [activeOnly, setActiveOnly] = useState<boolean | undefined>(
+    activeOnlyParam ? activeOnlyParam === 'true' : undefined
+  );
+
+  // Get menu data
+  const {
+    data: menuData,
+    isLoading: isMenuLoading,
+    error: menuError,
+  } = useGetMenuByIdQuery(menuId);
+  const menu = menuData?.data;
+
+  // Get categories for filter
+  const { data: categoriesData } = useGetCategoriesQuery();
+
+  // Fetch menu items with filters
+  const {
+    data: menuItemsData,
+    isLoading: isMenuItemsLoading,
+    isFetching: isMenuItemsFetching,
+    refetch: refetchMenuItems,
+  } = useGetMenuItemsByMenuIdQuery({
+    id: menuId,
+    page,
+    size: pageSize,
+    categoryId,
+    activeOnly
+  }, {
+    refetchOnMountOrArgChange: true,
   });
 
-  const [isClient, setIsClient] = useState(false);
-  
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  const menuItems = menuItemsData?.data?.content || [];
+  const pagination = menuItemsData?.data?.pagination || { totalPages: 1, pageNumber: 0, pageSize: 10, totalElements: 0 };
+  const totalPages = pagination?.totalPages || 1;
 
+  // Update URL when filters change
   useEffect(() => {
-    if (menuId) {
-      refetch();
+    // Create new URLSearchParams object
+    const params = new URLSearchParams();
+    
+    // Add page and pageSize
+    params.set('page', (page + 1).toString());
+    params.set('pageSize', pageSize.toString());
+    
+    // Add optional filters if they exist
+    if (categoryId !== undefined) {
+      params.set('categoryId', categoryId.toString());
     }
-  }, [menuId, refetch]);
+    
+    if (activeOnly !== undefined) {
+      params.set('activeOnly', activeOnly.toString());
+    }
+    
+    // Update URL without reloading the page
+    const url = `${window.location.pathname}?${params.toString()}`;
+    navigation.replace(url);
+  }, [page, pageSize, categoryId, activeOnly, navigation]);
 
-  // Function to trigger a refetch
-  const handleRefresh = () => {
-    refetch();
-    // Increment refreshKey to force component updates
-    setRefreshKey(prev => prev + 1);
+  // Function to apply filters
+  const applyFilters = () => {
+    // Reset to first page when applying new filters
+    setPage(0);
   };
 
-  if (!isClient) return null;
-  
-  if (isNaN(menuId)) {
-    return <div>Error: Invalid menu ID</div>;
+  // Function to reset filters
+  const resetFilters = () => {
+    setCategoryId(undefined);
+    setActiveOnly(undefined);
+    setPage(0);
+    setPageSize(10);
+  };
+
+  // Handle pagination
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  if (isMenuLoading) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    );
   }
-  
-  if (isLoading) return <div>Loading menu items...</div>;
-  if (error) return <div>Error loading menu items: {error.toString()}</div>;
 
-  const menu: Menu | null = data?.data ?? null;
-  if (!menu) return <div>Loading menu...</div>;
+  if (menuError) {
+    return (
+      <div className="flex flex-col items-center justify-center p-6 rounded-lg bg-destructive/10 text-destructive">
+        <p className="text-lg font-medium">Không thể tải thông tin thực đơn</p>
+        <p className="text-sm">Vui lòng thử lại sau</p>
+      </div>
+    );
+  }
 
-  const menuItems: MenuItem[] = Array.isArray(menu.menuItems) ? menu.menuItems : [];
+  if (!menu) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 px-4 bg-gray-50 rounded-lg border border-gray-200">
+        <CalendarIcon className="h-12 w-12 text-gray-400 mb-4" />
+        <p className="text-gray-600 font-medium text-lg">
+          Không tìm thấy thực đơn
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Danh Sách Mục Menu: {menu.name}</h1>
+    <div className="space-y-4 container py-4 max-w-7xl">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight space-y-1">
+            Quản lý món ăn
+          </h2>
+          <p className="text-muted-foreground">
+            Thực đơn: {menu?.name || 'Không có tên'}
+          </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => refetchMenuItems()}
+            disabled={isMenuItemsFetching}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isMenuItemsFetching ? "animate-spin" : ""}`} />
+            Làm mới
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => router.push('/menu/menu-info')}>
+            Quay lại
+          </Button>
+        </div>
+      </div>
+
+      <Separator className="my-4" />
       
-      <MenuItemList
-        key={refreshKey} 
-        items={menuItems}
-        onDelete={handleRefresh} 
-        onSelect={(id) => console.log(`Select menu item with ID: ${id}`)}
-        menuId={menuId}
-        onAddSuccess={handleRefresh} 
-      />
+      {/* Filter section */}
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-1 block">Danh mục</label>
+              <Select
+                value={categoryId?.toString() || "all"}
+                onValueChange={(value) => {
+                  if (value === "all") {
+                    setCategoryId(undefined);
+                  } else {
+                    setCategoryId(Number(value));
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Tất cả danh mục" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả danh mục</SelectItem>
+                  {categoriesData?.data?.map((category) => (
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-1 block">Trạng thái</label>
+              <Select
+                value={activeOnly === undefined ? "all" : activeOnly ? "true" : "false"}
+                onValueChange={(value) => {
+                  if (value === "all") {
+                    setActiveOnly(undefined);
+                  } else {
+                    setActiveOnly(value === "true");
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Tất cả trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                  <SelectItem value="true">Hoạt động</SelectItem>
+                  <SelectItem value="false">Vô hiệu hóa</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-1 block">Số món mỗi trang</label>
+              <Select
+                value={pageSize.toString()}
+                onValueChange={(value) => setPageSize(Number(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="10" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="flex justify-end mt-4 space-x-2">
+            <Button variant="outline" onClick={resetFilters}>
+              Đặt lại
+            </Button>
+            <Button onClick={applyFilters}>
+              Áp dụng
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Loading indicator */}
+      {(isMenuItemsLoading || isMenuItemsFetching) && (
+        <div className="flex justify-center items-center py-8">
+          <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+        </div>
+      )}
+
+      {/* Pagination top */}
+      {!isMenuItemsLoading && !isMenuItemsFetching && pagination && pagination.totalPages > 1 && (
+        <div className="mb-6 flex justify-between items-center">
+          <div className="text-sm text-gray-500">
+            Hiển thị {pagination.pageNumber * pagination.pageSize + 1} - {Math.min((pagination.pageNumber + 1) * pagination.pageSize, pagination.totalElements)} trong tổng số {pagination.totalElements} món
+          </div>
+          
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => handlePageChange(Math.max(0, page - 1))}
+                  className={page === 0 ? "pointer-events-none opacity-50" : "cursor-pointer"} 
+                />
+              </PaginationItem>
+              
+              {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                // Show current page and surrounding pages
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i;
+                } else if (page < 2) {
+                  pageNum = i;
+                } else if (page > totalPages - 3) {
+                  pageNum = totalPages - 5 + i;
+                } else {
+                  pageNum = page - 2 + i;
+                }
+                
+                if (pageNum >= 0 && pageNum < totalPages) {
+                  return (
+                    <PaginationItem key={pageNum}>
+                      <PaginationLink
+                        isActive={pageNum === page}
+                        onClick={() => handlePageChange(pageNum)}
+                        className="cursor-pointer"
+                      >
+                        {pageNum + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                }
+                return null;
+              })}
+              
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => handlePageChange(Math.min(totalPages - 1, page + 1))}
+                  className={page >= totalPages - 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} 
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
+
+      {/* Menu item list */}
+      {!isMenuItemsLoading && !isMenuItemsFetching && (
+        <MenuItemList 
+          menuId={menuId}
+          items={menuItems}
+          onRefresh={refetchMenuItems}
+        />
+      )}
+
+      {/* Pagination bottom */}
+      {!isMenuItemsLoading && !isMenuItemsFetching && pagination && pagination.totalPages > 1 && (
+        <div className="mt-6 flex justify-center">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => handlePageChange(Math.max(0, page - 1))}
+                  className={page === 0 ? "pointer-events-none opacity-50" : "cursor-pointer"} 
+                />
+              </PaginationItem>
+              
+              {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                // Show current page and surrounding pages
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i;
+                } else if (page < 2) {
+                  pageNum = i;
+                } else if (page > totalPages - 3) {
+                  pageNum = totalPages - 5 + i;
+                } else {
+                  pageNum = page - 2 + i;
+                }
+                
+                if (pageNum >= 0 && pageNum < totalPages) {
+                  return (
+                    <PaginationItem key={pageNum}>
+                      <PaginationLink
+                        isActive={pageNum === page}
+                        onClick={() => handlePageChange(pageNum)}
+                        className="cursor-pointer"
+                      >
+                        {pageNum + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                }
+                return null;
+              })}
+              
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => handlePageChange(Math.min(totalPages - 1, page + 1))}
+                  className={page >= totalPages - 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} 
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   );
 }

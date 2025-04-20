@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useGetUserMeQuery } from '@/features/auth/authApiSlice';
+import { toast } from 'sonner';
 
 function CheckOutForm() {
   const router = useRouter();
@@ -133,15 +134,41 @@ function CheckOutForm() {
         password,
       });
 
-      const response = await handleCheckOutFromQR(
+      const result = await handleCheckOutFromQR(
         scheduleIdNum,
         expiryNum,
         signatureParam,
         username,
         password,
       );
+      
+      if (result.error) {
+        setCheckOutStatus('error');
+        const errorMsg = result.error.message || 'Đã xảy ra lỗi khi check-out';
+        setErrorMessage(errorMsg);
+        
+        // Hiển thị toast thông báo lỗi
+        if (errorMsg.toLowerCase().includes('cấm truy cập')) {
+          toast.error('Cấm truy cập: Bạn không có trong danh sách ca làm việc này', {
+            position: 'top-right',
+            duration: 5000,
+          });
+        } else {
+          toast.error(errorMsg, {
+            position: 'top-right',
+            duration: 3000,
+          });
+        }
+        return;
+      }
+      
+      // If successful
       setCheckOutStatus('success');
-      setErrorMessage(response.message || 'Check-out thành công!');
+      setErrorMessage(result.data?.message || 'Check-out thành công!');
+      toast.success(result.data?.message || 'Check-out thành công!', {
+        position: 'top-right',
+        duration: 3000,
+      });
       setHasCheckedOut(true);
 
       setTimeout(() => {
@@ -149,17 +176,30 @@ function CheckOutForm() {
       }, 1500);
     } catch (error: any) {
       setCheckOutStatus('error');
-      console.error('Check-out error:', error);
-
-      if (error.status === 500 && error.data?.message === 'Bad credentials') {
-        setErrorMessage('Người dùng nhập sai password');
-      } else if (
-        error.status === 400 &&
-        error.data?.error === 'Yêu cầu không hợp lệ'
-      ) {
-        setErrorMessage('QR đã hết hiệu lực, vui lòng quét lại QR mới');
+      console.error('Chi tiết lỗi trong component:', error);
+      
+      // Truy cập đúng thông báo lỗi từ API
+      let errorMsg = 'Đã xảy ra lỗi khi check-out';
+      
+      if (error.data && error.data.error) {
+        errorMsg = error.data.error;
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+      
+      setErrorMessage(errorMsg);
+      
+      // Hiển thị toast thông báo lỗi
+      if (errorMsg.toLowerCase().includes('cấm truy cập')) {
+        toast.error('Cấm truy cập: Bạn không có trong danh sách ca làm việc này', {
+          position: 'top-right',
+          duration: 5000,
+        });
       } else {
-        setErrorMessage(error.message || 'Đã xảy ra lỗi khi check-out');
+        toast.error(errorMsg, {
+          position: 'top-right',
+          duration: 3000,
+        });
       }
     }
   };

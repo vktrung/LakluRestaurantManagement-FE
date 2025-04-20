@@ -15,15 +15,12 @@ import {
 } from '@/features/auth/types';
 import baseQuery from '@/features/baseQuery';
 import { createApi } from '@reduxjs/toolkit/query/react';
+import { getTokenFromCookie } from '@/utils/token';
 
 const getAuthToken = () => {
-  if (typeof document !== 'undefined') {
-    const match = document.cookie.match('(^|;)\\s*auth_token\\s*=\\s*([^;]+)');
-    const token = match ? match.pop() : null;
-    console.log("Auth token from cookie:", token); 
-    return token;
-  }
-  return null;
+  const token = getTokenFromCookie('auth_token');
+  console.log("Auth token from cookie:", token); 
+  return token || null;
 };
 
 export const authApiSlice = createApi({
@@ -103,7 +100,12 @@ export const authApiSlice = createApi({
       query: () => {
         const token = getAuthToken();
         if (!token) {
-          throw new Error('Không tìm thấy token trong cookie!');
+          console.warn('Không tìm thấy token trong cookie.');
+          
+          return {
+            url: endpoints.authMe,
+            method: 'GET',
+          };
         }
         return {
           url: endpoints.authMe,

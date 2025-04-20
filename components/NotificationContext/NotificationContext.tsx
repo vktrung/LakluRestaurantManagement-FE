@@ -173,8 +173,19 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
   // Định kỳ kiểm tra token và fetch data
   useEffect(() => {
+    // Kiểm tra xem có đang ở trang login không
+    if (typeof window !== 'undefined' && window.location.pathname.includes('/login')) {
+      // Nếu đang ở trang login, không gọi API
+      return;
+    }
+
     // Gọi lại dữ liệu mỗi 5 giây nếu đã có userData
     const dataRefreshInterval = setInterval(() => {
+      // Kiểm tra lại đường dẫn hiện tại mỗi lần gọi API để tránh gọi khi ở trang login
+      if (typeof window !== 'undefined' && window.location.pathname.includes('/login')) {
+        return;
+      }
+
       const token = getAuthToken();
 
       // Nếu có token mới (vừa đăng nhập) nhưng chưa có userData, gọi getUserMe

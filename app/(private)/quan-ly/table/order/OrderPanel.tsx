@@ -1,6 +1,6 @@
 'use client';
-
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation"; // Thêm useSearchParams
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { MinusCircle, PlusCircle, Trash2 } from "lucide-react";
@@ -22,11 +22,12 @@ const OrderPanel = ({
 }) => {
   const [createTableOrder, { isLoading: isCreatingOrder }] = useCreateTableOrderMutation();
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams(); // Thêm useSearchParams
 
+  // Get tableIds from query parameters
   const tableIdsParam = searchParams.get("tableIds");
   const tableIds = tableIdsParam ? tableIdsParam.split(",").map(Number) : [];
-
+  // Calculate total price
   const total = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const handleCreateOrder = async () => {
@@ -50,8 +51,8 @@ const OrderPanel = ({
     const orderData: CreateTableOrderRequest = {
       customerName: defaultCustomerName,
       customerPhone: defaultCustomerPhone,
-      tableIds: tableIds,
-      numberOfPeople: 6,
+      tableIds: tableIds, // Use the table IDs from query parameters
+      numberOfPeople: 6, // Hardcoding for now; adjust as needed
       orderItems: orderItems.map((item) => ({
         menuItemId: item.menuItemsId,
         quantity: item.quantity,
@@ -63,8 +64,9 @@ const OrderPanel = ({
       toast.success(`Đơn hàng đã được tạo thành công! ID: ${response.orderId}`, {
         position: "top-right",
       });
-      onClose();
-      router.push('');
+      console.log("Order data sent:", orderData); // Debugging
+      onClose(); // Close the panel after success
+      router.push(''); // Navigate to confirmation page
     } catch (error) {
       console.error("Failed to create table order:", error);
       toast.error("Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.", {
@@ -74,80 +76,75 @@ const OrderPanel = ({
   };
 
   return (
-    <div className="h-full border rounded-lg shadow-md p-3 sm:p-4 space-y-3 sm:space-y-4">
+    <div className="h-full border rounded-lg shadow-md p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-base sm:text-xl font-semibold">Đơn hàng của bạn</h2>
-        <Button variant="ghost" onClick={onClose} size="sm" className="h-8 sm:h-9 text-xs sm:text-sm">
+        <h2 className="text-xl font-semibold">Đơn hàng của bạn</h2>
+        <Button variant="ghost" onClick={onClose} size="sm">
           Đóng
         </Button>
       </div>
 
-      <div className="overflow-y-auto h-[calc(100vh-250px)] sm:h-[calc(100vh-300px)]">
+      <div className="overflow-y-auto h-[calc(100vh-300px)]">
         {orderItems.length > 0 ? (
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-4">
             {orderItems.map((item) => (
-              <div key={item.dishId} className="flex items-center justify-between p-2 sm:p-3 border rounded-lg">
-                <div className="flex items-center space-x-3 sm:space-x-4">
+              <div key={item.dishId} className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center space-x-4">
                   <img
                     src={item.image || "/placeholder.svg"}
                     alt={item.name}
-                    className="w-10 sm:w-12 h-10 sm:h-12 object-cover rounded"
+                    className="w-12 h-12 object-cover rounded"
                   />
                   <div>
-                    <h4 className="font-medium text-sm sm:text-base">{item.name}</h4>
-                    <p className="text-xs sm:text-sm text-muted-foreground">
+                    <h4 className="font-medium">{item.name}</h4>
+                    <p className="text-sm text-muted-foreground">
                       {item.price.toLocaleString("vi-VN")} VND
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-1 sm:space-x-2">
+                <div className="flex items-center">
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => onUpdateQuantity(item.dishId, item.quantity - 1)}
                     disabled={item.quantity <= 1}
-                    className="h-7 sm:h-8 w-7 sm:w-8"
                   >
-                    <MinusCircle className="h-3 sm:h-4 w-3 sm:w-4" />
+                    <MinusCircle className="h-4 w-4" />
                   </Button>
-                  <span className="text-xs sm:text-sm mx-1 sm:mx-2">{item.quantity}</span>
+                  <span className="mx-2">{item.quantity}</span>
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => onUpdateQuantity(item.dishId, item.quantity + 1)}
-                    className="h-7 sm:h-8 w-7 sm:w-8"
                   >
-                    <PlusCircle className="h-3 sm:h-4 w-3 sm:w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onRemoveItem(item.dishId)}
-                    className="h-7 sm:h-8 w-7 sm:w-8"
-                  >
-                    <Trash2 className="h-3 sm:h-4 w-3 sm:w-4 text-red-600" />
+                    <PlusCircle className="h-4 w-4" />
                   </Button>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onRemoveItem(item.dishId)}
+                >
+                  <Trash2 className="h-4 w-4 text-red-600" />
+                </Button>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-center text-muted-foreground text-sm sm:text-base">
-            Đơn hàng của bạn đang trống
-          </p>
+          <p className="text-center text-muted-foreground">Đơn hàng của bạn đang trống</p>
         )}
       </div>
 
-      <div className="border-t pt-3 sm:pt-4 mt-auto">
-        <div className="flex justify-between items-center mb-3 sm:mb-4">
-          <span className="font-semibold text-sm sm:text-base">Tổng cộng:</span>
-          <span className="font-bold text-base sm:text-lg">
+      <div className="border-t pt-4 mt-auto">
+        <div className="flex justify-between items-center mb-4">
+          <span className="font-semibold">Tổng cộng:</span>
+          <span className="font-bold text-lg">
             {total.toLocaleString("vi-VN")} VND
           </span>
         </div>
         <Button
           variant="default"
-          className="w-full h-8 sm:h-10 text-xs sm:text-sm bg-green-600 hover:bg-green-700"
+          className="w-full bg-green-600 hover:bg-green-700"
           onClick={handleCreateOrder}
           disabled={isCreatingOrder || orderItems.length === 0}
         >

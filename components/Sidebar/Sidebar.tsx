@@ -463,9 +463,6 @@ export function Sidebar({ className, ...props }: SidebarProps) {
                 <DropdownMenuItem asChild>
                   <Link href="/profile">Hồ sơ</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/settings">Cài đặt</Link>
-                </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => {

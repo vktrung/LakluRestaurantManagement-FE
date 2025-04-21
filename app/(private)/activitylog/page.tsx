@@ -94,6 +94,104 @@ export default function ActivityDashboard() {
     })
   }, [activityLogs?.content, sortConfig])
 
+  // Hàm render phân trang
+  const renderPagination = () => {
+    if (!activityLogs || activityLogs.totalPages <= 1) return null;
+
+    const totalPages = activityLogs.totalPages;
+    const maxVisiblePages = 5;
+    let startPage = Math.max(0, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages - 1, startPage + maxVisiblePages - 1);
+    
+    // Điều chỉnh startPage nếu endPage đã đạt giới hạn
+    if (endPage === totalPages - 1) {
+      startPage = Math.max(0, endPage - maxVisiblePages + 1);
+    }
+    
+    // Mảng chứa các nút phân trang
+    const paginationItems = [];
+    
+    // Thêm trang đầu tiên và dấu "..." nếu cần
+    if (startPage > 0) {
+      paginationItems.push(
+        <PaginationItem key="first">
+          <PaginationLink
+            onClick={() => setCurrentPage(0)}
+            isActive={currentPage === 0}
+          >
+            1
+          </PaginationLink>
+        </PaginationItem>
+      );
+      
+      if (startPage > 1) {
+        paginationItems.push(
+          <PaginationItem key="start-ellipsis">
+            <span className="px-4 py-2">...</span>
+          </PaginationItem>
+        );
+      }
+    }
+    
+    // Thêm các trang hiển thị
+    for (let i = startPage; i <= endPage; i++) {
+      paginationItems.push(
+        <PaginationItem key={i}>
+          <PaginationLink
+            onClick={() => setCurrentPage(i)}
+            isActive={currentPage === i}
+          >
+            {i + 1}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+    
+    // Thêm dấu "..." và trang cuối cùng nếu cần
+    if (endPage < totalPages - 1) {
+      if (endPage < totalPages - 2) {
+        paginationItems.push(
+          <PaginationItem key="end-ellipsis">
+            <span className="px-4 py-2">...</span>
+          </PaginationItem>
+        );
+      }
+      
+      paginationItems.push(
+        <PaginationItem key="last">
+          <PaginationLink
+            onClick={() => setCurrentPage(totalPages - 1)}
+            isActive={currentPage === totalPages - 1}
+          >
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+    
+    return (
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious 
+              onClick={() => currentPage > 0 && setCurrentPage(currentPage - 1)}
+              className={currentPage === 0 ? "pointer-events-none opacity-50" : ""}
+            />
+          </PaginationItem>
+          
+          {paginationItems}
+
+          <PaginationItem>
+            <PaginationNext
+              onClick={() => currentPage < totalPages - 1 && setCurrentPage(currentPage + 1)}
+              className={currentPage === totalPages - 1 ? "pointer-events-none opacity-50" : ""}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
@@ -215,36 +313,8 @@ export default function ActivityDashboard() {
                   />
                 )}
 
-                {activityLogs && activityLogs.totalPages > 1 && (
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious 
-                          onClick={() => currentPage > 0 && setCurrentPage(currentPage - 1)}
-                          className={currentPage === 0 ? "pointer-events-none opacity-50" : ""}
-                        />
-                      </PaginationItem>
-                      
-                      {Array.from({ length: activityLogs.totalPages }).map((_, i) => (
-                        <PaginationItem key={i}>
-                          <PaginationLink
-                            onClick={() => setCurrentPage(i)}
-                            isActive={currentPage === i}
-                          >
-                            {i + 1}
-                          </PaginationLink>
-                        </PaginationItem>
-                      ))}
+                {renderPagination()}
 
-                      <PaginationItem>
-                        <PaginationNext
-                          onClick={() => currentPage < activityLogs.totalPages - 1 && setCurrentPage(currentPage + 1)}
-                          className={currentPage === activityLogs.totalPages - 1 ? "pointer-events-none opacity-50" : ""}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                )}
               </div>
             </CardContent>
           </Card>

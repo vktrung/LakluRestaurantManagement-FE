@@ -206,20 +206,90 @@ export default function UserActivityLog() {
                 />
               </PaginationItem>
 
-              {Array.from({ length: activityLogs.totalPages }).map((_, i) => (
-                <PaginationItem key={i}>
-                  <PaginationLink
-                    href="#"
-                    isActive={currentPage === i}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      setCurrentPage(i)
-                    }}
-                  >
-                    {i + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
+              {(() => {
+                // Hiển thị tối đa 5 trang với trang hiện tại ở giữa khi có thể
+                const totalPages = activityLogs.totalPages;
+                const maxVisiblePages = 5;
+                let startPage = Math.max(0, currentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages - 1, startPage + maxVisiblePages - 1);
+                
+                // Điều chỉnh startPage nếu endPage đã đạt giới hạn
+                if (endPage === totalPages - 1) {
+                  startPage = Math.max(0, endPage - maxVisiblePages + 1);
+                }
+                
+                const visiblePages = [];
+                
+                // Thêm trang đầu tiên và dấu "..." nếu cần
+                if (startPage > 0) {
+                  visiblePages.push(
+                    <PaginationItem key="first">
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setCurrentPage(0);
+                        }}
+                      >
+                        1
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                  
+                  if (startPage > 1) {
+                    visiblePages.push(
+                      <PaginationItem key="start-ellipsis">
+                        <span className="px-4 py-2">...</span>
+                      </PaginationItem>
+                    );
+                  }
+                }
+                
+                // Thêm các trang hiển thị
+                for (let i = startPage; i <= endPage; i++) {
+                  visiblePages.push(
+                    <PaginationItem key={i}>
+                      <PaginationLink
+                        href="#"
+                        isActive={currentPage === i}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setCurrentPage(i);
+                        }}
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                }
+                
+                // Thêm dấu "..." và trang cuối cùng nếu cần
+                if (endPage < totalPages - 1) {
+                  if (endPage < totalPages - 2) {
+                    visiblePages.push(
+                      <PaginationItem key="end-ellipsis">
+                        <span className="px-4 py-2">...</span>
+                      </PaginationItem>
+                    );
+                  }
+                  
+                  visiblePages.push(
+                    <PaginationItem key="last">
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setCurrentPage(totalPages - 1);
+                        }}
+                      >
+                        {totalPages}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                }
+                
+                return visiblePages;
+              })()}
 
               <PaginationItem>
                 <PaginationNext

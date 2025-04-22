@@ -50,7 +50,7 @@ const OrderDetailPage = ({ params }: { params: { reservationId: string } }) => {
     return <div className="w-full p-6">Không thể tải danh sách thực đơn</div>;
 
   const menus = menusData?.data || [];
-  const menuItems = menuData?.data?.menuItems || [];
+  const menuItems = selectedMenuId && menuData?.data ? [menuData.data] : [];
 
   // Lọc menu_items theo searchTerm
   const filteredMenuItems = menuItems.filter((item: MenuItem) =>

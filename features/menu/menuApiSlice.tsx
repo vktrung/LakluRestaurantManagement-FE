@@ -8,6 +8,7 @@ import {
   MenuRequest,
   MenuByIdResponse,
   MenuDishesResponse,
+  MenuDishesParams, // <-- ADD THIS
 } from './types';
 
 export const menuApiSlice = createApi({
@@ -25,7 +26,7 @@ export const menuApiSlice = createApi({
 
     getMenuById: builder.query<MenuByIdResponse, number>({
       query: id => ({
-        url: `${endpoints.MenuApi}${id.toString()}`,
+        url: `${endpoints.MenuApi}${id}`,
         method: 'GET',
       }),
       providesTags: ['menu'],
@@ -33,20 +34,22 @@ export const menuApiSlice = createApi({
 
     getMenuItemById: builder.query<MenuItemByIdResponse, number>({
       query: id => ({
-        url: `${endpoints.MenuApi}${id.toString()}`,
+        url: `${endpoints.MenuApi}${id}`,
         method: 'GET',
       }),
       providesTags: ['menu'],
     }),
 
-    getMenuDishes: builder.query<
-      MenuDishesResponse,
-      { menuId: number; activeOnly?: boolean; page?: number; size?: number }
-    >({
-      query: ({ menuId, activeOnly = true, page = 0, size = 10 }) => ({
+    getMenuDishes: builder.query<MenuDishesResponse, MenuDishesParams>({
+      query: ({ menuId, categoryId, activeOnly = true, page = 0, size = 10 }) => ({
         url: `${endpoints.MenuApi}${menuId}/dishes`,
         method: 'GET',
-        params: { activeOnly, page, size },
+        params: {
+          ...(categoryId !== undefined && { categoryId }),
+          activeOnly,
+          page,
+          size,
+        },
       }),
       providesTags: ['menu-dishes'],
     }),
@@ -65,7 +68,7 @@ export const menuApiSlice = createApi({
       { id: number; body: MenuRequest }
     >({
       query: ({ id, body }) => ({
-        url: `${endpoints.MenuApi}${id.toString()}`,
+        url: `${endpoints.MenuApi}${id}`,
         method: 'PUT',
         body,
       }),
@@ -74,7 +77,7 @@ export const menuApiSlice = createApi({
 
     deleteMenu: builder.mutation<MenuResponse, number>({
       query: id => ({
-        url: `${endpoints.MenuApi}${id.toString()}`,
+        url: `${endpoints.MenuApi}${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['menu-list'],

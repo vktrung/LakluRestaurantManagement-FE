@@ -107,3 +107,10 @@ export interface MenuRequest {
   endAt: string;
   status: "ENABLE" | "DISABLE";
 }
+export interface MenuDishesParams {
+  menuId: number;
+  categoryId?: number;
+  activeOnly?: boolean;
+  page?: number;
+  size?: number;
+}

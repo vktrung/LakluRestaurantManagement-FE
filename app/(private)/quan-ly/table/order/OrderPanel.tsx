@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { MinusCircle, PlusCircle, Trash2 } from 'lucide-react';
-import { CreateTableOrderRequest } from '@/features/table-order/types';
 import { useCreateTableOrderMutation } from '@/features/table-order/table-orderApiSlice';
+import { CreateTableOrderRequest } from '@/features/table-order/types';
 import { Menu } from '@/features/menu/types';
 
 interface OrderItem {
@@ -28,8 +28,8 @@ const OrderPanel = ({
   menusData,
 }: {
   orderItems: OrderItem[];
-  onRemoveItem: (dishId: number) => void;
-  onUpdateQuantity: (dishId: number, quantity: number) => void;
+  onRemoveItem: (menuItemsId: number) => void;
+  onUpdateQuantity: (menuItemsId: number, quantity: number) => void;
   onClose: () => void;
   reservationId: number;
   menusData?: Menu[];
@@ -106,7 +106,7 @@ const OrderPanel = ({
           <div className="space-y-3 sm:space-y-4">
             {orderItems.map((item) => (
               <div
-                key={item.dishId}
+                key={item.menuItemsId}
                 className="flex items-center justify-between p-2 sm:p-3 border rounded-lg bg-gray-50"
               >
                 <div className="flex items-center space-x-3 sm:space-x-4">
@@ -132,7 +132,7 @@ const OrderPanel = ({
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => onUpdateQuantity(item.dishId, item.quantity - 1)}
+                      onClick={() => onUpdateQuantity(item.menuItemsId, item.quantity - 1)}
                       disabled={item.quantity <= 1}
                       className="h-7 sm:h-8 w-7 sm:w-8 rounded-r-none border-r-0"
                       aria-label={`Giảm số lượng của ${item.name}`}
@@ -145,7 +145,7 @@ const OrderPanel = ({
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => onUpdateQuantity(item.dishId, item.quantity + 1)}
+                      onClick={() => onUpdateQuantity(item.menuItemsId, item.quantity + 1)}
                       className="h-7 sm:h-8 w-7 sm:w-8 rounded-l-none border-l-0"
                       aria-label={`Tăng số lượng của ${item.name}`}
                     >
@@ -155,7 +155,7 @@ const OrderPanel = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => onRemoveItem(item.dishId)}
+                    onClick={() => onRemoveItem(item.menuItemsId)}
                     className="h-7 sm:h-8 w-7 sm:w-8"
                     aria-label={`Xóa ${item.name} khỏi đơn hàng`}
                   >
@@ -181,7 +181,7 @@ const OrderPanel = ({
         </div>
         <Button
           variant="default"
-          className="w-full h-8 sm:h-10 text-xs sm:text-sm bg-green-600 hover:bg-green-700"
+          className="w-full h-10 text-sm font-semibold bg-green-600 hover:bg-green-700"
           onClick={handleCreateOrder}
           disabled={isCreatingOrder || orderItems.length === 0}
         >

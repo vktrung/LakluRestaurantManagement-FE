@@ -15,7 +15,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import { useGetUserMeQuery } from '@/features/auth/authApiSlice';
 
@@ -143,11 +142,8 @@ export function Header({ className }: { className?: string }) {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Tài khoản của tôi</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuItem asChild>
-                  <Link href="/profile">Hồ sơ</Link>
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
+              <DropdownMenuItem>Hồ sơ</DropdownMenuItem>
+              <DropdownMenuItem>Cài đặt</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 Đăng xuất

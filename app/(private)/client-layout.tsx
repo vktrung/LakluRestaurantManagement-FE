@@ -1,6 +1,9 @@
 'use client';
 
 import { ClientWrapper } from '@/components/ClientWrapper/ClientWrapper';
+import { Sidebar } from '@/components/Sidebar/Sidebar';
+import { MobileSidebar } from '@/components/Sidebar/MobileSidebar';
+// import { useEffect, useState } from 'react';
 import { useEffect, useState, useRef } from 'react';
 import { useGetUserMeQuery } from '@/features/auth/authApiSlice';
 import dynamic from 'next/dynamic';
@@ -76,11 +79,16 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       </div>
     );
   }
-  
+
   return (
-    <div className="flex">
-      <DynamicSidebar />
-      <ClientWrapper>{children}</ClientWrapper>
+    <div className="flex min-h-screen flex-col">
+      <div className="flex flex-1">
+        <div className="hidden md:block">
+          <DynamicSidebar />
+        </div>
+        <ClientWrapper>{children}</ClientWrapper>
+      </div>
+      <MobileSidebar />
     </div>
   );
-} 
+}

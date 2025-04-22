@@ -1,12 +1,19 @@
 import { endpoints } from '@/configs/endpoints';
 import baseQuery from '@/features/baseQuery';
 import { createApi } from '@reduxjs/toolkit/query/react';
-import {MenuItemByIdResponse, Menu, MenuResponse, MenuRequest, MenuByIdResponse } from './types';
+import {
+  MenuItemByIdResponse,
+  Menu,
+  MenuResponse,
+  MenuRequest,
+  MenuByIdResponse,
+  MenuDishesResponse,
+} from './types';
 
 export const menuApiSlice = createApi({
   reducerPath: 'menuApi',
   baseQuery,
-  tagTypes: ['menu-list', 'menu'],
+  tagTypes: ['menu-list', 'menu', 'menu-dishes'],
   endpoints: builder => ({
     getMenus: builder.query<MenuResponse, void>({
       query: () => ({
@@ -23,6 +30,7 @@ export const menuApiSlice = createApi({
       }),
       providesTags: ['menu'],
     }),
+
     getMenuItemById: builder.query<MenuItemByIdResponse, number>({
       query: id => ({
         url: `${endpoints.MenuApi}${id.toString()}`,
@@ -30,6 +38,19 @@ export const menuApiSlice = createApi({
       }),
       providesTags: ['menu'],
     }),
+
+    getMenuDishes: builder.query<
+      MenuDishesResponse,
+      { menuId: number; activeOnly?: boolean; page?: number; size?: number }
+    >({
+      query: ({ menuId, activeOnly = true, page = 0, size = 10 }) => ({
+        url: `${endpoints.MenuApi}${menuId}/dishes`,
+        method: 'GET',
+        params: { activeOnly, page, size },
+      }),
+      providesTags: ['menu-dishes'],
+    }),
+
     createMenu: builder.mutation<MenuResponse, MenuRequest>({
       query: body => ({
         url: endpoints.MenuApi,
@@ -65,6 +86,7 @@ export const {
   useGetMenusQuery,
   useGetMenuByIdQuery,
   useGetMenuItemByIdQuery,
+  useGetMenuDishesQuery,
   useCreateMenuMutation,
   useUpdateMenuMutation,
   useDeleteMenuMutation,

@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import {
   useGetMenusQuery,
-  useGetMenuItemByIdQuery,
+  useGetMenuDishesQuery
 } from '@/features/menu/menuApiSlice';
 import { useGetDishByIdQuery } from '@/features/dish/dishApiSlice';
 import { useGetCategoryByIdQuery } from '@/features/category/categoryApiSlice';
@@ -30,11 +30,17 @@ const OrderDetailPage = ({ params }: { params: { reservationId: string } }) => {
   const [selectedMenuId, setSelectedMenuId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const { data: menuData, isLoading: isMenuLoading } = useGetMenuItemByIdQuery(
-    selectedMenuId || 0,
+  const { 
+    data: menuDishesData, 
+    isLoading: isMenuDishesLoading 
+  } = useGetMenuDishesQuery(
+    { 
+      menuId: selectedMenuId || 0,
+      activeOnly: true
+    },
     {
       skip: !selectedMenuId,
-    },
+    }
   );
 
   // Sử dụng useEffect để khởi tạo selectedMenuId
@@ -50,7 +56,7 @@ const OrderDetailPage = ({ params }: { params: { reservationId: string } }) => {
     return <div className="w-full p-6">Không thể tải danh sách thực đơn</div>;
 
   const menus = menusData?.data || [];
-  const menuItems = menuData?.data?.menuItems || [];
+  const menuItems = menuDishesData?.data?.content || [];
 
   // Lọc menu_items theo searchTerm
   const filteredMenuItems = menuItems.filter((item: MenuItem) =>
@@ -106,7 +112,7 @@ const OrderDetailPage = ({ params }: { params: { reservationId: string } }) => {
       </div>
 
       {/* Danh sách món ăn */}
-      {isMenuLoading ? (
+      {isMenuDishesLoading ? (
         <div>Đang tải món ăn...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -16,7 +16,7 @@ import {
 } from "@/features/payment/PaymentApiSlice"
 import {
   useGetMenusQuery,
-  useGetMenuItemByIdQuery,
+  useGetMenuDishesQuery
 } from '@/features/menu/menuApiSlice'
 import { useCreateNewItemByOrderIdMutation, useDeleteOrderItemByIdMutation } from '@/features/order/orderApiSlice'
 import { formatPrice } from "@/lib/utils"
@@ -134,8 +134,14 @@ export default function IntegratedPaymentPage() {
   const [searchTerm, setSearchTerm] = useState('')
 
   // Lấy danh sách món trong menu
-  const { data: menuData, isLoading: isMenuLoading } = useGetMenuItemByIdQuery(
-    selectedMenuId || 0,
+  const { 
+    data: menuDishesData, 
+    isLoading: isMenuDishesLoading 
+  } = useGetMenuDishesQuery(
+    { 
+      menuId: selectedMenuId || 0,
+      activeOnly: true
+    },
     { skip: !selectedMenuId }
   )
 
@@ -229,7 +235,7 @@ export default function IntegratedPaymentPage() {
   }, [menusData, selectedMenuId])
 
   // Lọc món ăn theo searchTerm
-  const menuItems = menuData?.data?.menuItems || []
+  const menuItems = menuDishesData?.data?.content || []
   const filteredMenuItems = menuItems.filter((item: MenuItem) =>
     item.dish?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -1110,7 +1116,7 @@ export default function IntegratedPaymentPage() {
               </div>
 
               {/* Menu Items */}
-              {isMenuLoading ? (
+              {isMenuDishesLoading ? (
                 <div>Đang tải món ăn...</div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

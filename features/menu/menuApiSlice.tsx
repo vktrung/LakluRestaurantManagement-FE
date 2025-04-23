@@ -8,7 +8,8 @@ import {
   MenuRequest,
   MenuByIdResponse,
   MenuDishesResponse,
-  MenuDishesParams, // <-- ADD THIS
+  MenuDishesParams,
+  MenuSearchDishesParams, // <-- ADD THIS
 } from './types';
 
 export const menuApiSlice = createApi({
@@ -41,7 +42,13 @@ export const menuApiSlice = createApi({
     }),
 
     getMenuDishes: builder.query<MenuDishesResponse, MenuDishesParams>({
-      query: ({ menuId, categoryId, activeOnly = true, page = 0, size = 10 }) => ({
+      query: ({
+        menuId,
+        categoryId,
+        activeOnly = true,
+        page = 0,
+        size = 10,
+      }) => ({
         url: `${endpoints.MenuApi}${menuId}/dishes`,
         method: 'GET',
         params: {
@@ -53,7 +60,30 @@ export const menuApiSlice = createApi({
       }),
       providesTags: ['menu-dishes'],
     }),
-
+    getSearchMenuDishes: builder.query<
+      MenuDishesResponse,
+      MenuSearchDishesParams
+    >({
+      query: ({
+        menuId,
+        dishName,
+        categoryId,
+        activeOnly = true,
+        page = 0,
+        size = 10,
+      }) => ({
+        url: `${endpoints.MenuApi}${menuId}/dishes/search`,
+        method: 'GET',
+        params: {
+          dishName,
+          ...(categoryId !== undefined && { categoryId }),
+          activeOnly,
+          page,
+          size,
+        },
+      }),
+      providesTags: ['menu-dishes'],
+    }),
     createMenu: builder.mutation<MenuResponse, MenuRequest>({
       query: body => ({
         url: endpoints.MenuApi,
@@ -89,6 +119,7 @@ export const {
   useGetMenusQuery,
   useGetMenuByIdQuery,
   useGetMenuItemByIdQuery,
+  useGetSearchMenuDishesQuery,
   useGetMenuDishesQuery,
   useCreateMenuMutation,
   useUpdateMenuMutation,

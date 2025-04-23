@@ -108,7 +108,7 @@ export const MenuItemList: React.FC<MenuItemListProps> = ({
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto">
+    <div className="p-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
         <Button
           onClick={handleAdd}
@@ -160,11 +160,17 @@ const MenuItemCard: React.FC<{
 
   // Status badge
   const statusBadge = item.isActive ? (
-    <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-200">
+    <Badge
+      variant="default"
+      className="bg-green-100 text-green-800 hover:bg-green-200"
+    >
       Hoạt động
     </Badge>
   ) : (
-    <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-200">
+    <Badge
+      variant="outline"
+      className="bg-gray-100 text-gray-800 hover:bg-gray-200"
+    >
       Vô hiệu hóa
     </Badge>
   );
@@ -187,9 +193,7 @@ const MenuItemCard: React.FC<{
             <span className="sr-only">Không có ảnh</span>
           </div>
         )}
-        <div className="absolute top-2 right-2">
-          {statusBadge}
-        </div>
+        <div className="absolute top-2 right-2">{statusBadge}</div>
       </div>
       <CardHeader className="pb-2 pt-4">
         <CardTitle className="text-xl font-semibold text-gray-900 line-clamp-1">

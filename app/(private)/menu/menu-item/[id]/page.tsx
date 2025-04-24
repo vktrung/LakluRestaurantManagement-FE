@@ -4,10 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useGetMenuByIdQuery } from '@/features/menu/menuApiSlice';
 import { useGetMenuItemsByMenuIdQuery } from '@/features/menu-item/menuItemApiSlice';
+import { useGetSearchMenuDishesQuery } from '@/features/menu/menuApiSlice';
 import { useGetCategoriesQuery } from '@/features/category/categoryApiSlice';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 import MenuItemList from '../components/MenuItemList';
 import {
   Select,
@@ -24,7 +26,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { CalendarIcon, RefreshCw } from 'lucide-react';
+import { CalendarIcon, RefreshCw, Search } from 'lucide-react';
 
 export default function MenuItemPage() {
   const params = useParams();
@@ -36,6 +38,8 @@ export default function MenuItemPage() {
   const [activeOnly, setActiveOnly] = useState<boolean | undefined>(undefined);
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(0);
+  const [dishName, setDishName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Get menu data
   const {
@@ -48,7 +52,7 @@ export default function MenuItemPage() {
   // Get categories for filter
   const { data: categoriesData } = useGetCategoriesQuery();
 
-  // Fetch menu items with filters
+  // Fetch menu items with filters using regular API
   const {
     data: menuItemsData,
     isLoading: isMenuItemsLoading,
@@ -64,11 +68,40 @@ export default function MenuItemPage() {
     },
     {
       refetchOnMountOrArgChange: true,
+      skip: !!searchQuery,
     },
   );
 
-  const menuItems = menuItemsData?.data?.content || [];
-  const pagination = menuItemsData?.data?.pagination || {
+  // Fetch menu items with search API
+  const {
+    data: searchMenuItemsData,
+    isLoading: isSearchMenuItemsLoading,
+    isFetching: isSearchMenuItemsFetching,
+    refetch: refetchSearchMenuItems,
+  } = useGetSearchMenuDishesQuery(
+    {
+      menuId,
+      dishName: searchQuery,
+      categoryId,
+      activeOnly,
+      size: pageSize,
+      page,
+    },
+    {
+      refetchOnMountOrArgChange: true,
+      skip: !searchQuery,
+    },
+  );
+
+  // Determine which data to use based on whether search is active
+  const currentData = searchQuery ? searchMenuItemsData : menuItemsData;
+  const isLoading = searchQuery
+    ? isSearchMenuItemsLoading || isSearchMenuItemsFetching
+    : isMenuItemsLoading || isMenuItemsFetching;
+  const refetchData = searchQuery ? refetchSearchMenuItems : refetchMenuItems;
+
+  const menuItems = currentData?.data?.content || [];
+  const pagination = currentData?.data?.pagination || {
     totalPages: 1,
     pageNumber: 0,
     pageSize: 10,
@@ -80,6 +113,7 @@ export default function MenuItemPage() {
   const applyFilters = () => {
     // Reset to first page when applying new filters
     setPage(0);
+    setSearchQuery(dishName.trim());
   };
 
   // Function to reset filters
@@ -88,6 +122,8 @@ export default function MenuItemPage() {
     setActiveOnly(undefined);
     setPageSize(10);
     setPage(0);
+    setDishName('');
+    setSearchQuery('');
   };
 
   // Handle pagination
@@ -124,7 +160,7 @@ export default function MenuItemPage() {
   }
 
   return (
-    <div className="space-y-4 container py-4 max-w-7xl">
+    <div className="p-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight space-y-1">
@@ -138,13 +174,11 @@ export default function MenuItemPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => refetchMenuItems()}
-            disabled={isMenuItemsFetching}
+            onClick={() => refetchData()}
+            disabled={isLoading}
           >
             <RefreshCw
-              className={`h-4 w-4 mr-2 ${
-                isMenuItemsFetching ? 'animate-spin' : ''
-              }`}
+              className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`}
             />
             Làm mới
           </Button>
@@ -163,7 +197,22 @@ export default function MenuItemPage() {
       {/* Filter section */}
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-1 block">
+                Tìm kiếm món ăn
+              </label>
+              <div className="flex items-center">
+                <Input
+                  type="text"
+                  placeholder="Nhập tên món ăn..."
+                  value={dishName}
+                  onChange={e => setDishName(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+            </div>
+
             <div>
               <label className="text-sm font-medium mb-1 block">Danh mục</label>
               <Select
@@ -250,91 +299,91 @@ export default function MenuItemPage() {
             <Button variant="outline" onClick={resetFilters}>
               Đặt lại
             </Button>
-            <Button onClick={applyFilters}>Áp dụng</Button>
+            <Button onClick={applyFilters}>
+              <Search className="h-4 w-4 mr-2" />
+              Tìm kiếm
+            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Loading indicator */}
-      {(isMenuItemsLoading || isMenuItemsFetching) && (
+      {isLoading && (
         <div className="flex justify-center items-center py-8">
           <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
         </div>
       )}
 
       {/* Menu item list */}
-      {!isMenuItemsLoading && !isMenuItemsFetching && (
+      {!isLoading && (
         <MenuItemList
           menuId={menuId}
-          items={menuItems}
-          onRefresh={refetchMenuItems}
+          items={menuItems as any}
+          onRefresh={refetchData}
         />
       )}
 
       {/* Pagination bottom */}
-      {!isMenuItemsLoading &&
-        !isMenuItemsFetching &&
-        pagination &&
-        pagination.totalPages > 1 && (
-          <div className="mt-6 flex justify-center">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() => handlePageChange(Math.max(0, page - 1))}
-                    className={
-                      page === 0
-                        ? 'pointer-events-none opacity-50'
-                        : 'cursor-pointer'
-                    }
-                  />
-                </PaginationItem>
-
-                {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-                  // Show current page and surrounding pages
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i;
-                  } else if (page < 2) {
-                    pageNum = i;
-                  } else if (page > totalPages - 3) {
-                    pageNum = totalPages - 5 + i;
-                  } else {
-                    pageNum = page - 2 + i;
+      {!isLoading && pagination && pagination.totalPages > 1 && (
+        <div className="mt-6 flex justify-center">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => handlePageChange(Math.max(0, page - 1))}
+                  className={
+                    page === 0
+                      ? 'pointer-events-none opacity-50'
+                      : 'cursor-pointer'
                   }
+                />
+              </PaginationItem>
 
-                  if (pageNum >= 0 && pageNum < totalPages) {
-                    return (
-                      <PaginationItem key={pageNum}>
-                        <PaginationLink
-                          isActive={pageNum === page}
-                          onClick={() => handlePageChange(pageNum)}
-                          className="cursor-pointer"
-                        >
-                          {pageNum + 1}
-                        </PaginationLink>
-                      </PaginationItem>
-                    );
+              {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                // Show current page and surrounding pages
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i;
+                } else if (page < 2) {
+                  pageNum = i;
+                } else if (page > totalPages - 3) {
+                  pageNum = totalPages - 5 + i;
+                } else {
+                  pageNum = page - 2 + i;
+                }
+
+                if (pageNum >= 0 && pageNum < totalPages) {
+                  return (
+                    <PaginationItem key={pageNum}>
+                      <PaginationLink
+                        isActive={pageNum === page}
+                        onClick={() => handlePageChange(pageNum)}
+                        className="cursor-pointer"
+                      >
+                        {pageNum + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                }
+                return null;
+              })}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    handlePageChange(Math.min(totalPages - 1, page + 1))
                   }
-                  return null;
-                })}
-
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() =>
-                      handlePageChange(Math.min(totalPages - 1, page + 1))
-                    }
-                    className={
-                      page >= totalPages - 1
-                        ? 'pointer-events-none opacity-50'
-                        : 'cursor-pointer'
-                    }
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
-        )}
+                  className={
+                    page >= totalPages - 1
+                      ? 'pointer-events-none opacity-50'
+                      : 'cursor-pointer'
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   );
 }

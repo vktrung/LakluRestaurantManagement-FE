@@ -1200,50 +1200,6 @@ export default function IntegratedPaymentPage() {
                             {(Number(item.price) || 0).toLocaleString('vi-VN')} VND × {item.quantity}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => {
-                              if (!item.id) {
-                                console.error('Item has no id', item);
-                                setErrorMessage('Lỗi: Không thể giảm số lượng món ăn không có ID');
-                                return;
-                              }
-                              changeItemQuantity(item.id, item.quantity - 1);
-                            }}
-                            disabled={isUpdatingOrderItem || isPaymentCreated || isPaymentCancelled}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <span className="w-8 text-center">{item.quantity}</span>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => {
-                              if (!item.id) {
-                                console.error('Item has no id', item);
-                                setErrorMessage('Lỗi: Không thể tăng số lượng món ăn không có ID');
-                                return;
-                              }
-                              changeItemQuantity(item.id, item.quantity + 1);
-                            }}
-                            disabled={isUpdatingOrderItem || isPaymentCreated || isPaymentCancelled}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => handleDeleteItem(item.orderItemId)}
-                            disabled={isUpdatingOrderItem || isPaymentCreated || isDeletingOrderItem || isPaymentCancelled}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
                       </div>
                     ))
                   )}

@@ -1,11 +1,11 @@
 export enum MenuStatus {
-  ENABLE = "ENABLE",
-  DISABLE = "DISABLE",
+  ENABLE = 'ENABLE',
+  DISABLE = 'DISABLE',
 }
 
 export enum MenuItemStatus {
-  ENABLE = "enable",
-  DISABLE = "disable",
+  ENABLE = 'enable',
+  DISABLE = 'disable',
 }
 
 export interface Image {
@@ -105,10 +105,18 @@ export interface MenuRequest {
   name: string;
   startAt: string;
   endAt: string;
-  status: "ENABLE" | "DISABLE";
+  status: 'ENABLE' | 'DISABLE';
 }
 export interface MenuDishesParams {
   menuId: number;
+  categoryId?: number;
+  activeOnly?: boolean;
+  page?: number;
+  size?: number;
+}
+export interface MenuSearchDishesParams {
+  menuId: number;
+  dishName?: string;
   categoryId?: number;
   activeOnly?: boolean;
   page?: number;

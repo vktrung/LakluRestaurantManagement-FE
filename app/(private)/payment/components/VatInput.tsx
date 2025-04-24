@@ -5,6 +5,14 @@ interface VatInputProps {
 }
 
 export function VatInput({ vatRate, vatAmount, onChange }: VatInputProps) {
+    const handleVatChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = Number(e.target.value);
+        // Ensure VAT is between 0 and 100
+        if (value <= 100) {
+            onChange(value);
+        }
+    };
+
     return (
         <div className="bg-white rounded-xl border shadow-md p-5">
             <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
@@ -23,7 +31,7 @@ export function VatInput({ vatRate, vatAmount, onChange }: VatInputProps) {
                         min="0"
                         max="100"
                         value={vatRate}
-                        onChange={(e) => onChange(Number(e.target.value))}
+                        onChange={handleVatChange}
                         className="pl-8 w-full rounded-lg border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary/20 focus:ring-opacity-50 py-2.5"
                     />
                 </div>

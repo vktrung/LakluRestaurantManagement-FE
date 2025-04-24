@@ -78,7 +78,7 @@ const OrderPanel = ({
         position: 'top-right',
       });
       onClose();
-      router.push(`/quan-ly/order/${reservationId}`);
+      router.push(`/quan-ly/order/`);
     } catch (error) {
       console.error('Failed to create table order:', error);
       toast.error('Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.', {

@@ -87,7 +87,7 @@ export function PayslipTable({ payslips }: PayslipTableProps) {
                 <TableCell className="text-xs sm:text-sm">{payslip.staffId}</TableCell>
                 <TableCell className="text-xs sm:text-sm">{payslip.totalWorkingDays}</TableCell>
                 <TableCell className="text-xs sm:text-sm">{payslip.totalWorkingHours}</TableCell>
-                <TableCell className="text-xs sm:text-sm">{payslip.totalSalary.toLocaleString("vi-VN")} đ</TableCell>
+                <TableCell className="text-xs sm:text-sm">{Math.round(payslip.totalSalary).toLocaleString("vi-VN")} đ</TableCell>
                 <TableCell>
                   <Badge variant="outline" className="bg-orange-50 text-xs sm:text-sm">
                     {payslip.lateCount}
@@ -95,7 +95,7 @@ export function PayslipTable({ payslips }: PayslipTableProps) {
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className="bg-red-50 text-xs sm:text-sm">
-                    {payslip.lateHours}
+                    {Number(payslip.lateHours).toFixed(2)}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
@@ -144,7 +144,7 @@ export function PayslipTable({ payslips }: PayslipTableProps) {
                 </div>
                 <div>
                   <span className="text-muted-foreground">Tổng lương:</span>
-                  <span className="font-medium ml-1">{payslip.totalSalary.toLocaleString("vi-VN")} đ</span>
+                  <span className="font-medium ml-1">{Math.round(payslip.totalSalary).toLocaleString("vi-VN")} đ</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Lần trễ:</span>

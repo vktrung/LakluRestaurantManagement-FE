@@ -266,30 +266,6 @@ export function UserManagement() {
       <div className="w-full">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
           <div className="flex flex-col sm:flex-row w-full md:w-auto gap-2">
-            <div className="relative w-full md:w-auto">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Tìm kiếm người dùng..."
-                className="w-full md:w-[250px] pl-8"
-                value={searchTerm}
-                onChange={handleSearch}
-              />
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <Filter className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Lọc theo</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Phòng ban</DropdownMenuItem>
-                <DropdownMenuItem>Trạng thái</DropdownMenuItem>
-                <DropdownMenuItem>Vai trò</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
             <Button variant="outline" size="icon" onClick={handleRefresh}>
               <RefreshCw className="h-4 w-4" />
             </Button>

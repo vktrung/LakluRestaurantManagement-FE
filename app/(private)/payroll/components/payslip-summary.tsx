@@ -85,7 +85,7 @@ export function PayslipSummary({ payslips }: PayslipSummaryProps) {
                 <div className="flex flex-col">
                   <span className="text-xs sm:text-sm text-muted-foreground">Tổng lương</span>
                   <span className="text-lg sm:text-xl font-bold text-primary">
-                    {payslip.totalSalary.toLocaleString("vi-VN")} đ
+                    {Math.round(payslip.totalSalary).toLocaleString("vi-VN")} đ
                   </span>
                 </div>
                 <div className="flex flex-col">
@@ -94,7 +94,7 @@ export function PayslipSummary({ payslips }: PayslipSummaryProps) {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xs sm:text-sm text-muted-foreground">Giờ đi muộn</span>
-                  <span className="text-lg sm:text-xl font-bold">{payslip.lateHours.toFixed(1)}</span>
+                  <span className="text-lg sm:text-xl font-bold">{Number(payslip.lateHours).toFixed(2)}</span>
                 </div>
               </div>
             </CardContent>

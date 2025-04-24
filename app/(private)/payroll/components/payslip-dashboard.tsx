@@ -137,7 +137,7 @@ export function PayslipDashboard() {
                 <Skeleton className="h-6 sm:h-8 w-full" />
               ) : (
                 <>
-                  <div className="text-lg sm:text-2xl font-bold">{totalSalary.toLocaleString("vi-VN")} đ</div>
+                  <div className="text-lg sm:text-2xl font-bold">{Math.round(totalSalary).toLocaleString("vi-VN")} đ</div>
                   <p className="text-xs text-muted-foreground">Tháng {date ? format(date, "MM/yyyy") : ""}</p>
                 </>
               )}
@@ -169,7 +169,7 @@ export function PayslipDashboard() {
                 <Skeleton className="h-6 sm:h-8 w-full" />
               ) : (
                 <>
-                  <div className="text-lg sm:text-2xl font-bold">{averageSalary.toLocaleString("vi-VN")} đ</div>
+                  <div className="text-lg sm:text-2xl font-bold">{Math.round(averageSalary).toLocaleString("vi-VN")} đ</div>
                   <p className="text-xs text-muted-foreground">Tháng {date ? format(date, "MM/yyyy") : ""}</p>
                 </>
               )}

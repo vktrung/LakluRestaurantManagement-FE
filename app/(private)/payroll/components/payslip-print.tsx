@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Download, Printer } from "lucide-react"
 import { Payslip } from "@/features/payroll/types"
 import { Staff } from "@/features/staff/types"
+import Image from "next/image"
 
 interface PayslipPrintProps {
   payslip: Payslip
@@ -31,8 +32,8 @@ export function PayslipPrint({ payslip, staffData }: PayslipPrintProps) {
   }
 
   // Tính toán các thành phần lương dựa vào thông tin Staff API
-  const basicSalary = staffData?.salaryAmount || 0
-  const lateDeduction = payslip.lateHours * 50000
+  const basicSalary = Math.round(staffData?.salaryAmount || 0)
+  const lateDeduction = Math.round(payslip.lateHours * 50000)
   
   // Tạo dữ liệu chấm công từ thông tin thực tế
   const attendanceData = {
@@ -40,7 +41,7 @@ export function PayslipPrint({ payslip, staffData }: PayslipPrintProps) {
     actualWorkDays: payslip.totalWorkingDays - Math.floor(payslip.lateHours / 8),
     totalWorkingHours: payslip.totalWorkingHours,
     lateCount: payslip.lateCount,
-    lateHours: payslip.lateHours
+    lateHours: Number(payslip.lateHours).toFixed(2)
   }
 
   // Hàm chuyển đổi loại lương sang tiếng Việt
@@ -84,6 +85,11 @@ export function PayslipPrint({ payslip, staffData }: PayslipPrintProps) {
           .print-hidden {
             display: none !important;
           }
+          /* Đảm bảo logo hiển thị đúng khi in */
+          .print-container img {
+            visibility: visible !important;
+            display: block !important;
+          }
         }
       `}</style>
 
@@ -103,13 +109,20 @@ export function PayslipPrint({ payslip, staffData }: PayslipPrintProps) {
           {/* Tiêu đề và thông tin công ty */}
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-md bg-primary/20 flex items-center justify-center text-primary font-bold">
-                LOGO
+              <div className="h-16 w-16 rounded-md overflow-hidden relative">
+                <Image 
+                  src="/Logo-09.png" 
+                  alt="Laklu Restaurant Logo" 
+                  fill 
+                  className="object-contain"
+                  priority
+                  unoptimized
+                />
               </div>
               <div>
-                <h2 className="text-xl font-bold">CÔNG TY TNHH CÔNG NGHỆ ABC</h2>
-                <p className="text-sm text-muted-foreground">Địa chỉ: 123 Đường Lê Lợi, Quận 1, TP. Hồ Chí Minh</p>
-                <p className="text-sm text-muted-foreground">Điện thoại: (028) 3823 xxxx - Email: info@abc-tech.com</p>
+                <h2 className="text-xl font-bold">LAKLU RESTAURANT</h2>
+                <p className="text-sm text-muted-foreground">Địa chỉ: 83 Nguyễn Văn Cừ, Vinh, Nghệ An</p>
+                <p className="text-sm text-muted-foreground">Điện thoại: 097 606 17 48 - Email: locc12305@gmail.com</p>
               </div>
             </div>
             <div className="text-right">
@@ -220,21 +233,15 @@ export function PayslipPrint({ payslip, staffData }: PayslipPrintProps) {
                     <td className="py-2">
                       Lương cơ bản {staffData?.salaryType ? `(${translateSalaryType(staffData.salaryType)})` : ''}
                       {staffData?.salaryType?.toUpperCase() === "HOURLY" && payslip.totalWorkingHours > 0 && 
-                        ` (${payslip.totalWorkingHours} giờ x ${Math.round((staffData?.salaryAmount || payslip.totalSalary) / payslip.totalWorkingHours).toLocaleString("vi-VN")} đ)`}
+                        ` (${payslip.totalWorkingHours} giờ x ${Math.round((staffData?.salaryAmount || payslip.totalSalary)).toLocaleString("vi-VN")} đ)`}
                     </td>
-                    <td className="py-2 text-right">{(staffData?.salaryAmount || payslip.totalSalary).toLocaleString("vi-VN")}</td>
+                    <td className="py-2 text-right">{Math.round(staffData?.salaryAmount || payslip.totalSalary).toLocaleString("vi-VN")}</td>
                   </tr>
-                  {payslip.lateHours > 0 && (
-                    <tr className="border-b text-destructive">
-                      <td className="py-2">Trừ đi muộn ({payslip.lateHours} giờ)</td>
-                      <td className="py-2 text-right">-{lateDeduction.toLocaleString("vi-VN")}</td>
-                    </tr>
-                  )}
                 </tbody>
                 <tfoot>
                   <tr className="border-t font-bold">
                     <td className="py-2">Tổng thu nhập</td>
-                    <td className="py-2 text-right">{payslip.totalSalary.toLocaleString("vi-VN")}</td>
+                    <td className="py-2 text-right">{Math.round(payslip.totalSalary).toLocaleString("vi-VN")}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -243,7 +250,7 @@ export function PayslipPrint({ payslip, staffData }: PayslipPrintProps) {
             <div className="bg-muted/30 p-4 rounded-lg">
               <div className="flex justify-between items-center">
                 <h4 className="font-semibold text-lg">LƯƠNG THỰC NHẬN:</h4>
-                <span className="font-bold text-xl">{(payslip.totalSalary - lateDeduction).toLocaleString("vi-VN")} VNĐ</span>
+                <span className="font-bold text-xl">{Math.round(payslip.totalSalary).toLocaleString("vi-VN")} VNĐ</span>
               </div>
             </div>
           </div>

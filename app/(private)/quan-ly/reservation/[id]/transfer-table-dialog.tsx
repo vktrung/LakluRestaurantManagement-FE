@@ -88,8 +88,6 @@ export function TransferTableDialog({ reservation, isOpen, onClose }: TransferTa
 
   // Xử lý lỗi API
   const handleApiError = (error: any) => {
-    console.error("Lỗi khi chuyển bàn:", error)
-      
     // Xử lý hiển thị lỗi từ API
     if (error?.data?.error) {
       if (typeof error.data.error === 'object' && error.data.error !== null) {

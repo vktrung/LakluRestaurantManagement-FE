@@ -253,6 +253,67 @@ export default function NewReservationPage() {
     }
   }
 
+  // Xử lý lỗi API chi tiết
+  const handleApiError = (error: any) => {
+    // Bắt định dạng lỗi từ API
+    let errorMsg = "Không thể tạo đặt bàn. Vui lòng thử lại.";
+    
+    if (error?.data) {
+      // Trường hợp 1: Lỗi nằm trong error object như ví dụ {"": "Số người không được vượt quá số chỗ của bàn"}
+      if (error.data.error && typeof error.data.error === 'object') {
+        const errorEntries = Object.entries(error.data.error);
+        if (errorEntries.length > 0) {
+          errorMsg = String(errorEntries[0][1]);
+          toast.error(errorMsg);
+          return;
+        }
+      }
+      
+      // Trường hợp 2: error là một string
+      if (error.data.error && typeof error.data.error === 'string') {
+        errorMsg = error.data.error;
+        toast.error(errorMsg);
+        return;
+      }
+      
+      // Trường hợp 3: Thông báo lỗi nằm trong message
+      if (error.data.message && error.data.message !== 'null' && error.data.message !== null) {
+        errorMsg = String(error.data.message);
+        toast.error(errorMsg);
+        return;
+      }
+      
+      // Trường hợp 4: Tìm thông tin lỗi trong trường khác
+      for (const key in error.data) {
+        if (
+          key !== 'timestamp' && 
+          key !== 'httpStatus' && 
+          key !== 'data' && 
+          error.data[key] !== null && 
+          error.data[key] !== undefined
+        ) {
+          const value = error.data[key];
+          if (typeof value === 'string') {
+            errorMsg = value;
+            toast.error(errorMsg);
+            return;
+          } else if (typeof value === 'object') {
+            // Đối với lỗi lồng nhau
+            const nestedEntries = Object.entries(value);
+            if (nestedEntries.length > 0) {
+              errorMsg = String(nestedEntries[0][1]);
+              toast.error(errorMsg);
+              return;
+            }
+          }
+        }
+      }
+    }
+    
+    // Mặc định trả về thông báo chung
+    toast.error(errorMsg);
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -284,9 +345,8 @@ export default function NewReservationPage() {
       await createReservation(reservationData).unwrap()
       toast.success("Đã tạo đặt bàn thành công.")
       router.push("/quan-ly/reservation")
-    } catch (error) {
-      console.error("Lỗi khi tạo đặt bàn:", error)
-      toast.error("Không thể tạo đặt bàn. Vui lòng thử lại.")
+    } catch (error: any) {
+      handleApiError(error)
     } finally {
       setIsSubmitting(false)
     }

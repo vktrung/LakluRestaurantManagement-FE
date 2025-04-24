@@ -54,16 +54,13 @@ export function EditTablesDialog({ reservation, isOpen, onClose }: EditTablesDia
       const checkInDate = new Date(reservation.detail.checkIn);
       // Đảm bảo rằng ngày là hợp lệ
       if (isNaN(checkInDate.getTime())) {
-        console.error('Ngày check-in không hợp lệ:', reservation.detail.checkIn);
         return format(new Date(), "yyyy-MM-dd");
       }
       
       // Định dạng ngày theo yyyy-MM-dd
       const formattedDate = format(checkInDate, "yyyy-MM-dd");
-      console.log('Ngày đã được định dạng:', formattedDate);
       return formattedDate;
     } catch (error) {
-      console.error('Lỗi khi định dạng ngày:', error);
       return format(new Date(), "yyyy-MM-dd");
     }
   }, [reservation?.detail?.checkIn]);
@@ -83,28 +80,6 @@ export function EditTablesDialog({ reservation, isOpen, onClose }: EditTablesDia
   // Get available tables from the API response
   const availableTables = tablesByDateResponse?.data || [];
 
-  // Debug tablesByDateResponse
-  useEffect(() => {
-    if (tablesByDateResponse) {
-      console.log('debug API response tablesByDate:', tablesByDateResponse);
-    }
-  }, [tablesByDateResponse]);
-  
-  // Mutations
-  const [mergeOrSplitTables, { isLoading: isMerging }] = useMergeOrSplitTablesMutation()
-  const [removeTablesFromReservation, { isLoading: isRemoving }] = useRemoveTablesFromReservationMutation()
-  const [addTablesToReservation, { isLoading: isAdding }] = useAddTablesToReservationMutation()
-  
-  // Debug useEffect để theo dõi dữ liệu
-  useEffect(() => {
-    if (isOpen) {
-      console.log('debug currentTableIds:', reservation?.detail?.tableIds);
-      console.log('debug availableTables:', availableTables);
-      console.log('debug tableCount:', reservation?.detail?.tableIds?.length || 0);
-      console.log('debug checkIn:', reservation.detail.checkIn);
-    }
-  }, [isOpen, availableTables, reservation?.detail?.tableIds, reservation.detail.checkIn]);
-  
   // Gọi lại API khi mở dialog
   useEffect(() => {
     if (isOpen) {
@@ -146,13 +121,11 @@ export function EditTablesDialog({ reservation, isOpen, onClose }: EditTablesDia
     [reservation?.detail?.tables]
   )
 
-  // Thêm debug log sau khi đã khai báo currentTableIds
-  useEffect(() => {
-    if (isOpen && currentTableIds) {
-      console.log('debug matchedTablesCount:', availableTables.filter(table => currentTableIds.includes(table.id)).length);
-    }
-  }, [isOpen, availableTables, currentTableIds]);
-
+  // Mutations
+  const [mergeOrSplitTables, { isLoading: isMerging }] = useMergeOrSplitTablesMutation()
+  const [removeTablesFromReservation, { isLoading: isRemoving }] = useRemoveTablesFromReservationMutation()
+  const [addTablesToReservation, { isLoading: isAdding }] = useAddTablesToReservationMutation()
+  
   // Toggle bàn trong chế độ cập nhật 
   const toggleTableSelection = (tableId: number) => {
     setSelectedTables((prev) => (prev.includes(tableId) ? prev.filter((id) => id !== tableId) : [...prev, tableId]))
@@ -185,8 +158,6 @@ export function EditTablesDialog({ reservation, isOpen, onClose }: EditTablesDia
 
   // Xử lý lỗi API
   const handleApiError = (error: any) => {
-    console.error("Lỗi khi cập nhật bàn:", error)
-      
     // Xử lý hiển thị lỗi từ API
     if (error?.data?.error) {
       // Kiểm tra nếu error.data.error là đối tượng

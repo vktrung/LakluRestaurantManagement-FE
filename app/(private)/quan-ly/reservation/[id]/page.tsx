@@ -78,69 +78,6 @@ export default function ReservationDetailPage({ params }: { params: { id: string
   // Lấy dữ liệu reservation từ response
   const reservation = reservationResponse?.data
 
-  // Thêm console.log để debug thông tin tableIds
-  useEffect(() => {
-    if (reservation) {
-      console.log('Debug reservation data:', {
-        id: reservation.id,
-        tables: reservation.detail.tables,
-        checkIn: reservation.detail.checkIn
-      });
-    }
-  }, [reservation]);
-
-  // Xử lý mở dialog và tạo key mới
-  const handleOpenEditTables = useCallback(() => {
-    setDialogKey(prev => prev + 1) // Tạo key mới
-    setIsEditTablesOpen(true)
-  }, [])
-
-  // Xử lý đóng dialog gộp/tách bàn và refresh dữ liệu
-  const handleCloseEditTables = useCallback(() => {
-    setIsEditTablesOpen(false)
-    // Refetch dữ liệu sau khi đóng dialog
-    setTimeout(() => {
-      refetch()
-    }, 100)
-  }, [refetch])
-
-  // Xử lý mở dialog chuyển bàn và tạo key mới
-  const handleOpenTransferTable = useCallback(() => {
-    setTransferDialogKey(prev => prev + 1) // Tạo key mới
-    setIsTransferTableOpen(true)
-  }, [])
-
-  // Xử lý đóng dialog chuyển bàn và refresh dữ liệu
-  const handleCloseTransferTable = useCallback(() => {
-    setIsTransferTableOpen(false)
-    // Refetch dữ liệu sau khi đóng dialog
-    setTimeout(() => {
-      refetch()
-    }, 100)
-  }, [refetch])
-
-  // Xử lý mở dialog chỉnh sửa thông tin và tạo key mới
-  const handleOpenEditReservation = useCallback(() => {
-    setEditReservationDialogKey(prev => prev + 1) // Tạo key mới
-    setIsEditReservationOpen(true)
-  }, [])
-
-  // Xử lý đóng dialog chỉnh sửa thông tin và refresh dữ liệu
-  const handleCloseEditReservation = useCallback(() => {
-    setIsEditReservationOpen(false)
-    // Refetch dữ liệu sau khi đóng dialog
-    setTimeout(() => {
-      refetch()
-    }, 100)
-  }, [refetch])
-
-  // Hiển thị thông báo lỗi nếu có
-  useEffect(() => {
-    if (error) {
-      toast.error("Không thể tải thông tin đặt bàn. Vui lòng thử lại sau.")
-    }
-  }, [error])
-
   // Format time and date
   const formatDateTime = (dateString: string | null) => {
     if (!dateString) return "-"
@@ -301,7 +238,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
               {/* Nút chỉnh sửa thông tin */}
               <Button
                 className="w-full justify-start"
-                onClick={handleOpenEditReservation}
+                onClick={() => setIsEditReservationOpen(true)}
                 disabled={reservation.detail.status === "CANCELLED" || reservation.detail.status === "COMPLETED"}
               >
                 <Edit className="mr-2 h-4 w-4" />
@@ -311,7 +248,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
               {/* Nút quản lý bàn */}
               <Button
                 className="w-full justify-start" 
-                onClick={handleOpenEditTables}
+                onClick={() => setIsEditTablesOpen(true)}
                 disabled={reservation.detail.status === "CANCELLED" || reservation.detail.status === "COMPLETED"}
               >
                 <Table className="mr-2 h-4 w-4" />
@@ -321,7 +258,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
               {/* Nút chuyển bàn */}
               <Button
                 className="w-full justify-start"
-                onClick={handleOpenTransferTable}
+                onClick={() => setIsTransferTableOpen(true)}
                 disabled={
                   reservation.detail.status === "CANCELLED" || 
                   reservation.detail.status === "COMPLETED" ||
@@ -355,7 +292,12 @@ export default function ReservationDetailPage({ params }: { params: { id: string
           key={`edit-tables-${dialogKey}`}
           reservation={reservation}
           isOpen={isEditTablesOpen}
-          onClose={handleCloseEditTables}
+          onClose={() => {
+            setIsEditTablesOpen(false);
+            setTimeout(() => {
+              refetch();
+            }, 100);
+          }}
         />
       )}
 
@@ -365,7 +307,12 @@ export default function ReservationDetailPage({ params }: { params: { id: string
           key={`transfer-table-${transferDialogKey}`}
           reservation={reservation}
           isOpen={isTransferTableOpen}
-          onClose={handleCloseTransferTable}
+          onClose={() => {
+            setIsTransferTableOpen(false);
+            setTimeout(() => {
+              refetch();
+            }, 100);
+          }}
         />
       )}
 
@@ -375,7 +322,12 @@ export default function ReservationDetailPage({ params }: { params: { id: string
           key={`edit-reservation-${editReservationDialogKey}`}
           reservation={reservation}
           isOpen={isEditReservationOpen}
-          onClose={handleCloseEditReservation}
+          onClose={() => {
+            setIsEditReservationOpen(false);
+            setTimeout(() => {
+              refetch();
+            }, 100);
+          }}
           onSuccess={() => refetch()}
         />
       )}

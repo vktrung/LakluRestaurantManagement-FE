@@ -118,8 +118,7 @@ export function EditReservationDialog({ reservation, isOpen, onClose, onSuccess 
       // Đóng dialog
       onClose()
     } catch (error) {
-      console.error("Lỗi khi cập nhật đặt bàn:", error)
-      toast.error("Không thể cập nhật thông tin đặt bàn. Vui lòng thử lại!")
+      toast.error("Không thể cập nhật đặt bàn. Vui lòng thử lại.")
     } finally {
       setIsSubmitting(false)
     }

@@ -19,7 +19,6 @@ import { getTokenFromCookie } from '@/utils/token';
 
 const getAuthToken = () => {
   const token = getTokenFromCookie('auth_token');
-  console.log("Auth token from cookie:", token); 
   return token || null;
 };
 

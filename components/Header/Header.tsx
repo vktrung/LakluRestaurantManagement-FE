@@ -142,8 +142,9 @@ export function Header({ className }: { className?: string }) {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Tài khoản của tôi</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Hồ sơ</DropdownMenuItem>
-              <DropdownMenuItem>Cài đặt</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/profile">Hồ sơ</Link>
+                </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 Đăng xuất

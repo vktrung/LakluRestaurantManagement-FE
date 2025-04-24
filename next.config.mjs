@@ -30,7 +30,15 @@ const nextConfig = {
           },
           {
             key: 'Cache-Control',
-            value: 'no-store, max-age=0',
+            value: 'no-store, no-cache, must-revalidate, max-age=0',
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
           },
         ],
       },
@@ -85,7 +93,24 @@ const nextConfig = {
   },
   // Thêm cấu hình React Strict Mode để dễ phát hiện lỗi
   reactStrictMode: false, // Tắt strict mode trong production để tránh gọi API hai lần
-  // Cấu hình các tùy chọn runtime để giảm kích thước bundle
+  // Thêm cấu hình webpackDevMiddleware để cải thiện Fast Refresh
+  webpack: (config, { dev, isServer }) => {
+    if (dev && !isServer) {
+      // Cải thiện Fast Refresh
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: /node_modules/,
+        aggregateTimeout: 300,
+        poll: 1000, // Kiểm tra các thay đổi mỗi giây
+      };
+    }
+    return config;
+  },
+  // Cấu hình cho Fast Refresh
+  devIndicators: {
+    buildActivity: true,
+  },
+  // Đảm bảo rằng Fast Refresh được kích hoạt
   experimental: {
     // Tắt các tính năng thử nghiệm không cần thiết
     serverActions: true,

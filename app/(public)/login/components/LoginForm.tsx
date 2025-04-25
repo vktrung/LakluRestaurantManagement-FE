@@ -9,6 +9,7 @@ import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { login } from "@/services/authService"
+import { UserMeResponse } from "@/features/auth/types"
 
 export default function LoginForm() {
   const router = useRouter()
@@ -42,7 +43,49 @@ export default function LoginForm() {
     try {
       const response = await login(username, otp)
       console.log("response", response)
-      router.push("/")
+      
+      // Gọi API để lấy thông tin người dùng
+      try {
+        const token = response?.data?.token
+        if (token) {
+          const userResponse = await fetch(
+            `${process.env.NEXT_PUBLIC_SERVER_URL}/api/v1/auth/me`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          )
+          
+          if (userResponse.ok) {
+            const userData: UserMeResponse = await userResponse.json()
+            const userRoles = userData?.data?.roleNames || []
+            
+            // Điều hướng người dùng dựa trên vai trò
+            if (userRoles.includes('Quản trị viên hệ thống')) {
+              router.push("/quan-ly/tong-quat") // Trang tổng quát cho quản lý
+            } else if (userRoles.includes('Phục vụ')) {
+              router.push("/quan-ly/table") // Trang bàn ăn cho nhân viên
+            } else if (userRoles.includes('Bếp')) {
+              router.push("/kitchen") // Trang bếp cho đầu bếp
+            } else if (userRoles.includes('Thu ngân')) {
+              router.push("/cashier-order-2/order") // Trang thu ngân
+            } else {
+              // Mặc định chuyển đến trang chính
+              router.push("/")
+            }
+          } else {
+            // Nếu không lấy được thông tin người dùng, chuyển hướng đến trang mặc định
+            router.push("/")
+          }
+        } else {
+          router.push("/")
+        }
+      } catch (err) {
+        console.error("Error fetching user data:", err)
+        router.push("/")
+      }
+      
       router.refresh()
     } catch (err: any) {
       setErrorMessage(err?.data?.message || "Đăng nhập thất bại!")

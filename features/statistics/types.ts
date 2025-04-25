@@ -85,7 +85,7 @@ export interface Dish {
   
   export interface HourlyTopDish {
     hour: number;
-    topDish: Dish;
+    topDishes: Dish[];
   }
   
   export interface HourlyTopDishesResponse {

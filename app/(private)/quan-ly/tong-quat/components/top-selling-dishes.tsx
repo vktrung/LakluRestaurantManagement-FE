@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useGetHourlyTopDishesQuery } from "@/features/statistics/statisticsApiSlice"
-import { HourlyTopDishesResponse, HourlyTopDish } from "@/features/statistics/types"
+import { HourlyTopDishesResponse, HourlyTopDish, Dish } from "@/features/statistics/types"
 import { DateRange as CalendarDateRange } from "react-day-picker"
 
 // Chỉ giữ lại các type không có sẵn trong API type
@@ -151,7 +151,7 @@ export default function TopSellingDishes() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Món ăn bán chạy nhất</h2>
-          <p className="text-muted-foreground">Thống kê món ăn bán chạy nhất theo từng khung giờ</p>
+          <p className="text-muted-foreground">Thống kê 3 món ăn bán chạy nhất theo từng khung giờ</p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -266,33 +266,55 @@ export default function TopSellingDishes() {
 
                   {/* Timeline points */}
                   <div className="relative">
-                    <div className="flex justify-between">
+                    <div className="flex flex-wrap md:flex-nowrap justify-between overflow-x-auto">
                       {[...data]
                         .sort((a, b) => a.hour - b.hour)
                         .map((hourData, index) => (
                           <div
                             key={hourData.hour}
                             className={cn(
-                              "flex flex-col items-center",
+                              "flex flex-col items-center mb-6 md:mb-0",
                               index === 0 ? "ml-0" : "",
                               index === data.length - 1 ? "mr-0" : "",
                             )}
                             style={{
-                              width: `${100 / data.length}%`,
+                              minWidth: "120px",
+                              width: `${100 / Math.min(data.length, 6)}%`,
                               maxWidth: "150px",
                             }}
                           >
-                            <div className="text-sm text-muted-foreground mb-2 flex items-center">
+                            <div className="text-sm text-muted-foreground mb-2 flex items-center sticky top-0 bg-background z-10">
                               <Clock className="h-3 w-3 mr-1" />
                               {formatHour(hourData.hour)}
                             </div>
 
-                            <div className="mt-4 text-center">
-                              <div className="font-medium line-clamp-1">{hourData.topDish.dishName}</div>
-                              <Badge variant="outline" className="mt-1">
-                                {formatCurrency(hourData.topDish.dishPrice)}
-                              </Badge>
-                              <div className="mt-2 text-sm font-medium">Đã bán: {hourData.topDish.totalQuantity}</div>
+                            {/* Hiển thị tối đa 3 món trong topDishes */}
+                            <div className="mt-4 flex flex-col gap-2 w-full">
+                              {hourData.topDishes.map((dish, dishIndex) => (
+                                <div 
+                                  key={dish.dishId} 
+                                  className={cn(
+                                    "text-center border rounded-lg p-2 shadow-sm hover:shadow-md transition-all",
+                                    dishIndex === 0 ? "border-primary/20 bg-primary/5" : ""
+                                  )}
+                                >
+                                  <div className="font-medium text-sm line-clamp-1 mb-1">{dish.dishName}</div>
+                                  <Badge variant="outline" className="mb-1 text-xs">
+                                    {formatCurrency(dish.dishPrice)}
+                                  </Badge>
+                                  <div className="text-xs mt-1">
+                                    Đã bán:{" "}
+                                    <span className={cn("text-xs rounded px-1.5 py-0.5", getDishColor(dish.dishId))}>
+                                      {dish.totalQuantity}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                              {hourData.topDishes.length === 0 && (
+                                <div className="text-center text-muted-foreground text-xs">
+                                  Không có dữ liệu
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))}

@@ -58,9 +58,6 @@ const MenuItemsList = ({
 
   return (
     <div className="py-3 sm:py-4 space-y-3 sm:space-y-4">
-      <div className="text-xs sm:text-sm text-muted-foreground mb-2">
-        Thời gian phục vụ: {startAt} đến {endAt}
-      </div>
       {Object.entries(itemsByCategory).map(([categoryName, items]) => (
         <div key={categoryName}>
           <h3 className="font-semibold text-sm sm:text-lg mb-2">{categoryName}</h3>
@@ -209,8 +206,8 @@ const MenuPage = () => {
     <div className="relative flex flex-col sm:flex-row h-full p-3 sm:p-4 pb-20">
       {/* Menu Selection and Items */}
       <div className={`flex-1 ${showOrderPanel && !isMobile ? 'sm:w-2/3' : 'w-full'}`}>
-        <Card className="h-full">
-          <CardHeader>
+        <Card className="h-full flex flex-col">
+          <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                 <ShoppingBag className="h-4 sm:h-5 w-4 sm:w-5" />
@@ -233,8 +230,8 @@ const MenuPage = () => {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[calc(100vh-150px)] sm:h-[calc(100vh-200px)]">
+          <CardContent className="flex-1 pb-2">
+            <ScrollArea className="h-[calc(100vh-230px)] sm:h-[calc(100vh-240px)]">
               <Accordion
                 type="single"
                 collapsible
@@ -268,8 +265,12 @@ const MenuPage = () => {
               </Accordion>
             </ScrollArea>
           </CardContent>
-          <CardFooter>
-            <Button variant="outline" className="w-full h-8 sm:h-10 text-xs sm:text-sm" onClick={() => setShowOrderPanel(true)}>
+          <CardFooter className="pt-2 mt-auto">
+            <Button 
+              variant="default" 
+              className="w-full h-8 sm:h-10 text-xs sm:text-sm bg-green-600 hover:bg-green-700" 
+              onClick={() => setShowOrderPanel(true)}
+            >
               <ShoppingCart className="mr-2 h-4 w-4" />
               Xem đơn hàng ({totalItems})
             </Button>
@@ -291,7 +292,7 @@ const MenuPage = () => {
         </div>
       )}
 
-      {/* Cart Button - Mobile */}
+      {/* Cart Button - Mobile
       {totalItems > 0 && (
         <div className="sm:hidden fixed bottom-20 right-4 z-50">
           <Button
@@ -304,7 +305,7 @@ const MenuPage = () => {
             </Badge>
           </Button>
         </div>
-      )}
+      )} */}
 
       {/* Order Panel - Mobile (Full Screen) */}
       {showOrderPanel && isMobile && (

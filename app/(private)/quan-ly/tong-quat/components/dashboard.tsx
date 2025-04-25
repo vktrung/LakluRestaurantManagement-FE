@@ -18,8 +18,10 @@ import { Dish } from "@/features/statistics/types";
 import TopDishes from "./top-dishes";
 import TopSellingDishes from "./top-selling-dishes";
 
+type TimeFrameType = 'daily' | 'monthly' | 'yearly';
+
 export default function Dashboard() {
-  const [timeFrame, setTimeFrame] = useState("daily");
+  const [timeFrame, setTimeFrame] = useState<TimeFrameType>("daily");
 
   // Lấy dữ liệu từ API chi tiết món ăn bán được
   const { data: dishDetailsData, isLoading: isDishDetailsLoading, error: dishDetailsError } = useGetDishDetailsQuery();
@@ -113,7 +115,7 @@ export default function Dashboard() {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Thống Kê Nhà Hàng</h1>
-        <Tabs value={timeFrame} onValueChange={setTimeFrame} className="w-[400px]">
+        <Tabs value={timeFrame} onValueChange={(value: string) => setTimeFrame(value as TimeFrameType)} className="w-[400px]">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="daily">Ngày</TabsTrigger>
             <TabsTrigger value="monthly">Tháng</TabsTrigger>
@@ -129,6 +131,7 @@ export default function Dashboard() {
         topDishCount={topDishes[0]?.totalQuantity || 0}
         maxRevenue={maxRevenue}
         formatCurrency={formatCurrency}
+        timeFrame={timeFrame}
       />
 
       <Card>

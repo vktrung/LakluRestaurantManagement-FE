@@ -87,38 +87,37 @@ export default function RestaurantTables() {
   };
 
   // Hàm tạo order từ các bàn đã chọn
- // Trong RestaurantTables.tsx
-const handleCreateOrder = () => {
-  if (selectedTables.length === 0) {
-    alert("Vui lòng chọn ít nhất một bàn để tạo order!");
-    return;
-  }
-  const tableIds = selectedTables.map((table) => table.id).join(",");
-  const capacities = selectedTables.map((table) => table.capacity).join(",");
-  
-  // Điều hướng với cả tableIds và capacities
-  router.push(`./table/order?tableIds=${tableIds}&capacities=${capacities}`);
-  setSelectedTables([]);
-};
+  const handleCreateOrder = () => {
+    if (selectedTables.length === 0) {
+      alert("Vui lòng chọn ít nhất một bàn để tạo order!");
+      return;
+    }
+    const tableIds = selectedTables.map((table) => table.id).join(",");
+    const capacities = selectedTables.map((table) => table.capacity).join(",");
+    
+    // Điều hướng với cả tableIds và capacities
+    router.push(`./table/order?tableIds=${tableIds}&capacities=${capacities}`);
+    setSelectedTables([]);
+  };
 
   if (isLoading) return <p className="p-4">Loading...</p>;
   if (error) return <p className="p-4 text-red-500">Đã có lỗi xảy ra.</p>;
 
   return (
-    <div className="p-6">
-      <div className="flex flex-col gap-4 mb-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-2xl font-bold">Sơ Đồ Bàn Nhà Hàng</h1>
-          <div className="flex flex-wrap gap-2">
+    <div className="p-2 sm:p-6">
+      <div className="flex flex-col gap-2 mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold">Sơ Đồ Bàn</h1>
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             {/* Ẩn nút "Thêm bàn mới" nếu là Phục vụ */}
             {!isWaiter && (
-              <Button variant="outline" onClick={() => setShowAddModal(true)}>
-                <Plus className="mr-2 h-4 w-4" /> Thêm bàn mới
+              <Button variant="outline" size="sm" onClick={() => setShowAddModal(true)}>
+                <Plus className="mr-1 h-3 w-3" /> Thêm bàn
               </Button>
             )}
             <Select value={filter} onValueChange={setFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Lọc theo trạng thái" />
+              <SelectTrigger className="h-9 text-sm w-[120px] sm:w-[180px]">
+                <SelectValue placeholder="Lọc trạng thái" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả bàn</SelectItem>
@@ -128,8 +127,8 @@ const handleCreateOrder = () => {
               </SelectContent>
             </Select>
             {selectedTables.length > 0 && (
-              <Button onClick={handleCreateOrder}>
-                Tạo Order ({selectedTables.length} bàn)
+              <Button size="sm" className="h-9" onClick={handleCreateOrder}>
+                Tạo Order ({selectedTables.length})
               </Button>
             )}
           </div>
@@ -137,21 +136,21 @@ const handleCreateOrder = () => {
       </div>
 
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="all">Tất cả bàn</TabsTrigger>
-          <TabsTrigger value="4">Bàn 4 người</TabsTrigger>
-          <TabsTrigger value="6">Bàn 6 người</TabsTrigger>
+        <TabsList className="mb-4 h-9">
+          <TabsTrigger value="all" className="text-xs sm:text-sm">Tất cả</TabsTrigger>
+          <TabsTrigger value="4" className="text-xs sm:text-sm">Bàn 4 người</TabsTrigger>
+          <TabsTrigger value="6" className="text-xs sm:text-sm">Bàn 6 người</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all">
-          <div className="space-y-8">
+          <div className="space-y-4 sm:space-y-8">
             {Object.entries(tablesByCapacity).map(([capacity, tables]) =>
               tables.length > 0 && (
-                <div key={capacity} className="space-y-4">
-                  <h2 className="text-xl font-semibold border-b pb-2">
+                <div key={capacity} className="space-y-2 sm:space-y-4">
+                  <h2 className="text-lg sm:text-xl font-semibold border-b pb-1 sm:pb-2">
                     Khu vực bàn {capacity} người
                   </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
                     {tables.map((table) => (
                       <TableCard
                         key={table.id}
@@ -178,7 +177,73 @@ const handleCreateOrder = () => {
           </div>
         </TabsContent>
 
-        {/* Các TabsContent khác (2, 4, 6) tương tự, chỉ cần thêm isWaiter */}
+        <TabsContent value="4">
+          <div className="space-y-2 sm:space-y-4">
+            <h2 className="text-lg sm:text-xl font-semibold border-b pb-1 sm:pb-2">
+              Khu vực bàn 4 người
+            </h2>
+            <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+              {tablesByCapacity[4].map((table) => (
+                <TableCard
+                  key={table.id}
+                  table={table}
+                  translateStatus={translateStatus}
+                  getStatusColors={getStatusColors}
+                  onEdit={(table) => {
+                    setSelectedTable(table);
+                    setShowEditModal(true);
+                  }}
+                  onDelete={(table) => {
+                    setSelectedTable(table);
+                    setShowDeleteModal(true);
+                  }}
+                  onSelect={handleTableSelect}
+                  isSelected={selectedTables.some((t) => t.id === table.id)}
+                  isWaiter={isWaiter}
+                />
+              ))}
+            </div>
+            {tablesByCapacity[4].length === 0 && (
+              <div className="text-center py-4 text-sm text-gray-500">
+                Không có bàn 4 người nào với trạng thái đã chọn
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="6">
+          <div className="space-y-2 sm:space-y-4">
+            <h2 className="text-lg sm:text-xl font-semibold border-b pb-1 sm:pb-2">
+              Khu vực bàn 6 người
+            </h2>
+            <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+              {tablesByCapacity[6].map((table) => (
+                <TableCard
+                  key={table.id}
+                  table={table}
+                  translateStatus={translateStatus}
+                  getStatusColors={getStatusColors}
+                  onEdit={(table) => {
+                    setSelectedTable(table);
+                    setShowEditModal(true);
+                  }}
+                  onDelete={(table) => {
+                    setSelectedTable(table);
+                    setShowDeleteModal(true);
+                  }}
+                  onSelect={handleTableSelect}
+                  isSelected={selectedTables.some((t) => t.id === table.id)}
+                  isWaiter={isWaiter}
+                />
+              ))}
+            </div>
+            {tablesByCapacity[6].length === 0 && (
+              <div className="text-center py-4 text-sm text-gray-500">
+                Không có bàn 6 người nào với trạng thái đã chọn
+              </div>
+            )}
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Only render modals if not waiter */}
@@ -228,48 +293,47 @@ function TableCard({
     <Card
       className={`border-2 ${colors.border} ${
         isSelected ? "bg-gray-300" : colors.bg
-      }`}
+      } cursor-pointer hover:shadow-md transition-shadow`}
       onClick={() => onSelect(table)}
     >
-      <CardContent className="p-4">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-xl font-bold">Bàn {table.tableNumber}</h2>
-          <Badge className={colors.badgeBg}>{translateStatus(table.status)}</Badge>
+      <CardContent className="p-2 sm:p-3">
+        <div className="flex justify-between items-center mb-1">
+          <h2 className="text-base font-bold">Bàn {table.tableNumber}</h2>
+          <Badge className={`${colors.badgeBg} text-xs py-0 px-1`}>{translateStatus(table.status)}</Badge>
         </div>
-        <div className="flex items-center gap-2 text-gray-600 mb-1">
-          <Users size={16} />
-          <span>Sức chứa: {table.capacity} người</span>
+        <div className="flex items-center gap-1 text-gray-600 text-xs">
+          <Users size={14} />
+          <span>Sức chứa: {table.capacity}</span>
         </div>
       </CardContent>
-      <CardFooter className="p-4 pt-0 flex flex-col gap-2">
-        {/* Hide Edit and Delete buttons for waiters */}
-        {!isWaiter && (
-          <div className="flex gap-2 w-full">
+      {!isWaiter && (
+        <CardFooter className="p-2 pt-0 flex flex-col gap-1">
+          <div className="flex gap-1 w-full">
             <Button
               variant="outline"
               size="sm"
-              className="flex-1"
+              className="flex-1 h-7 text-xs px-1"
               onClick={(e) => {
-                e.stopPropagation(); // Ngăn việc nhấp nút "Sửa" kích hoạt onSelect
+                e.stopPropagation();
                 onEdit(table);
               }}
             >
-              <Edit size={16} className="mr-1" /> Sửa
+              <Edit size={12} className="mr-1" /> Sửa
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 text-red-500 hover:text-red-700"
+              className="flex-1 h-7 text-xs px-1 text-red-500 hover:text-red-700"
               onClick={(e) => {
-                e.stopPropagation(); // Ngăn việc nhấp nút "Xóa" kích hoạt onSelect
+                e.stopPropagation();
                 onDelete(table);
               }}
             >
-              <Trash size={16} className="mr-1" /> Xóa
+              <Trash size={12} className="mr-1" /> Xóa
             </Button>
           </div>
-        )}
-      </CardFooter>
+        </CardFooter>
+      )}
     </Card>
   );
 }

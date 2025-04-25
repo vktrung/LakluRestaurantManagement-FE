@@ -115,7 +115,7 @@ const MenuItemsList = ({
 const MenuPage = () => {
   const params = useParams();
   const reservationId = Number(params.id);
-  const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
+  const [expandedMenu, setExpandedMenu] = useState<string | undefined>(undefined);
   const [showOrderPanel, setShowOrderPanel] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [orderItems, setOrderItems] = useState<
@@ -235,6 +235,7 @@ const MenuPage = () => {
               <Accordion
                 type="single"
                 collapsible
+                value={expandedMenu}
                 onValueChange={setExpandedMenu}
                 className="w-full"
               >

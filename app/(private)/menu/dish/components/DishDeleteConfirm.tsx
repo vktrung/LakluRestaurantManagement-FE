@@ -2,7 +2,10 @@
 'use client';
 
 import React from 'react';
-import { useDeleteDishMutation } from '@/features/dish/dishApiSlice'; // Adjust the import path
+import {
+  useDeleteDishMutation,
+  useGetDishByIdQuery,
+} from '@/features/dish/dishApiSlice'; // Adjust the import path
 import { Button } from '@/components/ui/button'; // Adjust import path
 import { toast } from 'sonner';
 
@@ -18,7 +21,7 @@ const DishDeleteConfirm: React.FC<DishDeleteConfirmProps> = ({
   onCancel,
 }) => {
   const [deleteDish] = useDeleteDishMutation();
-
+  const { data: dish } = useGetDishByIdQuery(dishId);
   const handleDelete = async () => {
     try {
       const response = await deleteDish(dishId).unwrap();
@@ -39,7 +42,7 @@ const DishDeleteConfirm: React.FC<DishDeleteConfirmProps> = ({
   return (
     <div className="space-y-4">
       <p className="text-gray-500">
-        Bạn có chắc chắn muốn xóa món ăn có ID {dishId}?
+        Bạn có chắc chắn muốn xóa món ăn {dish?.data.name}?
       </p>
       <div className="flex space-x-2">
         <Button

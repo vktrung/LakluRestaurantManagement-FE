@@ -1,10 +1,12 @@
 // File: components/Sidebar/Sidebar.tsx
 'use client';
 
+
 import * as React from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useSidebar } from './SidebarContext';
+
 
 // shadcn-ui
 import {
@@ -14,6 +16,7 @@ import {
   AccordionContent,
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
+
 
 // Dropdown imports
 import {
@@ -25,6 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
+
 
 // lucide-react icons
 import {
@@ -48,12 +52,15 @@ import {
   ScrollText,
   Coffee,
   UtensilsCrossed,
-  Receipt, 
-  Menu
+  Receipt,
+  Menu,
+  Banknote
 } from "lucide-react"
+
 
 import { IoFastFood } from 'react-icons/io5';
 import { useGetUserMeQuery } from '@/features/auth/authApiSlice';
+
 
 // Define menu items for each role
 const roleBasedMenuItems = {
@@ -88,6 +95,11 @@ const roleBasedMenuItems = {
           label: "Mã giảm giá",
           href: "/voucher",
           icon: <Tag className="h-4 w-4" />, // Icon thẻ giảm giá
+        },
+        {
+          label: "Giao dich",
+          href: "/payment",
+          icon: <Banknote className="h-4 w-4" />,
         },
       ],
     },
@@ -224,7 +236,7 @@ const roleBasedMenuItems = {
       children: [
         {
           label: "Máy POS",
-          href: "/cashier-order-2/order",
+          href: "/cashier-order",
           icon: <CreditCard className="h-4 w-4" />, // Icon thẻ tín dụng
         },
         {
@@ -243,12 +255,14 @@ const roleBasedMenuItems = {
 }
 
 
+
+
 // Define quick links for roles
 const roleBasedQuickLinks = {
   "Quản trị viên hệ thống": [
     {
-      label: "Két",
-      href: "/cash-register",
+      label: "Máy POS",
+      href: "/cashier-order",
       icon: <CreditCard className="h-4 w-4" />, // Thay đổi từ FileText
     },
     {
@@ -257,7 +271,7 @@ const roleBasedQuickLinks = {
       icon: <ChefHat className="h-4 w-4" />, // Thay đổi từ IoFastFood
     },
     {
-      label: "Máy POS",
+      label: "Máy POS 2",
       href: "/cashier-order-2/order",
       icon: <Receipt className="h-4 w-4" />, // Thay đổi từ FileText
     },
@@ -274,7 +288,7 @@ const roleBasedQuickLinks = {
       icon: <ShoppingCart className="h-4 w-4" />, // Thay đổi từ IoFastFood
     },
   ],
-  "Bếp": [
+  Bếp: [
     {
       label: "Bếp",
       href: "/kitchen",
@@ -284,24 +298,17 @@ const roleBasedQuickLinks = {
   "Thu ngân": [
     {
       label: "Máy POS",
-      href: "/cashier-order-2/order",
-      icon: <CreditCard className="h-4 w-4" />, // Icon thẻ tín dụng
-    },
-    {
-      label: "Lịch làm việc",
-      href: "/schedule",
-      icon: <CalendarDays className="h-4 w-4" />, // Giữ nguyên
-    },
-    {
-      label: "Bảng Lương",
-      href: "/payroll",
-      icon: <ScrollText className="h-4 w-4" />, // Icon bảng lương
+      href: "/cashier-order",
+      icon: <CreditCard className="h-4 w-4" />, // Thay đổi từ FileText
     },
   ],
 }
 
 
+
+
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
+
 
 export function Sidebar({ className, ...props }: SidebarProps) {
   const { collapsed, toggleCollapsed } = useSidebar();
@@ -309,27 +316,27 @@ export function Sidebar({ className, ...props }: SidebarProps) {
     // Luôn làm mới khi component được mount
     refetchOnMountOrArgChange: true
   });
-  
+ 
   // Kiểm tra đường dẫn hiện tại
   const isLoginPage = typeof window !== 'undefined' && window.location.pathname.includes('/login');
-  
+ 
   // Force refetch khi component được mount nhưng chỉ khi không ở trang login
   React.useEffect(() => {
     if (!isLoginPage) {
       refetch();
     }
   }, [refetch, isLoginPage]);
-  
+ 
   // Determine which menu items to show based on user role
   const userRoles = data?.data?.roleNames || [];
-  
+ 
   // Reset menu items khi dữ liệu đang tải hoặc có lỗi
   const menuItems = React.useMemo(() => {
     // Nếu đang tải hoặc có lỗi, hiển thị menu trống
     if (isLoading || error) {
       return [];
     }
-    
+   
     if (userRoles.includes('Quản trị viên hệ thống')) {
       return roleBasedMenuItems['Quản trị viên hệ thống'];
     } else if (userRoles.includes('Phục vụ')) {
@@ -342,13 +349,14 @@ export function Sidebar({ className, ...props }: SidebarProps) {
     return [];
   }, [userRoles, isLoading, error]);
 
+
   // Determine which quick links to show
   const quickLinks = React.useMemo(() => {
     // Nếu đang tải hoặc có lỗi, hiển thị menu trống
     if (isLoading || error) {
       return [];
     }
-    
+   
     if (userRoles.includes('Quản trị viên hệ thống')) {
       return roleBasedQuickLinks['Quản trị viên hệ thống'];
     } else if (userRoles.includes('Phục vụ')) {
@@ -360,6 +368,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
     }
     return [];
   }, [userRoles, isLoading, error]);
+
 
   return (
     <div className={cn(
@@ -379,10 +388,12 @@ export function Sidebar({ className, ...props }: SidebarProps) {
             </div>
           )}
 
+
           <Button variant="ghost" size="icon" onClick={toggleCollapsed}>
             <Menu className="h-4 w-4" />
           </Button>
         </div>
+
 
         {/* Content area - with flex-grow to push footer down */}
         <div className="flex flex-col flex-grow overflow-hidden">
@@ -408,6 +419,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
                       {!collapsed && <span>{item.label}</span>}
                     </AccordionTrigger>
 
+
                     <AccordionContent className={!collapsed ? 'pl-6' : ''}>
                       {item.children.map(child => (
                         <Link
@@ -423,6 +435,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
                   </AccordionItem>
                 ))}
               </Accordion>
+
 
               {/* Quick Links Section */}
               {quickLinks.length > 0 && (
@@ -448,6 +461,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
           )}
         </div>
 
+
         {/* Footer with dropdown - always at bottom */}
         <div className="p-4 border-t dark:border-slate-800 flex items-center justify-between mt-auto flex-shrink-0">
           {!collapsed && data?.data && (
@@ -458,6 +472,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
               </div>
             </div>
           )}
+
 
           {/* Dropdown Menu */}
           <DropdownMenu>
@@ -492,3 +507,4 @@ export function Sidebar({ className, ...props }: SidebarProps) {
     </div>
   );
 }
+

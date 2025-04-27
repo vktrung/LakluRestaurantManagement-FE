@@ -271,7 +271,7 @@ const roleBasedQuickLinks = {
       icon: <ChefHat className="h-4 w-4" />, // Thay đổi từ IoFastFood
     },
     {
-      label: "Máy POS 2",
+      label: "Máy POS",
       href: "/cashier-order-2/order",
       icon: <Receipt className="h-4 w-4" />, // Thay đổi từ FileText
     },

@@ -1347,7 +1347,7 @@ export default function IntegratedPaymentPage() {
                       <div className="text-center space-y-4">
                         {isQrLoading ? (
                           <div>Đang tải mã QR...</div>
-                        ) : qrCodeData?.data?.qrCodeUrl ? (
+                        ) : qrCodeData?.data?.qrCodeUrl && paymentStatus !== "FAILED" ? (
                           <div className="flex flex-col items-center">
                             <p className="mb-4">Quét mã QR để thanh toán:</p>
                             <Image
@@ -1422,6 +1422,18 @@ export default function IntegratedPaymentPage() {
                                 </Button>
                               </div>
                             )}
+                          </div>
+                        ) : paymentStatus === "FAILED" ? (
+                          <div className="flex flex-col items-center">
+                            <div className="bg-red-50 text-red-700 py-3 px-4 rounded-lg flex items-center mb-4">
+                              <svg className="h-6 w-6 mr-2 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                              </svg>
+                              <span>Thanh toán đã thất bại</span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-4">
+                            Giao dịch không hoàn tất: Quá thời gian chờ thanh toán.
+                            </p>
                           </div>
                         ) : (
                           <div>Không có mã QR</div>

@@ -12,7 +12,7 @@ export NEXT_TELEMETRY_DISABLED=1
 export NEXT_DISABLE_SOURCEMAPS=1
 export NEXT_TYPESCRIPT_CHECK=0
 export NEXT_SHARP_PATH=false
-export NODE_OPTIONS="--max-old-space-size=1024 --gc-global --optimize-for-size"
+export NODE_OPTIONS="--max-old-space-size=1024 --optimize-for-size"
 
 # --- PHASE 1: CLEANUP ---
 echo "===== PHASE 1: CLEANUP ====="

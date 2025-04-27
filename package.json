@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3015",
-    "build": "bash ultralight-build.sh",
+    "build": "bash minimal-build.sh",
+    "build:ultra": "bash ultralight-build.sh",
     "build:normal": "NEXT_TYPESCRIPT_CHECK=0 next build --no-lint",
     "start": "next start -p 3015",
     "lint": "next lint",
-    "deploy": "npm ci && npm run build && next start -p 3015"
+    "deploy": "bash deploy.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",

@@ -82,7 +82,7 @@ const nextConfig = {
     ];
   },
   // Tăng cường xử lý lỗi trong môi trường production
-  productionBrowserSourceMaps: true, // Bật source maps cho việc debug trong production
+  productionBrowserSourceMaps: false, // Tắt source maps để giảm bộ nhớ khi build
   poweredByHeader: false, // Tắt header 'X-Powered-By' vì lý do bảo mật
   // Đảm bảo không có caching cho dữ liệu động
   onDemandEntries: {
@@ -104,6 +104,16 @@ const nextConfig = {
         poll: 1000, // Kiểm tra các thay đổi mỗi giây
       };
     }
+
+    // Tối ưu hóa build cho production
+    if (!dev) {
+      // Tắt minimize để giảm tải cho quá trình build nếu gặp vấn đề
+      config.optimization = {
+        ...config.optimization,
+        minimize: false
+      };
+    }
+    
     return config;
   },
   // Cấu hình cho Fast Refresh
@@ -116,9 +126,14 @@ const nextConfig = {
     serverActions: true,
     // Tắt optimizeCss để tránh lỗi critters
     optimizeCss: false,
+    // Tắt tính năng gây tốn bộ nhớ
+    optimizeFonts: false,
+    modularizeImports: false,
   },
-  // Tắt việc tạo trang tĩnh cho các trang lỗi mặc định
-  output: 'standalone',  // Sử dụng standalone output để đóng gói dependencies
+  // Sử dụng standalone output để đóng gói dependencies
+  output: 'standalone',
+  // Cấu hình swcMinify - cân nhắc tắt nếu vẫn gặp vấn đề
+  swcMinify: false, 
 };
 
 export default nextConfig;

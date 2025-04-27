@@ -12,9 +12,9 @@ npm ci || { echo "Lỗi khi cài đặt dependencies"; exit 1; }
 echo "===== CÀI ĐẶT CRITTERS ====="
 npm install critters --save || { echo "Lỗi khi cài đặt critters"; exit 1; }
 
-# Build
+# Build với bộ nhớ heap cao hơn
 echo "===== ĐANG BUILD ỨNG DỤNG ====="
-NODE_ENV=production npm run build || { echo "Lỗi khi build ứng dụng"; exit 1; }
+NODE_OPTIONS="--max-old-space-size=4096" NODE_ENV=production npm run build || { echo "Lỗi khi build ứng dụng"; exit 1; }
 
 # Thông báo hoàn thành
 echo "===== BUILD THÀNH CÔNG ====="

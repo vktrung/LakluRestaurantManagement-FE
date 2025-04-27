@@ -4,23 +4,23 @@
 echo "===== BẮT ĐẦU QUÁ TRÌNH TRIỂN KHAI ====="
 echo "Thời gian: $(date)"
 
-# Cài đặt các dependencies
-echo "===== CÀI ĐẶT DEPENDENCIES ====="
-npm ci || { echo "Lỗi khi cài đặt dependencies"; exit 1; }
+# Thiết lập biến môi trường cần thiết
+export NODE_ENV=production
+export NEXT_TELEMETRY_DISABLED=1
+export NEXT_DISABLE_SOURCEMAPS=1
+export NEXT_TYPESCRIPT_CHECK=0
 
-# Cài đặt critters (vì gặp lỗi với module này)
-echo "===== CÀI ĐẶT CRITTERS ====="
-npm install critters --save || { echo "Lỗi khi cài đặt critters"; exit 1; }
+# Thực hiện build siêu nhẹ
+echo "===== SỬ DỤNG ULTRALIGHT BUILD ====="
+chmod +x ultralight-build.sh
+./ultralight-build.sh || { echo "Lỗi trong quá trình build"; exit 1; }
 
-# Xóa các file cache thừa (nếu có)
-echo "===== DỌN DẸP CACHE ====="
-rm -rf .next || true
-
-# Build với bộ nhớ heap cao hơn và bỏ qua kiểm tra type
-echo "===== ĐANG BUILD ỨNG DỤNG ====="
-NODE_OPTIONS="--max-old-space-size=6144" NODE_ENV=production NEXT_DISABLE_SOURCEMAPS=1 NEXT_TYPESCRIPT_CHECK=0 next build --no-lint || { echo "Lỗi khi build ứng dụng"; exit 1; }
+# Khởi động ứng dụng với PM2
+echo "===== KHỞI ĐỘNG ỨNG DỤNG ====="
+pm2 delete cmslaklu || true
+pm2 start ecosystem.config.js || { echo "Lỗi khi khởi động ứng dụng"; exit 1; }
 
 # Thông báo hoàn thành
-echo "===== BUILD THÀNH CÔNG ====="
-echo "Quá trình build đã hoàn tất thành công!"
+echo "===== TRIỂN KHAI THÀNH CÔNG ====="
+echo "Ứng dụng đã được triển khai và khởi động thành công!"
 echo "===== KẾT THÚC QUÁ TRÌNH TRIỂN KHAI =====" 

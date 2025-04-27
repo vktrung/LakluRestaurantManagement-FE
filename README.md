@@ -1,37 +1,107 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Laklu Restaurant Management - Frontend
 
-## Getting Started
+## Yêu cầu hệ thống tối thiểu
 
-First, run the development server:
+- **OS**: Linux/Unix hoặc Windows
+- **RAM**: Tối thiểu 1GB (khuyến nghị 2GB+)
+- **CPU**: 1 core (khuyến nghị 2 cores+)
+- **Node.js**: v18+ (khuyến nghị v20)
+- **NPM**: v9+
+
+## Triển khai trong môi trường hạn chế tài nguyên
+
+### 1. Chuẩn bị
+
+Trước khi triển khai, đảm bảo hệ thống đã được dọn dẹp:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Xoá cache
+npm cache clean --force
+# Xoá dữ liệu tạm thời
+rm -rf .next node_modules/.cache tmp
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Triển khai với ultralight-build.sh
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Script `ultralight-build.sh` được tối ưu hóa đặc biệt cho các máy chủ có ít RAM:
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+```bash
+# Cấp quyền thực thi cho script
+chmod +x ultralight-build.sh
 
-## Learn More
+# Chạy script build siêu nhẹ
+./ultralight-build.sh
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Triển khai với PM2
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Sau khi build thành công, sử dụng PM2 để chạy ứng dụng:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+```bash
+# Khởi động ứng dụng
+pm2 start ecosystem.config.js
 
-## Deploy on Vercel
+# Kiểm tra trạng thái
+pm2 status
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Xem logs
+pm2 logs cmslaklu
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
-# LakluRestaurantManagement-FE
+### 4. Sử dụng script deploy.sh
+
+Script `deploy.sh` đã được tối ưu hóa để tự động triển khai:
+
+```bash
+# Cấp quyền thực thi
+chmod +x deploy.sh
+
+# Triển khai
+./deploy.sh
+```
+
+## Khắc phục sự cố
+
+### Lỗi "Killed" khi build
+
+Nếu quá trình build bị killed do hết bộ nhớ:
+
+1. **Tăng swap space** (nếu có quyền root):
+   ```bash
+   sudo fallocate -l 2G /swapfile
+   sudo chmod 600 /swapfile
+   sudo mkswap /swapfile
+   sudo swapon /swapfile
+   ```
+
+2. **Xoá các tiến trình Node.js đang chạy**:
+   ```bash
+   pkill -f node
+   ```
+
+3. **Sử dụng build siêu nhẹ**:
+   ```bash
+   ./ultralight-build.sh
+   ```
+
+4. **Nếu vẫn gặp vấn đề**: Build trên máy có nhiều tài nguyên hơn, sau đó copy thư mục `.next` sang máy chủ.
+
+## Cấu trúc ứng dụng
+
+- `app/`: Chứa các components và routes
+- `components/`: Chứa các UI components
+- `features/`: Chứa các tính năng
+- `services/`: Chứa các service gọi API
+- `store/`: Redux store
+
+## Tối ưu hóa cho môi trường production
+
+Các tệp cấu hình đã được tối ưu cho môi trường sản xuất:
+
+- **ecosystem.config.js**: Cấu hình PM2 tối ưu
+- **ultralight-build.sh**: Script build tối ưu cho môi trường ít tài nguyên
+- **package.json**: Đã tách devDependencies để giảm kích thước khi cài đặt trong chế độ production
+
+## Giấy phép
+
+Bản quyền © SEP

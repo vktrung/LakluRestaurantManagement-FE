@@ -7,6 +7,7 @@ echo "Thời gian: $(date)"
 export NODE_OPTIONS="--max-old-space-size=2048 --gc-global --optimize-for-size"
 export NEXT_DISABLE_SOURCEMAPS=1
 export NEXT_MINIMAL=1
+export NEXT_TYPESCRIPT_CHECK=0
 
 # Xóa thư mục .next nếu tồn tại
 echo "===== DỌN DẸP CACHE ====="
@@ -23,7 +24,7 @@ npm install --no-save critters || { echo "Lỗi khi cài đặt critters"; exit 
 
 # Build với các tùy chọn tối thiểu
 echo "===== ĐANG BUILD ỨNG DỤNG (CHẾ ĐỘ TỐI THIỂU) ====="
-NODE_ENV=production next build --no-lint --no-typescript || { echo "Lỗi khi build ứng dụng"; exit 1; }
+NODE_ENV=production next build --no-lint || { echo "Lỗi khi build ứng dụng"; exit 1; }
 
 # Thông báo hoàn thành
 echo "===== BUILD THÀNH CÔNG ====="

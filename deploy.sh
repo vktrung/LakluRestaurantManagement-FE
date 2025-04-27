@@ -16,9 +16,9 @@ npm install critters --save || { echo "Lỗi khi cài đặt critters"; exit 1; 
 echo "===== DỌN DẸP CACHE ====="
 rm -rf .next || true
 
-# Build với bộ nhớ heap cao hơn và tắt kiểm tra types
+# Build với bộ nhớ heap cao hơn và bỏ qua kiểm tra type
 echo "===== ĐANG BUILD ỨNG DỤNG ====="
-NODE_OPTIONS="--max-old-space-size=6144" NODE_ENV=production NEXT_DISABLE_SOURCEMAPS=1 next build --no-lint --no-typescript || { echo "Lỗi khi build ứng dụng"; exit 1; }
+NODE_OPTIONS="--max-old-space-size=6144" NODE_ENV=production NEXT_DISABLE_SOURCEMAPS=1 NEXT_TYPESCRIPT_CHECK=0 next build --no-lint || { echo "Lỗi khi build ứng dụng"; exit 1; }
 
 # Thông báo hoàn thành
 echo "===== BUILD THÀNH CÔNG ====="

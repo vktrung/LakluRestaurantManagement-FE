@@ -25,6 +25,7 @@ NEXT_TELEMETRY_DISABLED=1
 NEXT_DISABLE_SOURCEMAPS=1
 NODE_ENV=production
 NEXT_SHARP_PATH=false
+NEXT_TYPESCRIPT_CHECK=0
 EOL
 
 # Giai đoạn 2: Build dự án
@@ -36,10 +37,11 @@ export NEXT_TELEMETRY_DISABLED=1
 export NEXT_DISABLE_SOURCEMAPS=1
 export NODE_ENV=production
 export NEXT_SHARP_PATH=false
+export NEXT_TYPESCRIPT_CHECK=0
 
 # Build với các tùy chọn tối thiểu
 echo "===== ĐANG BUILD ỨNG DỤNG (CHẾ ĐỘ TỐI THIỂU) ====="
-next build --no-lint --no-typescript || { echo "Lỗi khi build ứng dụng"; exit 1; }
+next build --no-lint || { echo "Lỗi khi build ứng dụng"; exit 1; }
 
 # Nếu thành công, dọn dẹp cache không cần thiết
 echo "===== DỌN DẸP SAU BUILD ====="

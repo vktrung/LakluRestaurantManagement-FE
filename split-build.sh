@@ -6,6 +6,7 @@ echo "Thời gian: $(date)"
 # Các tùy chọn chung
 export NODE_OPTIONS="--max-old-space-size=2048"
 export NEXT_DISABLE_SOURCEMAPS=1
+export NEXT_TYPESCRIPT_CHECK=0
 
 # Xóa thư mục .next nếu tồn tại
 echo "===== DỌN DẸP CACHE ====="
@@ -27,7 +28,7 @@ mkdir -p .next/cache
 
 # 1. Build phần đầu tiên - Chỉ build phần server
 echo "===== BUILD PHẦN SERVER ====="
-NODE_ENV=production npx next build --no-lint --no-typescript || { echo "Lỗi khi build phần server"; exit 1; }
+NODE_ENV=production npx next build --no-lint || { echo "Lỗi khi build phần server"; exit 1; }
 
 # Giải phóng bộ nhớ
 echo "===== GIẢI PHÓNG BỘ NHỚ ====="

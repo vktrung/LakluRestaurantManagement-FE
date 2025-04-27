@@ -2,7 +2,6 @@
 const nextConfig = {
   images: {
     domains: ['qr.sepay.vn', 'api.laklu.com'], // Thêm hostname của URL hình ảnh
-    disableStaticImages: true, // Tắt tối ưu hóa hình ảnh tĩnh để giảm bộ nhớ khi build
   },
   async rewrites() {
     return [
@@ -82,26 +81,19 @@ const nextConfig = {
       },
     ];
   },
-  // Vô hiệu hóa source maps để giảm bộ nhớ khi build
-  productionBrowserSourceMaps: false,
-  poweredByHeader: false,
-  
-  // Tắt incremental để giảm bộ nhớ RAM khi build
-  typescript: {
-    ignoreBuildErrors: true,
-    tsconfigPath: 'tsconfig.json',
-  },
-  
-  // Tắt caching trong quá trình build
+  // Tăng cường xử lý lỗi trong môi trường production
+  productionBrowserSourceMaps: true, // Bật source maps cho việc debug trong production
+  poweredByHeader: false, // Tắt header 'X-Powered-By' vì lý do bảo mật
+  // Đảm bảo không có caching cho dữ liệu động
   onDemandEntries: {
+    // Thời gian (tính bằng ms) trước khi phần bộ nhớ cache của compiler bị xóa
     maxInactiveAge: 15 * 1000,
+    // Số lượng trang giữ trong bộ nhớ
     pagesBufferLength: 2,
   },
-  
-  // Tắt strict mode trong production để tránh gọi API hai lần
-  reactStrictMode: false,
-  
-  // Tối ưu hóa webpack cho môi trường ít tài nguyên
+  // Thêm cấu hình React Strict Mode để dễ phát hiện lỗi
+  reactStrictMode: false, // Tắt strict mode trong production để tránh gọi API hai lần
+  // Thêm cấu hình webpackDevMiddleware để cải thiện Fast Refresh
   webpack: (config, { dev, isServer }) => {
     if (dev && !isServer) {
       // Cải thiện Fast Refresh
@@ -109,62 +101,24 @@ const nextConfig = {
         ...config.watchOptions,
         ignored: /node_modules/,
         aggregateTimeout: 300,
-        poll: 1000,
+        poll: 1000, // Kiểm tra các thay đổi mỗi giây
       };
     }
-
-    // Tối ưu hóa cho production (tắt minimize)
-    if (!dev) {
-      config.optimization = {
-        ...config.optimization,
-        minimize: false,
-        splitChunks: {
-          cacheGroups: {
-            default: false,
-            vendors: false,
-          },
-        },
-        runtimeChunk: false,
-      };
-      
-      // Giảm số lượng chunk tạo ra để giảm bộ nhớ
-      config.plugins = config.plugins.filter((plugin) => {
-        if (plugin.constructor.name === 'ForkTsCheckerWebpackPlugin') return false;
-        return true;
-      });
-    }
-    
     return config;
   },
-  
-  // Tắt các tính năng không cần thiết trong quá trình build
+  // Cấu hình cho Fast Refresh
   devIndicators: {
-    buildActivity: false,
+    buildActivity: true,
   },
-  
-  // Tắt các tính năng thử nghiệm không cần thiết
+  // Đảm bảo rằng Fast Refresh được kích hoạt
   experimental: {
+    // Tắt các tính năng thử nghiệm không cần thiết
     serverActions: true,
+    // Tắt optimizeCss để tránh lỗi critters
     optimizeCss: false,
-    optimizeFonts: false,
-    modularizeImports: false,
-    legacyBrowsers: false,
-    webVitalsAttribution: ['CLS', 'LCP'], // Giảm số lượng metrics theo dõi
   },
-  
-  // Sử dụng output cơ bản để giảm bộ nhớ
-  output: 'standalone',
-  
-  // Tắt minimizer để giảm bộ nhớ sử dụng
-  swcMinify: false,
-  
-  // Thêm để giảm bộ nhớ khi build
-  compress: false,
-  
-  // Giảm kích thước build bằng cách chỉ hỗ trợ phiên bản ES mới
-  future: {
-    webpack5: true,
-  },
+  // Tắt việc tạo trang tĩnh cho các trang lỗi mặc định
+  output: 'standalone',  // Sử dụng standalone output để đóng gói dependencies
 };
 
 export default nextConfig;

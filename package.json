@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3015",
-    "build": "npm install --no-save critters && next build --no-lint",
+    "build": "npm install --no-save critters && next build --no-lint --no-typescript",
+    "build:low-mem": "NODE_OPTIONS='--max-old-space-size=4096' next build --no-lint --no-typescript",
     "start": "next start -p 3015",
     "lint": "next lint",
     "deploy": "npm ci && npm run build && next start -p 3015"

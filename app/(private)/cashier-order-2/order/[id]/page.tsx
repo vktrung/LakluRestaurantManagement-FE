@@ -27,6 +27,14 @@ import {
 } from "lucide-react"
 import { useDeleteOrderItemByIdMutation } from "@/features/order/orderApiSlice"
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -287,15 +295,20 @@ export default function ReservationOrdersPage() {
   const [isSplitDialogOpen, setIsSplitDialogOpen] = useState(false)
   const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  const [isPaymentLoading, setIsPaymentLoading] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null)
-  const [isDeleteOrderDialogOpen, setIsDeleteOrderDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null)
+  const [isDeleteOrderDialogOpen, setIsDeleteOrderDialogOpen] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false)
 
   // API mutation để xóa món ăn
   const [deleteOrderItem, { isLoading: isDeleting }] = useDeleteOrderItemByIdMutation()
   const [deleteOrder, { isLoading: isOrderDeleting }] = useDeleteOrderMutation()
+
+  // State cho modal cảnh báo
+  const [showWarningModal, setShowWarningModal] = useState(false)
+  const [warningMessage, setWarningMessage] = useState("")
 
   // Sử dụng skip: false để luôn fetch dữ liệu, và refetchOnMountOrArgChange: true để fetch lại mỗi khi component được mount
   const {
@@ -378,7 +391,19 @@ export default function ReservationOrdersPage() {
   }
 
   const handlePayment = (order: Order) => {
-    // Chuyển đến trang thanh toán
+    // Kiểm tra xem tất cả các món ăn trong đơn hàng đã được giao hay chưa
+    const allItemsDelivered = order.orderItems?.every((item) => item.statusLabel === "Đã giao")
+
+    if (!allItemsDelivered) {
+      // Hiển thị modal cảnh báo thay vì alert
+      setWarningMessage(
+        "Một số món ăn chưa được giao. Vui lòng đảm bảo tất cả món ăn đã được giao trước khi thanh toán.",
+      )
+      setShowWarningModal(true)
+      return
+    }
+
+    // Nếu tất cả món đã giao, chuyển đến trang thanh toán
     setIsPaymentLoading(true)
     router.push(`/payment/${order.id}`)
   }
@@ -477,6 +502,28 @@ export default function ReservationOrdersPage() {
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 p-4 sm:p-6">
+      {/* Modal cảnh báo món ăn chưa giao */}
+      <Dialog open={showWarningModal} onOpenChange={setShowWarningModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-700">
+              <AlertTriangle className="h-5 w-5" />
+              Không thể thanh toán
+            </DialogTitle>
+            <DialogDescription className="text-slate-700">{warningMessage}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button
+              variant="default"
+              onClick={() => setShowWarningModal(false)}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              Đã hiểu
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Dialog xác nhận xóa món ăn */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
@@ -665,28 +712,25 @@ export default function ReservationOrdersPage() {
                     </Button>
                   )}
 
-                  {/* Nút thanh toán - Chỉ hiển thị khi tất cả món đã được giao */}
-                  {order.orderItems.every((item) => item.statusLabel === "Đã giao") && (
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-2"
-                      onClick={() => handlePayment(order)}
-                      disabled={isPaymentLoading}
-                    >
-                      {isPaymentLoading ? (
-                        <>
-                          <RefreshCw className="h-4 w-4 animate-spin" />
-                          Đang chuyển hướng...
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="h-4 w-4" />
-                          Thanh toán
-                        </>
-                      )}
-                    </Button>
-                  )}
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-2"
+                    onClick={() => handlePayment(order)}
+                    disabled={isPaymentLoading}
+                  >
+                    {isPaymentLoading ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        Đang chuyển hướng...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="h-4 w-4" />
+                        Thanh toán
+                      </>
+                    )}
+                  </Button>
 
                   <Button
                     variant="outline"

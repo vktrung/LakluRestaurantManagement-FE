@@ -262,7 +262,7 @@ const roleBasedQuickLinks = {
   "Quản trị viên hệ thống": [
     {
       label: "Máy POS",
-      href: "/cashier-order-2/order",
+      href: "/cashier-order",
       icon: <CreditCard className="h-4 w-4" />, // Thay đổi từ FileText
     },
     {
@@ -271,8 +271,8 @@ const roleBasedQuickLinks = {
       icon: <ChefHat className="h-4 w-4" />, // Thay đổi từ IoFastFood
     },
     {
-      label: "Két",
-      href: "/cash-register",
+      label: "Máy POS 2",
+      href: "/cashier-order-2/order",
       icon: <Receipt className="h-4 w-4" />, // Thay đổi từ FileText
     },
   ],

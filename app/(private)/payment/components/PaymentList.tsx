@@ -56,6 +56,9 @@ export function PaymentList({ payments, currentPage, totalPages, totalItems, onP
         displayStatus = "Thanh toán thành công"
         break
       case "failed":
+      case "cancelled":
+        displayStatus = "Đã hủy"
+        break
       case "thất bại":
         displayStatus = "Thất bại"
         break
@@ -88,11 +91,20 @@ export function PaymentList({ payments, currentPage, totalPages, totalItems, onP
           </Badge>
         )
       case "failed":
+      case "cancelled":
+        return (
+          <Badge variant="destructive" className="px-3 py-1.5 font-medium">
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse"></span>
+              {displayStatus}
+            </span>
+          </Badge>
+        )
       case "thất bại":
         return (
           <Badge variant="destructive" className="px-3 py-1.5 font-medium">
             <span className="flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-white"></span>
+              <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse"></span>
               {displayStatus}
             </span>
           </Badge>

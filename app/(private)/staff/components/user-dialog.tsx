@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { CalendarIcon, Save, X, Loader2 } from "lucide-react"
+import { CalendarIcon, Save, X, Loader2, Lock, LockOpen } from "lucide-react"
 import { format } from "date-fns"
 
 import { Button } from "@/components/ui/button"

@@ -17,7 +17,8 @@ import {
   UserCog,
   KeyRound,
   Loader2,
-  LockOpen
+  LockOpen,
+  UserX
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -76,6 +77,8 @@ export function UserManagement() {
   const [updateProfileStatus, { isLoading: isDeactivating }] = useUpdateProfileStatusMutation()
   const [userToActivate, setUserToActivate] = useState<Staff | null>(null)
   const [isConfirmActivateOpen, setIsConfirmActivateOpen] = useState(false)
+  const [userToResign, setUserToResign] = useState<Staff | null>(null)
+  const [isConfirmResignOpen, setIsConfirmResignOpen] = useState(false)
 
   // Gọi API với tham số currentPage
   const { data: staffResponse, isLoading, refetch } = useGetStaffQuery(
@@ -257,8 +260,47 @@ export function UserManagement() {
     }
   }
 
+  const handleResignUser = (user: Staff) => {
+    setUserToResign(user)
+    setIsConfirmResignOpen(true)
+  }
+
+  const handleConfirmResign = async () => {
+    if (!userToResign) return
+    
+    try {
+      await updateProfileStatus({
+        profileId: userToResign.profile.id,
+        payload: {
+          employmentStatus: 'RESIGNED'
+        }
+      }).unwrap()
+      
+      toast({
+        title: "Thành công",
+        description: `Đã khóa vĩnh viễn tài khoản ${userToResign.username}`,
+      })
+      
+      refetch()
+    } catch (error) {
+      console.error("Lỗi khi khóa vĩnh viễn tài khoản:", error)
+      toast({
+        variant: "destructive",
+        title: "Lỗi",
+        description: "Có lỗi xảy ra khi khóa vĩnh viễn tài khoản",
+      })
+    } finally {
+      setIsConfirmResignOpen(false)
+      setUserToResign(null)
+    }
+  }
+
   const isUserTemporaryLeave = (user: Staff) => {
     return user.profile.employmentStatus === 'TEMPORARY_LEAVE'
+  }
+
+  const isUserResigned = (user: Staff) => {
+    return user.profile.employmentStatus === 'RESIGNED'
   }
 
   return (
@@ -372,15 +414,32 @@ export function UserManagement() {
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               {isUserTemporaryLeave(user) ? (
+                                <>
+                                  <DropdownMenuItem onClick={() => handleActivateUser(user)} className="text-green-600">
+                                    <LockOpen className="mr-2 h-4 w-4" />
+                                    Kích hoạt lại
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleResignUser(user)} className="text-red-600">
+                                    <UserX className="mr-2 h-4 w-4" />
+                                    Khóa vĩnh viễn
+                                  </DropdownMenuItem>
+                                </>
+                              ) : isUserResigned(user) ? (
                                 <DropdownMenuItem onClick={() => handleActivateUser(user)} className="text-green-600">
                                   <LockOpen className="mr-2 h-4 w-4" />
                                   Kích hoạt lại
                                 </DropdownMenuItem>
                               ) : (
-                                <DropdownMenuItem onClick={() => handleDeleteUser(user)} className="text-red-600">
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Tạm khóa
-                                </DropdownMenuItem>
+                                <>
+                                  <DropdownMenuItem onClick={() => handleDeleteUser(user)} className="text-yellow-600">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Tạm khóa
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleResignUser(user)} className="text-red-600">
+                                    <UserX className="mr-2 h-4 w-4" />
+                                    Khóa vĩnh viễn
+                                  </DropdownMenuItem>
+                                </>
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -504,6 +563,39 @@ export function UserManagement() {
                 </>
               ) : (
                 "Xác nhận kích hoạt"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog xác nhận khóa vĩnh viễn tài khoản */}
+      <AlertDialog open={isConfirmResignOpen} onOpenChange={setIsConfirmResignOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận khóa vĩnh viễn tài khoản</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn khóa vĩnh viễn tài khoản <strong>{userToResign?.username}</strong>?
+              <br />
+              Người dùng này sẽ không thể đăng nhập vào hệ thống và được đánh dấu đã nghỉ việc.
+              <br />
+              <span className="text-red-600 font-semibold">Lưu ý: Hành động này vẫn có thể được hoàn tác nếu cần.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeactivating}>Hủy</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmResign}
+              disabled={isDeactivating}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isDeactivating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Đang xử lý...
+                </>
+              ) : (
+                "Xác nhận khóa vĩnh viễn"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

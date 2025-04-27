@@ -978,7 +978,6 @@ export default function IntegratedPaymentPage() {
 
   return (
     <div className="container mx-auto p-4" ref={pageRef}>
-      <Toaster position="top-center" richColors />
       {/* Modal xác nhận rời trang */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

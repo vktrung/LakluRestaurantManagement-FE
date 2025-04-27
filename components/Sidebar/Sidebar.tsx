@@ -235,9 +235,9 @@ const roleBasedMenuItems = {
       icon: <DollarSign className="h-4 w-4" />, // Giữ nguyên
       children: [
         {
-          label: "Máy POS",
-          href: "/cashier-order",
-          icon: <CreditCard className="h-4 w-4" />, // Icon thẻ tín dụng
+          label: "Giao dich",
+          href: "/payment",
+          icon: <Banknote className="h-4 w-4" />,
         },
         {
           label: "Lịch làm việc",
@@ -261,8 +261,8 @@ const roleBasedMenuItems = {
 const roleBasedQuickLinks = {
   "Quản trị viên hệ thống": [
     {
-      label: "Máy POS",
-      href: "/cashier-order",
+      label: "Két",
+      href: "/cash-register",
       icon: <CreditCard className="h-4 w-4" />, // Thay đổi từ FileText
     },
     {
@@ -295,12 +295,17 @@ const roleBasedQuickLinks = {
       icon: <ChefHat className="h-4 w-4" />, // Thay đổi từ IoFastFood
     },
   ],
-  "Thu ngân": [
+"Thu ngân": [
+  {
+    label: "Két",
+    href: "/cash-register",
+    icon: <CreditCard className="h-4 w-4" />, // Thay đổi từ FileText
+  },
     {
       label: "Máy POS",
-      href: "/cashier-order",
-      icon: <CreditCard className="h-4 w-4" />, // Thay đổi từ FileText
-    },
+      href: "/cashier-order-2/order",
+      icon: <CreditCard className="h-4 w-4" />, // Icon thẻ tín dụng
+    }
   ],
 }
 

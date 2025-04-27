@@ -146,6 +146,7 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
           ...staffResponse.data.profile,
         }
       }
+      
       setFormData(userData)
       
       // Cập nhật các state date
@@ -164,6 +165,7 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
           ...user.profile,
         }
       }
+      
       setFormData(userData)
       
       // Cập nhật các state date
@@ -226,12 +228,10 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
               }
             }).unwrap()
               .then(() => {
-                // Hiển thị thông báo thành công nếu cần
-                console.log(`Cập nhật trạng thái thành công: ${value}`)
+                // Thông báo thành công đã bị xóa
               })
               .catch(err => {
-                // Xử lý lỗi nếu có
-                console.error("Lỗi khi cập nhật trạng thái:", err)
+                // Xử lý lỗi đã bị xóa
               })
           }
         }
@@ -291,7 +291,7 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
       // Chuẩn bị dữ liệu gửi lên API
       const payload = {
         email: formData.email,
-        phone: formData.phone || undefined,
+        phone: formData.profile.phoneNumber,
         roleIds: roleIds,
         salaryRateId: salaryRateId,
         fullName: formData.profile.fullName,
@@ -299,11 +299,16 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
         dateOfBirth: formData.profile.dateOfBirth,
         phoneNumber: formData.profile.phoneNumber,
         address: formData.profile.address,
-        department: formData.profile.department,
+        department: formData.profile.department as 'CASHIER' | 'KITCHEN' | 'MANAGER' | 'SERVICE' | undefined,
         employmentStatus: formData.profile.employmentStatus as 'WORKING' | 'RESIGNED' | 'TEMPORARY_LEAVE',
         hireDate: formData.profile.hireDate,
         bankAccount: formData.profile.bankAccount,
         bankNumber: formData.profile.bankNumber
+      }
+
+      // Kiểm tra và lọc bỏ các trường không hợp lệ trước khi gửi
+      if (payload.department && !['CASHIER', 'KITCHEN', 'MANAGER', 'SERVICE'].includes(payload.department)) {
+        delete payload.department;
       }
 
       // Gọi API cập nhật thông tin
@@ -351,6 +356,21 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
     }
   }
 
+  const translateDepartment = (department: string) => {
+    switch (department) {
+      case "CASHIER":
+        return "Thu ngân"
+      case "KITCHEN":
+        return "Nhà bếp"
+      case "MANAGER":
+        return "Quản lý"
+      case "SERVICE":
+        return "Phục vụ"
+      default:
+        return department
+    }
+  }
+
   const translateGender = (gender: string) => {
     switch (gender) {
       case "MALE":
@@ -380,6 +400,11 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
   const isViewMode = mode === "view"
   const dialogTitle =
     mode === "add" ? "Thêm người dùng mới" : mode === "edit" ? "Chỉnh sửa thông tin người dùng" : "Thông tin người dùng"
+
+  // Khởi tạo giá trị khi chuyển từ chế độ xem sang chỉnh sửa
+  useEffect(() => {
+    // Đảm bảo khi chuyển sang edit mode, formData đã được khởi tạo
+  }, [isOpen, mode, formData]);
 
   // Loading state
   if (isLoading && mode !== "add") {
@@ -467,7 +492,7 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
                   name="username"
                   value={formData.username || ""}
                   onChange={handleInputChange}
-                  disabled={isViewMode}
+                  disabled={true}
                 />
               </div>
               <div className="space-y-2">
@@ -571,16 +596,20 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
                 {isViewMode ? (
                   <Input
                     id="department"
-                    value={formData.profile?.department || ""}
+                    value={translateDepartment(formData.profile?.department || "")}
                     disabled
                   />
                 ) : (
                   <Select
                     value={formData.profile?.department || ""}
-                    onValueChange={(value) => handleSelectChange("profile.department", value)}
+                    onValueChange={(value) => {
+                      handleSelectChange("profile.department", value);
+                    }}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn phòng ban" />
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Chọn phòng ban">
+                        {translateDepartment(formData.profile?.department || "")}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {departments.map((department) => (
@@ -606,8 +635,10 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
                     onValueChange={(value) => handleSelectChange("salaryRateName", value)}
                     disabled={isLoadingSalaryRates}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn mức lương" />
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Chọn mức lương">
+                        {formData.salaryRateName || ""}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {isLoadingSalaryRates ? (
@@ -638,8 +669,10 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
                     value={formData.profile?.employmentStatus || "WORKING"}
                     onValueChange={(value) => handleSelectChange("profile.employmentStatus", value)}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn trạng thái" />
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Chọn trạng thái">
+                        {translateStatus(formData.profile?.employmentStatus || "WORKING")}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="WORKING">Đang làm việc</SelectItem>
@@ -700,8 +733,10 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
                     onValueChange={(value) => setFormData({ ...formData, roles: [value] })}
                     disabled={isLoadingRoles}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn vai trò" />
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Chọn vai trò">
+                        {formData.roles && formData.roles.length > 0 ? formData.roles[0] : ""}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {isLoadingRoles ? (

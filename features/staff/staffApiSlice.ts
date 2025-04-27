@@ -21,7 +21,7 @@ export interface UpdateEmploymentStatusRequest {
 
 export interface UpdateUserProfileRequest {
   email?: string;
-  phone?: string | null;
+  phone?: string;
   roleIds?: number[];
   salaryRateId?: number;
   fullName?: string;
@@ -29,7 +29,7 @@ export interface UpdateUserProfileRequest {
   dateOfBirth?: string;
   phoneNumber?: string;
   address?: string;
-  department?: string;
+  department?: 'CASHIER' | 'KITCHEN' | 'MANAGER' | 'SERVICE';
   employmentStatus?: 'WORKING' | 'RESIGNED' | 'TEMPORARY_LEAVE';
   hireDate?: string;
   bankAccount?: string;

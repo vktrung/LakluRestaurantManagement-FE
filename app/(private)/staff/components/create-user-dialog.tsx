@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useCreateStaffMutation } from "@/features/staff/staffApiSlice"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { useGetSalaryRatesQuery, useCreateSalaryRateMutation } from "@/features/salary/salaryApiSlice"
 import { useGetRolesQuery } from "@/features/role/roleApiSlice"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -71,6 +71,9 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
     password: ""
   })
 
+  // Thêm state để xử lý lỗi từ API
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+
   // State cho phần tạo mức lương mới
   const [isCreatingSalary, setIsCreatingSalary] = useState(false)
   const [newSalaryData, setNewSalaryData] = useState({
@@ -80,7 +83,6 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
     isGlobal: true
   })
 
-  const { toast } = useToast()
   const [createStaff, { isLoading }] = useCreateStaffMutation()
   const { data: salaryRatesResponse, isLoading: isLoadingSalaryRates, refetch: refetchSalaryRates } = useGetSalaryRatesQuery()
   const [createSalaryRate, { isLoading: isCreatingSalaryRate }] = useCreateSalaryRateMutation()
@@ -110,6 +112,51 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
     }
   }, [salaryRates, roles, formData.salaryRateId, formData.roleIds]);
 
+  // Hàm lấy tên hiển thị cho các trường
+  const getFieldDisplayName = (field: string): string => {
+    switch (field) {
+      case 'username':
+        return 'Tên đăng nhập';
+      case 'password':
+        return 'Mật khẩu';
+      case 'email':
+        return 'Email';
+      case 'department':
+        return 'Phòng ban';
+      case 'salaryRateId':
+        return 'Mức lương';
+      case 'roleIds':
+        return 'Vai trò';
+      default:
+        return field;
+    }
+  }
+
+  // Hàm reset lỗi
+  const resetErrors = () => {
+    setErrors({ password: "" })
+    setFormErrors({})
+  }
+
+  // Hàm reset form về giá trị mặc định
+  const resetForm = () => {
+    setFormData({
+      username: "",
+      password: "",
+      email: "",
+      department: "KITCHEN",
+      roleIds: roles.length > 0 ? [roles[0].id] : [],
+      salaryRateId: salaryRates.length > 0 ? salaryRates[0].id : 0
+    })
+    resetErrors()
+  }
+
+  // Xử lý khi đóng dialog
+  const handleClose = () => {
+    resetForm()
+    onClose()
+  }
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData({
@@ -120,6 +167,15 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
     // Xác thực mật khẩu PIN khi thay đổi
     if (name === 'password') {
       validatePassword(value);
+    }
+
+    // Xóa lỗi của trường khi người dùng nhập lại
+    if (formErrors[name]) {
+      setFormErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
+      })
     }
   }
   
@@ -143,6 +199,15 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
       ...formData,
       [name]: value,
     })
+
+    // Xóa lỗi của trường khi người dùng chọn lại
+    if (formErrors[name]) {
+      setFormErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
+      })
+    }
   }
 
   // Xử lý tạo mức lương mới
@@ -163,28 +228,23 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
 
   const handleCreateSalary = async () => {
     if (!newSalaryData.levelName.trim()) {
-      toast({
-        title: "Lỗi",
-        description: "Vui lòng nhập tên mức lương",
-        variant: "destructive",
+      toast.error("Vui lòng nhập tên mức lương", {
+        description: "Tên mức lương không được để trống"
       })
       return;
     }
 
     if (newSalaryData.amount <= 0) {
-      toast({
-        title: "Lỗi",
-        description: "Vui lòng nhập số tiền lương hợp lệ",
-        variant: "destructive",
+      toast.error("Vui lòng nhập số tiền lương hợp lệ", {
+        description: "Số tiền lương phải lớn hơn 0"
       })
       return;
     }
 
     try {
       const result = await createSalaryRate(newSalaryData).unwrap();
-      toast({
-        title: "Thành công",
-        description: "Đã tạo mức lương mới thành công",
+      toast.success("Đã tạo mức lương mới thành công", {
+        description: `Đã thêm mức lương "${newSalaryData.levelName}"`
       })
       
       // Đóng modal và làm mới danh sách lương
@@ -207,10 +267,8 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
         isGlobal: true
       })
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: "Không thể tạo mức lương mới. Vui lòng thử lại.",
-        variant: "destructive",
+      toast.error("Không thể tạo mức lương mới", {
+        description: "Vui lòng thử lại sau"
       })
       console.error("Lỗi khi tạo mức lương:", error)
     }
@@ -219,25 +277,56 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
   const handleSubmit = async () => {
     // Xác thực mật khẩu trước khi gửi
     if (!validatePassword(formData.password)) {
+      toast.error("Lỗi xác thực", {
+        description: errors.password
+      })
       return;
     }
     
     try {
       console.log("Gửi dữ liệu:", formData);
       await createStaff(formData).unwrap()
-      toast({
-        title: "Thành công",
-        description: "Thêm người dùng mới thành công",
+      toast.success("Thêm người dùng mới thành công", {
+        description: `Đã thêm người dùng "${formData.username}" vào hệ thống`
       })
       onSuccess?.()
-      onClose()
-    } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: "Không thể thêm người dùng. Vui lòng thử lại.",
-        variant: "destructive",
-      })
+      handleClose()
+    } catch (error: any) {
       console.error("Lỗi khi tạo người dùng:", error)
+      
+      // Xử lý lỗi từ API
+      if (error?.data) {
+        const errorData = error.data
+        
+        // Xử lý lỗi trường cụ thể nếu có
+        if (errorData?.error && typeof errorData.error === 'object') {
+          // Lưu lỗi vào state để có thể tô đỏ các trường bị lỗi
+          setFormErrors(errorData.error)
+          
+          // Hiển thị tất cả các lỗi qua toast
+          const errorMessages = Object.entries(errorData.error)
+            .map(([field, message]) => {
+              // Tạo thông báo lỗi có định dạng rõ ràng hơn
+              const fieldName = getFieldDisplayName(field);
+              return `${fieldName}: ${String(message)}`;
+            })
+            .join('\n');
+          
+          toast.error("Không thể tạo người dùng", {
+            description: errorMessages
+          })
+        } else {
+          // Hiển thị thông báo lỗi chung nếu không phải lỗi theo trường
+          toast.error("Lỗi hệ thống", {
+            description: errorData.message || "Không thể thêm người dùng. Vui lòng thử lại."
+          })
+        }
+      } else {
+        // Hiển thị thông báo lỗi mặc định
+        toast.error("Lỗi kết nối", {
+          description: "Không thể thêm người dùng. Vui lòng thử lại sau."
+        })
+      }
     }
   }
 
@@ -250,7 +339,7 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
     formData.salaryRateId > 0;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Thêm người dùng mới</DialogTitle>
@@ -264,40 +353,35 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
             <Label htmlFor="username" className="text-right">
               Tên đăng nhập
             </Label>
-            <Input
-              id="username"
-              name="username"
-              placeholder="Nhập tên đăng nhập"
-              className="col-span-3"
-              value={formData.username}
-              onChange={handleInputChange}
-              required
-            />
+            <div className="col-span-3">
+              <Input
+                id="username"
+                name="username"
+                placeholder="Nhập tên đăng nhập"
+                className={formErrors.username ? "border-red-500" : ""}
+                value={formData.username}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="password" className="text-right">
               Mật khẩu (PIN)
             </Label>
-            <div className="col-span-3 space-y-2">
+            <div className="col-span-3">
               <Input
                 id="password"
                 name="password"
                 type="password"
                 placeholder="Nhập mã PIN 4 số"
                 maxLength={4}
+                className={formErrors.password || errors.password ? "border-red-500" : ""}
                 value={formData.password}
                 onChange={handleInputChange}
                 required
               />
-              {errors.password && (
-                <Alert variant="destructive" className="py-2">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="ml-2 text-xs">
-                    {errors.password}
-                  </AlertDescription>
-                </Alert>
-              )}
             </div>
           </div>
 
@@ -305,36 +389,40 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
             <Label htmlFor="email" className="text-right">
               Email
             </Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="Nhập email"
-              className="col-span-3"
-              value={formData.email}
-              onChange={handleInputChange}
-              required
-            />
+            <div className="col-span-3">
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="Nhập email"
+                className={formErrors.email ? "border-red-500" : ""}
+                value={formData.email}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="department" className="text-right">
               Phòng ban
             </Label>
-            <Select 
-              value={formData.department} 
-              onValueChange={(value) => handleSelectChange("department", value)}
-            >
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Chọn phòng ban" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="KITCHEN">Bếp</SelectItem>
-                <SelectItem value="SERVICE">Phục vụ</SelectItem>
-                <SelectItem value="MANAGER">Quản lý</SelectItem>
-                <SelectItem value="CASHIER">Thu Ngân</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="col-span-3">
+              <Select 
+                value={formData.department} 
+                onValueChange={(value) => handleSelectChange("department", value)}
+              >
+                <SelectTrigger className={formErrors.department ? "border-red-500" : ""}>
+                  <SelectValue placeholder="Chọn phòng ban" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="KITCHEN">Bếp</SelectItem>
+                  <SelectItem value="SERVICE">Phục vụ</SelectItem>
+                  <SelectItem value="MANAGER">Quản lý</SelectItem>
+                  <SelectItem value="CASHIER">Thu Ngân</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
@@ -349,13 +437,24 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
                   <div className="flex-1">
                     <Select 
                       value={formData.salaryRateId ? formData.salaryRateId.toString() : ""} 
-                      onValueChange={(value) => setFormData({
-                        ...formData,
-                        salaryRateId: parseInt(value)
-                      })}
+                      onValueChange={(value) => {
+                        setFormData({
+                          ...formData,
+                          salaryRateId: parseInt(value)
+                        })
+                        
+                        // Xóa lỗi khi người dùng chọn lại
+                        if (formErrors.salaryRateId) {
+                          setFormErrors(prev => {
+                            const newErrors = { ...prev }
+                            delete newErrors.salaryRateId
+                            return newErrors
+                          })
+                        }
+                      }}
                       disabled={salaryRates.length === 0}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={formErrors.salaryRateId ? "border-red-500" : ""}>
                         <SelectValue placeholder="Chọn mức lương" />
                       </SelectTrigger>
                       <SelectContent>
@@ -470,37 +569,50 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
             {isLoadingRoles ? (
               <Skeleton className="h-10 col-span-3" />
             ) : (
-              <Select 
-                value={formData.roleIds.length > 0 ? formData.roleIds[0].toString() : ""} 
-                onValueChange={(value) => setFormData({
-                  ...formData,
-                  roleIds: [parseInt(value)]
-                })}
-                disabled={roles.length === 0}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Chọn vai trò" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.length > 0 ? (
-                    roles.map((role) => (
-                      <SelectItem key={role.id} value={role.id.toString()}>
-                        {role.name}
+              <div className="col-span-3">
+                <Select 
+                  value={formData.roleIds.length > 0 ? formData.roleIds[0].toString() : ""} 
+                  onValueChange={(value) => {
+                    setFormData({
+                      ...formData,
+                      roleIds: [parseInt(value)]
+                    })
+                    
+                    // Xóa lỗi khi người dùng chọn lại
+                    if (formErrors.roleIds) {
+                      setFormErrors(prev => {
+                        const newErrors = { ...prev }
+                        delete newErrors.roleIds
+                        return newErrors
+                      })
+                    }
+                  }}
+                  disabled={roles.length === 0}
+                >
+                  <SelectTrigger className={formErrors.roleIds ? "border-red-500" : ""}>
+                    <SelectValue placeholder="Chọn vai trò" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.length > 0 ? (
+                      roles.map((role) => (
+                        <SelectItem key={role.id} value={role.id.toString()}>
+                          {role.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="" disabled>
+                        Không có dữ liệu về vai trò
                       </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="" disabled>
-                      Không có dữ liệu về vai trò
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={handleClose}>
             <X className="mr-2 h-4 w-4" />
             Hủy
           </Button>

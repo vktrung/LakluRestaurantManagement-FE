@@ -9,6 +9,7 @@ import { useGetUserMeQuery } from '@/features/auth/authApiSlice';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import useClearCache from '@/hooks/useClearCache';
+import { Toaster } from 'sonner';
 
 // Sử dụng dynamic import để tránh vấn đề SSR với sidebar
 const DynamicSidebar = dynamic(() => import('@/components/Sidebar/Sidebar').then(mod => ({ default: mod.Sidebar })), {
@@ -82,6 +83,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="flex min-h-screen flex-col">
+      <Toaster position="top-right" closeButton richColors />
       <div className="flex flex-1">
         <div className="hidden md:block">
           <DynamicSidebar />

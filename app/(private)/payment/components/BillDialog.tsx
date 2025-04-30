@@ -5,7 +5,7 @@ import { formatPrice } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Printer } from "lucide-react"
 import { getTokenFromCookie } from "@/utils/token"
-
+import { toast } from "sonner"
 interface BillDialogProps {
     isOpen: boolean
     onClose: () => void
@@ -312,7 +312,7 @@ export function BillDialog({ isOpen, onClose, billData, paymentId }: BillDialogP
             printWindow.document.close();
         } catch (error) {
             console.error('Error printing bill:', error);
-            alert('Có lỗi xảy ra khi in hóa đơn');
+            toast.error('Chỉ có thể in hóa đơn thành công!');
         }
     }
 

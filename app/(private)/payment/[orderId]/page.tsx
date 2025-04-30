@@ -102,6 +102,66 @@ function getStorageWithExpiry(key: string) {
   }
 }
 
+// Cập nhật interface OrderItemDisplay
+interface OrderItemDisplay {
+  orderItemId: number;
+  dishName: string;
+  quantity: number;
+  price: number;
+}
+
+// Cập nhật component OrderItemCard
+const OrderItemCard = ({ item, onDelete, onChangeQuantity }: { 
+  item: OrderItemDisplay; 
+  onDelete: (id: number) => void;
+  onChangeQuantity: (id: number, quantity: number) => void;
+}) => {
+  return (
+    <div className="flex items-center justify-between p-4 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex-1">
+        <h3 className="font-medium text-gray-900">{item.dishName}</h3>
+        <p className="text-sm text-gray-500">
+          {item.price.toLocaleString()} VND
+        </p>
+      </div>
+      
+      <div className="flex items-center gap-4">
+        {/* Quantity Controls */}
+        <div className="flex items-center border rounded-md">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 rounded-r-none border-r-0"
+            onClick={() => onChangeQuantity(item.orderItemId, item.quantity - 1)}
+            disabled={item.quantity <= 1}
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+          <span className="w-8 text-center font-medium">{item.quantity}</span>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 rounded-l-none border-l-0"
+            onClick={() => onChangeQuantity(item.orderItemId, item.quantity + 1)}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Delete Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+          onClick={() => onDelete(item.orderItemId)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 export default function IntegratedPaymentPage() {
   const { orderId } = useParams()
   const router = useRouter()
@@ -389,27 +449,70 @@ export default function IntegratedPaymentPage() {
     }
   }
 
-  // Placeholder function for handling delete confirmation
+  // Cập nhật hàm handleDeleteItem
   const handleDeleteItem = async (itemId: number | undefined) => {
     // Add check for undefined itemId
     if (itemId === undefined) {
-      console.error("Attempted to delete item with undefined ID.");
-      setErrorMessage("Lỗi: Không thể xóa món ăn với ID không xác định.");
+      toast.error("Lỗi: Không thể xóa món ăn với ID không xác định.");
       return;
     }
 
-    if (window.confirm("Bạn có chắc chắn muốn xóa món ăn này?")) {
-      try {
-        console.log(`Attempting to delete item ID: ${itemId}`);
-        await deleteOrderItemById(itemId).unwrap();
-        setErrorMessage("Đã xóa món ăn thành công."); // Optional success message
-        refetchOrderItems(); // Refetch the list after successful deletion
-      } catch (error) {
-        console.error(`Failed to delete item ID: ${itemId}`, error);
-        const message = (error as any)?.data?.message || "Không thể xóa món ăn. Vui lòng thử lại.";
-        setErrorMessage(`Lỗi xóa món ăn: ${message}`);
-      }
-    }
+    // Tìm món ăn cần xóa để hiển thị tên
+    const itemToDelete = existingOrderItemsData?.data?.find(
+      (item) => item.orderItemId === itemId
+    );
+
+    toast.promise(
+      new Promise((resolve, reject) => {
+        toast.custom((t) => (
+          <div className="bg-white rounded-lg shadow-lg p-4 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-2">Xác nhận xóa</h3>
+            <p className="text-gray-600 mb-4">
+              Bạn có chắc chắn muốn xóa món {itemToDelete?.dishName || "này"}?
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  toast.dismiss(t);
+                  reject();
+                }}
+              >
+                Hủy
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  toast.dismiss(t);
+                  resolve(true);
+                }}
+              >
+                Xóa
+              </Button>
+            </div>
+          </div>
+        ), {
+          duration: Infinity,
+        });
+      }).then(async () => {
+        try {
+          await deleteOrderItemById(itemId).unwrap();
+          refetchOrderItems();
+          toast.success(`Đã xóa món ${itemToDelete?.dishName || ""} thành công!`, {
+            duration: 2000,
+            className: "bg-green-50",
+          });
+        } catch (error: any) {
+          const message = error?.data?.message || "Không thể xóa món ăn. Vui lòng thử lại.";
+          toast.error(`Lỗi: ${message}`, {
+            duration: 3000,
+          });
+          throw new Error(message);
+        }
+      })
+    );
   };
 
   // Tính toán subtotal
@@ -1191,16 +1294,21 @@ export default function IntegratedPaymentPage() {
                       Chưa có món nào được chọn
                     </div>
                   ) : (
-                    (existingOrderItemsData?.data || []).map(item => (
-                      <div key={item.id} className="p-3 flex justify-between items-center">
-                        <div>
-                          <div className="font-medium">{item.dishName || 'Unknown'}</div>
-                          <div className="text-sm text-gray-500">
-                            {(Number(item.price) || 0).toLocaleString('vi-VN')} VND × {item.quantity}
-                          </div>
-                        </div>
-                      </div>
-                    ))
+                    <div className="space-y-4">
+                      {existingOrderItemsData?.data?.map((item) => (
+                        <OrderItemCard
+                          key={item.orderItemId}
+                          item={{
+                            orderItemId: item.orderItemId ?? 0,
+                            dishName: item.dishName,
+                            quantity: item.quantity,
+                            price: Number(item.price)
+                          }}
+                          onDelete={handleDeleteItem}
+                          onChangeQuantity={changeItemQuantity}
+                        />
+                      ))}
+                    </div>
                   )}
                 </div>
                 <div className="bg-muted/10 p-3 border-t">

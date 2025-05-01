@@ -93,5 +93,16 @@ export interface DeleteOrderResponse {
   timestamp: string;
   error: null | string;
 }
+export interface BatchUpdateOrderItemStatusRequest {
+  status: string;
+  orderItemIds: number[];
+}
 
+export interface BatchUpdateOrderItemStatusResponse {
+  data: OrderItem[];
+  message: string;
+  httpStatus: number;
+  timestamp: string;
+  error: string | null;
+}
 

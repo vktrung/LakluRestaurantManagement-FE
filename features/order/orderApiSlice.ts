@@ -10,7 +10,9 @@ import {
   OrderSplitRequest,
   MergeOrderRequest,
   AddOrderItemRequest,
-  DeleteOrderResponse
+  DeleteOrderResponse,
+  BatchUpdateOrderItemStatusResponse,
+  BatchUpdateOrderItemStatusRequest
 } from './types';
 import baseQuery from '../baseQuery';
 import { endpoints } from '@/configs/endpoints';
@@ -75,7 +77,7 @@ export const orderApiSlice = createApi({
     // Update order item status
     updateOrderItemStatus: builder.mutation<OrderItem, { orderItemId: number, statusUpdate: UpdateOrderItemStatusRequest }>({
       query: ({ orderItemId, statusUpdate }) => ({
-        url: `${endpoints.Order}item/${orderItemId}/status`,
+        url: `${endpoints.OrderItemApi}${orderItemId}/status`,
         method: 'PUT',
         body: statusUpdate
       }),
@@ -159,6 +161,18 @@ export const orderApiSlice = createApi({
         'ReservationOrder' 
       ]
     }),
+    // Update multiple order item statuses in batch
+updateOrderItemStatusBatch: builder.mutation<BatchUpdateOrderItemStatusResponse, BatchUpdateOrderItemStatusRequest>({
+  query: (batchRequest) => ({
+    url: `/api/v1/order_items/status/batch`,
+    method: 'PUT',
+    body: {
+      status: batchRequest.status,
+      orderItemIds: batchRequest.orderItemIds
+    }
+  }),
+  invalidatesTags: ['Order', 'ReservationOrder']
+}),
     
   })
 });
@@ -178,5 +192,6 @@ export const {
   useMergeOrdersMutation,
   useCreateNewItemByOrderIdMutation,
   useDeleteOrderItemByIdMutation,
-  useUpdateOrderItemQuantityMutation
+  useUpdateOrderItemQuantityMutation,
+  useUpdateOrderItemStatusBatchMutation,
 } = orderApiSlice;

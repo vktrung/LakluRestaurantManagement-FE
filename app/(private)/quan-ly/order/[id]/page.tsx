@@ -1,6 +1,3 @@
-
-
-
 'use client';
 
 import { useState } from 'react';
@@ -10,10 +7,27 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useGetOrdersByReservationIdQuery, useUpdateOrderItemQuantityMutation } from '@/features/order/orderApiSlice';
+import {
+  useGetOrdersByReservationIdQuery,
+  useUpdateOrderItemQuantityMutation,
+  useUpdateOrderItemStatusBatchMutation,
+} from '@/features/order/orderApiSlice';
 import { Order, OrderItem } from '@/features/order/types';
 import { toast } from 'sonner';
-import { Plus, Clock, CheckCircle, AlertCircle, User, Package, Salad, Loader2, XCircle, Minus, Plus as PlusIcon } from 'lucide-react';
+import {
+  Plus,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  User,
+  Package,
+  Salad,
+  Loader2,
+  XCircle,
+  Minus,
+  Plus as PlusIcon,
+  Truck,
+} from 'lucide-react';
 
 export default function ReservationOrdersPage() {
   const params = useParams();
@@ -21,7 +35,8 @@ export default function ReservationOrdersPage() {
   const reservationId = Number(params.id);
 
   const { data: ordersResponse, isLoading, isError } = useGetOrdersByReservationIdQuery(reservationId);
-  const [updateOrderItemQuantity, { isLoading: isUpdating }] = useUpdateOrderItemQuantityMutation();
+  const [updateOrderItemQuantity, { isLoading: isUpdatingQuantity }] = useUpdateOrderItemQuantityMutation();
+  const [updateOrderItemStatusBatch, { isLoading: isUpdatingStatus }] = useUpdateOrderItemStatusBatchMutation();
 
   const orders = (ordersResponse?.data || []).slice().sort((a: Order, b: Order) => {
     return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
@@ -89,7 +104,7 @@ export default function ReservationOrdersPage() {
     });
   };
 
-  const handleUpdate = async (orderItem: OrderItem) => {
+  const handleUpdateQuantity = async (orderItem: OrderItem) => {
     const editState = editStates[orderItem.orderItemId] || {};
     const updatedQuantity = editState.quantity ?? orderItem.quantity;
 
@@ -106,10 +121,52 @@ export default function ReservationOrdersPage() {
         delete newState[orderItem.orderItemId];
         return newState;
       });
-    } catch (error) {
-      toast.error('Có lỗi xảy ra khi cập nhật số lượng món.', {
+    } catch (error: any) {
+      const errorMessage = error?.data?.message || 'Có lỗi xảy ra khi cập nhật số lượng món.';
+      toast.error(errorMessage, {
         position: 'top-right',
       });
+      console.error('Update quantity error:', error);
+    }
+  };
+
+  const handleDeliverItem = async (orderItem: OrderItem) => {
+    if (confirm(`Bạn có chắc muốn đánh dấu món ${orderItem.dish.name} là đã giao?`)) {
+      try {
+        await updateOrderItemStatusBatch({
+          status: 'DELIVERED',
+          orderItemIds: [orderItem.orderItemId],
+        }).unwrap();
+        toast.success(`Món ${orderItem.dish.name} đã được đánh dấu là đã giao!`, {
+          position: 'top-right',
+        });
+      } catch (error: any) {
+        const errorMessage = error?.data?.message || 'Có lỗi xảy ra khi cập nhật trạng thái món.';
+        toast.error(errorMessage, {
+          position: 'top-right',
+        });
+        console.error('Deliver item error:', error);
+      }
+    }
+  };
+
+  const handleCancelItem = async (orderItem: OrderItem) => {
+    if (confirm(`Bạn có chắc muốn hủy món ${orderItem.dish.name}?`)) {
+      try {
+        await updateOrderItemStatusBatch({
+          status: 'CANCELLED',
+          orderItemIds: [orderItem.orderItemId],
+        }).unwrap();
+        toast.success(`Món ${orderItem.dish.name} đã được hủy thành công!`, {
+          position: 'top-right',
+        });
+      } catch (error: any) {
+        const errorMessage = error?.data?.message || 'Có lỗi xảy ra khi hủy món.';
+        toast.error(errorMessage, {
+          position: 'top-right',
+        });
+        console.error('Cancel item error:', error);
+      }
     }
   };
 
@@ -206,7 +263,7 @@ export default function ReservationOrdersPage() {
                           <div className="flex justify-between items-center">
                             <span className="text-gray-800 flex items-center gap-1.5">
                               <Salad className="w-3.5 h-3.5 text-gray-800" />
-                              {item.dish.name}
+                              {item.dish.name} - {item.dish.price.toLocaleString('vi-VN')} VNĐ
                             </span>
                             {getStatusBadge(item.statusLabel)}
                           </div>
@@ -233,15 +290,41 @@ export default function ReservationOrdersPage() {
                                 <PlusIcon className="w-3.5 h-3.5" />
                               </Button>
                             </div>
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
-                              onClick={() => handleUpdate(item)}
-                              disabled={isUpdating || !isEditing || !isPending}
-                            >
-                              Cập nhật
-                            </Button>
+                            <div className="flex gap-2 flex-wrap">
+                              <Button
+                                variant="default"
+                                size="sm"
+                                className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
+                                onClick={() => handleUpdateQuantity(item)}
+                                disabled={isUpdatingQuantity || !isEditing || !isPending}
+                              >
+                                Cập nhật
+                              </Button>
+                              {isPending && !item.dish.requiresPreparation && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs border-green-600 text-green-600 hover:bg-green-50"
+                                  onClick={() => handleDeliverItem(item)}
+                                  disabled={isUpdatingStatus}
+                                >
+                                  <Truck className="w-3.5 h-3.5 mr-1" />
+                                  Đã giao
+                                </Button>
+                              )}
+                              {isPending && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs border-red-600 text-red-600 hover:bg-red-50"
+                                  onClick={() => handleCancelItem(item)}
+                                  disabled={isUpdatingStatus}
+                                >
+                                  <XCircle className="w-3.5 h-3.5 mr-1" />
+                                  Hủy
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </li>
                       );

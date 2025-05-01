@@ -47,7 +47,7 @@ export interface UpdateOrderStatusRequest {
 }
 
 export interface UpdateOrderItemStatusRequest {
-  statusLabel: string;
+  status: string;
 }
 
 export interface CreateOrderItemRequest {

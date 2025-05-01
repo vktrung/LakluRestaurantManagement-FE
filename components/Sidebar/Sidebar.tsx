@@ -48,6 +48,7 @@ import {
 import { IoFastFood } from 'react-icons/io5';
 import { useGetUserMeQuery } from '@/features/auth/authApiSlice';
 import { useGetShiftsByStaffAndDateRangeQuery } from '@/features/schedule/scheduleApiSlice';
+import { useGetMyProfileQuery } from '@/features/profile/profileApiSlice';
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 
 // Define types for menu items and quick links
@@ -89,8 +90,8 @@ interface RoleBasedQuickLinks {
 // Define Shift interface based on API response
 interface Shift {
   id: number;
-  timeIn: string; // e.g., "2025-04-27T18:00:00"
-  timeOut: string; // e.g., "2025-04-28T01:00:35"
+  timeIn: string; // e.g., "2025-05-01T16:00:00"
+  timeOut: string; // e.g., "2025-05-02T01:00:00"
   detail: {
     id: number;
     managerFullName: string;
@@ -226,8 +227,9 @@ export function Sidebar({ className, ...props }: SidebarProps) {
   const { data: userData, isLoading: isUserLoading, error: userError, refetch } = useGetUserMeQuery(undefined, {
     refetchOnMountOrArgChange: true,
   });
+  const { data: profile, isLoading: isProfileLoading } = useGetMyProfileQuery();
 
-  // Get current date in DD/MM/YYYY format (e.g., 28/04/2025)
+  // Get current date in DD/MM/YYYY format (e.g., 01/05/2025)
   const currentDate = formatDateToDDMMYYYY(new Date());
 
   // Get staffId from userData (use provided staffId 2 for testing)
@@ -237,7 +239,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
   const { data: shiftData, isLoading: isShiftLoading, error: shiftError } = useGetShiftsByStaffAndDateRangeQuery(
     {
       staffId: staffId,
-      startDate: currentDate, // e.g., "28/04/2025"
+      startDate: currentDate, // e.g., "01/05/2025"
       endDate: currentDate,
     },
     { skip: !staffId } // Skip query if staffId is not available
@@ -252,8 +254,45 @@ export function Sidebar({ className, ...props }: SidebarProps) {
   }, [refetch, isLoginPage]);
 
   const userRoles = userData?.data?.roleNames || [];
+  const userFullName = profile?.fullName || '';
 
-  // Kiểm tra đơn giản: nếu có dữ liệu ca làm việc và không trống
+  // Check if user has shifts today and if they've attended
+  const hasAttendedShift = React.useMemo(() => {
+    if (isShiftLoading || shiftError || !shiftData?.data || shiftData.data.length === 0) {
+      console.log('Attendance check skipped:', {
+        isShiftLoading,
+        shiftError: shiftError
+          ? 'FetchBaseQueryError' in shiftError
+            ? (shiftError as FetchBaseQueryError).status
+            : (shiftError as { message?: string }).message || 'Unknown error'
+          : 'No error',
+        hasShiftData: !!shiftData?.data,
+      });
+      return false;
+    }
+
+    // Get the current user's full name
+    if (!userFullName) {
+      console.log('Cannot check attendance: user full name is missing');
+      return false;
+    }
+
+    // Loop through all shifts and check if user has attended any
+    for (const shift of shiftData.data) {
+      if (shift.detail && shift.detail.userAttendancesByFullName) {
+        // Check if the user's name is in the attendance records and if they've attended
+        if (shift.detail.userAttendancesByFullName[userFullName] === true) {
+          console.log(`User ${userFullName} has attended their shift`);
+          return true;
+        }
+      }
+    }
+
+    console.log(`User ${userFullName} has not attended any shifts today`);
+    return false;
+  }, [shiftData, isShiftLoading, shiftError, userFullName]);
+
+  // Check if user has shifts today
   const hasShifts = React.useMemo(() => {
     if (isShiftLoading || shiftError || !shiftData?.data) {
       const errorMessage = shiftError
@@ -269,7 +308,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       return false;
     }
 
-    // Kiểm tra nếu có bất kỳ ca làm việc nào
+    // Check if there are any shifts
     const hasAnyShift = shiftData.data.length > 0;
 
     console.log('Shift check result:', {
@@ -279,55 +318,151 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       currentDate,
       shiftData: shiftData.data,
     });
-    
+
     return hasAnyShift;
   }, [shiftData, isShiftLoading, shiftError, userRoles, currentDate]);
 
-  // Filter menu items based on shift existence for Phục vụ, Bếp, and Thu ngân
+  // Check if current time is within any shift's timeIn and timeOut
+  const isWithinShiftHours = React.useMemo(() => {
+    if (isShiftLoading || shiftError || !shiftData?.data || shiftData.data.length === 0) {
+      console.log('Shift hours check skipped:', {
+        isShiftLoading,
+        shiftError: shiftError
+          ? 'FetchBaseQueryError' in shiftError
+            ? (shiftError as FetchBaseQueryError).status
+            : (shiftError as { message?: string }).message || 'Unknown error'
+          : 'No error',
+        hasShiftData: !!shiftData?.data,
+      });
+      return false;
+    }
+
+    const now = new Date(); // Current date and time
+
+    for (const shift of shiftData.data) {
+      const timeIn = new Date(shift.timeIn); // e.g., 2025-05-01T16:00:00
+      const timeOut = new Date(shift.timeOut); // e.g., 2025-05-02T01:00:00
+
+      // Check if current time is within shift's timeIn and timeOut
+      if (now >= timeIn && now <= timeOut) {
+        console.log('Current time is within shift hours:', {
+          shiftId: shift.id,
+          timeIn: shift.timeIn,
+          timeOut: shift.timeOut,
+          currentTime: now.toISOString(),
+        });
+        return true;
+      }
+    }
+
+    console.log('Current time is outside shift hours:', {
+      currentTime: now.toISOString(),
+      shifts: shiftData.data.map((s: Shift) => ({
+        id: s.id,
+        timeIn: s.timeIn,
+        timeOut: s.timeOut,
+      })),
+    });
+    return false;
+  }, [shiftData, isShiftLoading, shiftError]);
+
+  // Filter menu items based on shift existence, attendance, and shift hours for staff roles
   const menuItems = React.useMemo((): MenuItem[] => {
     if (isUserLoading || userError) {
-      // console.log('Menu items skipped:', { isUserLoading, userError: userError?.message });
+      console.log('Menu items skipped:', {
+        isUserLoading,
+        userError: userError
+          ? 'FetchBaseQueryError' in userError
+            ? (userError as FetchBaseQueryError).status
+            : (userError as { message?: string }).message || 'Unknown error'
+          : 'No error',
+      });
       return [];
     }
 
     let items: MenuItem[] = [];
+
+    // System admin always gets full access
     if (userRoles.includes('Quản trị viên hệ thống')) {
       items = roleBasedMenuItems['Quản trị viên hệ thống'];
-    } else if (userRoles.includes('Phục vụ') || userRoles.includes('Bếp') || userRoles.includes('Thu ngân')) {
+    }
+    // For staff roles, check shift, attendance, and shift hours status
+    else if (userRoles.includes('Phục vụ') || userRoles.includes('Bếp') || userRoles.includes('Thu ngân')) {
       const role = userRoles.includes('Phục vụ') ? 'Phục vụ' : userRoles.includes('Bếp') ? 'Bếp' : 'Thu ngân';
-      items = roleBasedMenuItems[role];
-      if (!hasShifts) {
-        // Filter to only show "Bảng Lương" and "Lịch làm việc" if no shift
-        items = items.map((item) => ({
-          ...item,
-          children: item.children.filter(
-            (child) => child.href === '/payroll' || child.href === '/schedule'
-          ),
-        })).filter((item) => item.children.length > 0); // Remove items with empty children
+
+      // Show limited menu if:
+      // 1. No shifts today, or
+      // 2. Has shifts but hasn't attended yet, or
+      // 3. Has shifts but current time is not within shift hours
+      if (!hasShifts || !hasAttendedShift || !isWithinShiftHours) {
+        items = roleBasedMenuItems[role]
+          .map((item) => ({
+            ...item,
+            children: item.children.filter((child) => child.href === '/payroll' || child.href === '/schedule'),
+          }))
+          .filter((item) => item.children.length > 0);
+      }
+      // Show full menu if has shifts AND has attended AND current time is within shift hours
+      else {
+        items = roleBasedMenuItems[role];
       }
     }
-    console.log('Computed menuItems:', { items, role: userRoles, hasShifts });
-    return items;
-  }, [userRoles, isUserLoading, userError, hasShifts]);
 
-  // Filter quick links based on shift existence for Phục vụ, Bếp, and Thu ngân
+    console.log('Computed menuItems:', {
+      items,
+      role: userRoles,
+      hasShifts,
+      hasAttendedShift,
+      isWithinShiftHours,
+      userFullName,
+    });
+
+    return items;
+  }, [userRoles, isUserLoading, userError, hasShifts, hasAttendedShift, isWithinShiftHours, userFullName]);
+
+  // Filter quick links based on shift existence, attendance, and shift hours for staff roles
   const quickLinks = React.useMemo((): QuickLink[] => {
-    if (isUserLoading || userError) return [];
+    if (isUserLoading || userError) {
+      console.log('Quick links skipped:', {
+        isUserLoading,
+        userError: userError
+          ? 'FetchBaseQueryError' in userError
+            ? (userError as FetchBaseQueryError).status
+            : (userError as { message?: string }).message || 'Unknown error'
+          : 'No error',
+      });
+      return [];
+    }
 
     let links: QuickLink[] = [];
+
+    // System admin always gets full access
     if (userRoles.includes('Quản trị viên hệ thống')) {
       links = roleBasedQuickLinks['Quản trị viên hệ thống'];
-    } else if (userRoles.includes('Phục vụ') || userRoles.includes('Bếp') || userRoles.includes('Thu ngân')) {
+    }
+    // For staff roles, check shift, attendance, and shift hours status
+    else if (userRoles.includes('Phục vụ') || userRoles.includes('Bếp') || userRoles.includes('Thu ngân')) {
       const role = userRoles.includes('Phục vụ') ? 'Phục vụ' : userRoles.includes('Bếp') ? 'Bếp' : 'Thu ngân';
-      if (hasShifts) {
+
+      // Only show quick links if user has shifts today AND has attended AND current time is within shift hours
+      if (hasShifts && hasAttendedShift && isWithinShiftHours) {
         links = roleBasedQuickLinks[role];
       } else {
         links = [];
       }
     }
-    console.log('Computed quickLinks:', { links, role: userRoles, hasShifts });
+
+    console.log('Computed quickLinks:', {
+      links,
+      role: userRoles,
+      hasShifts,
+      hasAttendedShift,
+      isWithinShiftHours,
+      userFullName,
+    });
+
     return links;
-  }, [userRoles, isUserLoading, userError, hasShifts]);
+  }, [userRoles, isUserLoading, userError, hasShifts, hasAttendedShift, isWithinShiftHours, userFullName]);
 
   return (
     <div
@@ -366,6 +501,27 @@ export function Sidebar({ className, ...props }: SidebarProps) {
             </div>
           ) : (
             <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+              {/* Notification for staff roles with shifts */}
+              {!isUserLoading &&
+                !isShiftLoading &&
+                hasShifts &&
+                (userRoles.includes('Phục vụ') || userRoles.includes('Bếp') || userRoles.includes('Thu ngân')) && (
+                  <>
+                    {/* Attendance notification */}
+                    {!hasAttendedShift && (
+                      <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded text-yellow-800 text-sm">
+                        <p>Bạn cần điểm danh để truy cập đầy đủ chức năng</p>
+                      </div>
+                    )}
+                    {/* Shift time notification */}
+                    {hasAttendedShift && !isWithinShiftHours && (
+                      <div className="mb-4 p-3 bg-blue-50 border border-blue-300 rounded text-blue-800 text-sm">
+                        <p>Hiện chưa đến giờ ca làm việc của bạn</p>
+                      </div>
+                    )}
+                  </>
+                )}
+
               <Accordion type="single" collapsible>
                 {menuItems.map((item) => (
                   <AccordionItem value={item.value} key={item.value}>

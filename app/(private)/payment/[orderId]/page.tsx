@@ -656,7 +656,7 @@ export default function IntegratedPaymentPage() {
         paymentId,
         receivedAmount: Number(receivedAmount),
       }).unwrap()
-      setErrorMessage(`Thanh toán thành công: Tiền thối: ${result.data?.change || "0"}`)
+      toast.success(`Thanh toán thành công: Tiền thừa: ${result.data?.change || "0"}`)
       // Đánh dấu thanh toán đã hoàn tất
       setPaymentCompleted(true)
       // Only print bill if shouldPrintBill is true
@@ -1409,7 +1409,7 @@ export default function IntegratedPaymentPage() {
                           />
                           {receivedAmount && Number(receivedAmount) >= Number(totalAmount) && (
                             <div className="mt-2 text-sm text-green-600">
-                              Tiền thối: {(Number(receivedAmount) - Number(totalAmount)).toLocaleString()} VND
+                              Tiền thừa trả lại: {(Number(receivedAmount) - Number(totalAmount)).toLocaleString()} VND
                             </div>
                           )}
                         </div>

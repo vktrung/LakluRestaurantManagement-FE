@@ -28,6 +28,8 @@ import {
   Plus as PlusIcon,
   Truck,
 } from 'lucide-react';
+import ConfirmationModal from '@/components/ConfirmationModal/ConfirmationModal';
+// import ConfirmationModal from '@/components/ConfirmationModal'; // Import the modal
 
 export default function ReservationOrdersPage() {
   const params = useParams();
@@ -45,6 +47,32 @@ export default function ReservationOrdersPage() {
   const [editStates, setEditStates] = useState<{
     [key: number]: { quantity: number };
   }>({});
+
+  // State for managing the confirmation modal
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    onConfirm: () => {},
+  });
+
+  const openModal = (title: string, description: string, onConfirm: () => void) => {
+    setModalState({
+      isOpen: true,
+      title,
+      description,
+      onConfirm,
+    });
+  };
+
+  const closeModal = () => {
+    setModalState((prev) => ({ ...prev, isOpen: false }));
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -131,43 +159,53 @@ export default function ReservationOrdersPage() {
   };
 
   const handleDeliverItem = async (orderItem: OrderItem) => {
-    if (confirm(`Bạn có chắc muốn đánh dấu món ${orderItem.dish.name} là đã giao?`)) {
-      try {
-        await updateOrderItemStatusBatch({
-          status: 'DELIVERED',
-          orderItemIds: [orderItem.orderItemId],
-        }).unwrap();
-        toast.success(`Món ${orderItem.dish.name} đã được đánh dấu là đã giao!`, {
-          position: 'top-right',
-        });
-      } catch (error: any) {
-        const errorMessage = error?.data?.message || 'Có lỗi xảy ra khi cập nhật trạng thái món.';
-        toast.error(errorMessage, {
-          position: 'top-right',
-        });
-        console.error('Deliver item error:', error);
+    openModal(
+      'Xác nhận giao món',
+      `Bạn có chắc muốn đánh dấu món ${orderItem.dish.name} là đã giao?`,
+      async () => {
+        try {
+          await updateOrderItemStatusBatch({
+            status: 'DELIVERED',
+            orderItemIds: [orderItem.orderItemId],
+          }).unwrap();
+          toast.success(`Món ${orderItem.dish.name} đã được đánh dấu là đã giao!`, {
+            position: 'top-right',
+          });
+        } catch (error: any) {
+          const errorMessage = error?.data?.message || 'Có lỗi xảy ra khi cập nhật trạng thái món.';
+          toast.error(errorMessage, {
+            position: 'top-right',
+          });
+          console.error('Deliver item error:', error);
+        }
+        closeModal();
       }
-    }
+    );
   };
 
   const handleCancelItem = async (orderItem: OrderItem) => {
-    if (confirm(`Bạn có chắc muốn hủy món ${orderItem.dish.name}?`)) {
-      try {
-        await updateOrderItemStatusBatch({
-          status: 'CANCELLED',
-          orderItemIds: [orderItem.orderItemId],
-        }).unwrap();
-        toast.success(`Món ${orderItem.dish.name} đã được hủy thành công!`, {
-          position: 'top-right',
-        });
-      } catch (error: any) {
-        const errorMessage = error?.data?.message || 'Có lỗi xảy ra khi hủy món.';
-        toast.error(errorMessage, {
-          position: 'top-right',
-        });
-        console.error('Cancel item error:', error);
+    openModal(
+      'Xác nhận hủy món',
+      `Bạn có chắc muốn hủy món ${orderItem.dish.name}?`,
+      async () => {
+        try {
+          await updateOrderItemStatusBatch({
+            status: 'CANCELLED',
+            orderItemIds: [orderItem.orderItemId],
+          }).unwrap();
+          toast.success(`Món ${orderItem.dish.name} đã được hủy thành công!`, {
+            position: 'top-right',
+          });
+        } catch (error: any) {
+          const errorMessage = error?.data?.message || 'Có lỗi xảy ra khi hủy món.';
+          toast.error(errorMessage, {
+            position: 'top-right',
+          });
+          console.error('Cancel item error:', error);
+        }
+        closeModal();
       }
-    }
+    );
   };
 
   if (isLoading) {
@@ -336,6 +374,17 @@ export default function ReservationOrdersPage() {
           ))}
         </div>
       )}
+
+      {/* Render the ConfirmationModal */}
+      <ConfirmationModal
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
+        onConfirm={modalState.onConfirm}
+        title={modalState.title}
+        description={modalState.description}
+        confirmText="Xác nhận"
+        cancelText="Hủy"
+      />
     </div>
   );
 }

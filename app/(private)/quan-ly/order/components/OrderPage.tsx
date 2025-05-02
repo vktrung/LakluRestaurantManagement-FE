@@ -167,6 +167,11 @@ export default function OrderPage() {
 
   const reservations = reservationsResponse?.data?.content || [];
 
+  // Filter out completed reservations
+  const activeReservations = reservations.filter(
+    (reservation) => reservation.detail.status !== "COMPLETED"
+  );
+
   const handleTimeRangeChange = (value: string) => {
     setTimeRange(value as TimeRangeType);
   };
@@ -298,18 +303,18 @@ export default function OrderPage() {
         </div>
       </div>
 
-      {reservations.length === 0 ? (
+      {activeReservations.length === 0 ? (
         <div className="flex items-center justify-center h-[calc(100vh-12rem)] bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="flex flex-col items-center gap-4">
             <AlertCircle className="w-12 h-12 text-gray-400" />
             <p className="text-gray-600 text-xl font-semibold">
-              Không có dữ liệu đặt bàn trong khoảng thời gian đã chọn
+              Không có dữ liệu đặt bàn đang hoạt động trong khoảng thời gian đã chọn
             </p>
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 pb-6">
-          {reservations.map((reservation) => (
+          {activeReservations.map((reservation) => (
             <ReservationCard
               key={reservation.id}
               reservation={reservation}

@@ -1,45 +1,46 @@
-"use client";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Users, Edit, Trash, Plus } from "lucide-react";
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Users, Edit, XCircle, Plus } from 'lucide-react';
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useGetTablesQuery } from "@/features/table/tableApiSlice";
-import { useGetUserMeQuery } from "@/features/auth/authApiSlice";
-import { ITable } from "@/features/table/type";
-import AddTableModal from "./AddTableModal";
-import EditTableModal from "./EditTableModal";
-import DeleteTableModal from "./DeleteTableModal";
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useGetTablesQuery } from '@/features/table/tableApiSlice';
+import { useGetUserMeQuery } from '@/features/auth/authApiSlice';
+import { ITable } from '@/features/table/type';
+import AddTableModal from './AddTableModal';
+import EditTableModal from './EditTableModal';
+import DisableTableModal from './DisableTableModal';
 
 export default function RestaurantTables() {
   const { data, isLoading, error } = useGetTablesQuery();
   const { data: userData } = useGetUserMeQuery();
   const tables: ITable[] = data?.data || [];
-  
+
   // Check if the user has the "Phục vụ" role
   const userRoles = userData?.data?.roleNames || [];
-  const isWaiter = userRoles.includes("Phục vụ");
+  const isWaiter = userRoles.includes('Phục vụ');
 
-  const [filter, setFilter] = useState<string>("all");
+  const [filter, setFilter] = useState<string>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDisableModal, setShowDisableModal] = useState(false);
   const [selectedTable, setSelectedTable] = useState<ITable | null>(null);
-  const [selectedTables, setSelectedTables] = useState<ITable[]>([]); // Trạng thái lưu các bàn được chọn
+  const [selectedTables, setSelectedTables] = useState<ITable[]>([]);
   const router = useRouter();
-  
+
   // Lọc bàn theo trạng thái
   const filteredTables =
-    filter === "all" ? tables : tables.filter((table) => table.status === filter);
+    filter === 'all' ? tables : tables.filter((table) => table.status === filter);
 
   // Nhóm bàn theo sức chứa
   const tablesByCapacity = {
@@ -50,12 +51,12 @@ export default function RestaurantTables() {
 
   const translateStatus = (status: string) => {
     switch (status) {
-      case "RESERVED":
-        return "Đã đặt";
-      case "AVAILABLE":
-        return "Còn trống";
-      case "OCCUPIED":
-        return "Đang sử dụng";
+      case 'RESERVED':
+        return 'Đã đặt';
+      case 'AVAILABLE':
+        return 'Còn trống';
+      case 'OCCUPIED':
+        return 'Đang sử dụng';
       default:
         return status;
     }
@@ -63,20 +64,20 @@ export default function RestaurantTables() {
 
   const getStatusColors = (status: string) => {
     switch (status) {
-      case "RESERVED":
-        return { border: "border-red-400", bg: "bg-red-50", badgeBg: "bg-red-500" };
-      case "AVAILABLE":
-        return { border: "border-green-400", bg: "bg-green-50", badgeBg: "bg-green-500" };
-      case "OCCUPIED":
-        return { border: "border-blue-400", bg: "bg-blue-50", badgeBg: "bg-blue-500" };
+      case 'RESERVED':
+        return { border: 'border-red-400', bg: 'bg-red-50', badgeBg: 'bg-red-500' };
+      case 'AVAILABLE':
+        return { border: 'border-green-400', bg: 'bg-green-50', badgeBg: 'bg-green-500' };
+      case 'OCCUPIED':
+        return { border: 'border-gray-400', bg: 'bg-gray-50', badgeBg: 'bg-gray-500' }; // Gray for OCCUPIED
       default:
-        return { border: "border-gray-400", bg: "bg-gray-50", badgeBg: "bg-gray-500" };
+        return { border: 'border-gray-400', bg: 'bg-gray-50', badgeBg: 'bg-gray-500' };
     }
   };
 
   // Hàm chọn hoặc bỏ chọn bàn
   const handleTableSelect = (table: ITable) => {
-    if (table.status !== "AVAILABLE") return; // Chỉ cho phép chọn bàn trống
+    if (table.status !== 'AVAILABLE') return; // Chỉ cho phép chọn bàn trống
 
     const isSelected = selectedTables.some((t) => t.id === table.id);
     if (isSelected) {
@@ -89,13 +90,12 @@ export default function RestaurantTables() {
   // Hàm tạo order từ các bàn đã chọn
   const handleCreateOrder = () => {
     if (selectedTables.length === 0) {
-      alert("Vui lòng chọn ít nhất một bàn để tạo order!");
+      alert('Vui lòng chọn ít nhất một bàn để tạo order!');
       return;
     }
-    const tableIds = selectedTables.map((table) => table.id).join(",");
-    const capacities = selectedTables.map((table) => table.capacity).join(",");
-    
-    // Điều hướng với cả tableIds và capacities
+    const tableIds = selectedTables.map((table) => table.id).join(',');
+    const capacities = selectedTables.map((table) => table.capacity).join(',');
+
     router.push(`./table/order?tableIds=${tableIds}&capacities=${capacities}`);
     setSelectedTables([]);
   };
@@ -109,7 +109,6 @@ export default function RestaurantTables() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <h1 className="text-xl sm:text-2xl font-bold">Sơ Đồ Bàn</h1>
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-            {/* Ẩn nút "Thêm bàn mới" nếu là Phục vụ */}
             {!isWaiter && (
               <Button variant="outline" size="sm" onClick={() => setShowAddModal(true)}>
                 <Plus className="mr-1 h-3 w-3" /> Thêm bàn
@@ -137,9 +136,15 @@ export default function RestaurantTables() {
 
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="mb-4 h-9">
-          <TabsTrigger value="all" className="text-xs sm:text-sm">Tất cả</TabsTrigger>
-          <TabsTrigger value="4" className="text-xs sm:text-sm">Bàn 4 người</TabsTrigger>
-          <TabsTrigger value="6" className="text-xs sm:text-sm">Bàn 6 người</TabsTrigger>
+          <TabsTrigger value="all" className="text-xs sm:text-sm">
+            Tất cả
+          </TabsTrigger>
+          <TabsTrigger value="4" className="text-xs sm:text-sm">
+            Bàn 4 người
+          </TabsTrigger>
+          <TabsTrigger value="6" className="text-xs sm:text-sm">
+            Bàn 6 người
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="all">
@@ -161,13 +166,15 @@ export default function RestaurantTables() {
                           setSelectedTable(table);
                           setShowEditModal(true);
                         }}
-                        onDelete={(table) => {
-                          setSelectedTable(table);
-                          setShowDeleteModal(true);
+                        onDisable={(table) => {
+                          if (table.status === 'AVAILABLE') {
+                            setSelectedTable(table);
+                            setShowDisableModal(true);
+                          }
                         }}
                         onSelect={handleTableSelect}
                         isSelected={selectedTables.some((t) => t.id === table.id)}
-                        isWaiter={isWaiter} // Pass the waiter role status
+                        isWaiter={isWaiter}
                       />
                     ))}
                   </div>
@@ -193,9 +200,11 @@ export default function RestaurantTables() {
                     setSelectedTable(table);
                     setShowEditModal(true);
                   }}
-                  onDelete={(table) => {
-                    setSelectedTable(table);
-                    setShowDeleteModal(true);
+                  onDisable={(table) => {
+                    if (table.status === 'AVAILABLE') {
+                      setSelectedTable(table);
+                      setShowDisableModal(true);
+                    }
                   }}
                   onSelect={handleTableSelect}
                   isSelected={selectedTables.some((t) => t.id === table.id)}
@@ -227,9 +236,11 @@ export default function RestaurantTables() {
                     setSelectedTable(table);
                     setShowEditModal(true);
                   }}
-                  onDelete={(table) => {
-                    setSelectedTable(table);
-                    setShowDeleteModal(true);
+                  onDisable={(table) => {
+                    if (table.status === 'AVAILABLE') {
+                      setSelectedTable(table);
+                      setShowDisableModal(true);
+                    }
                   }}
                   onSelect={handleTableSelect}
                   isSelected={selectedTables.some((t) => t.id === table.id)}
@@ -246,7 +257,6 @@ export default function RestaurantTables() {
         </TabsContent>
       </Tabs>
 
-      {/* Only render modals if not waiter */}
       {!isWaiter && (
         <>
           <AddTableModal open={showAddModal} onClose={() => setShowAddModal(false)} />
@@ -255,9 +265,9 @@ export default function RestaurantTables() {
             onClose={() => setShowEditModal(false)}
             table={selectedTable}
           />
-          <DeleteTableModal
-            open={showDeleteModal}
-            onClose={() => setShowDeleteModal(false)}
+          <DisableTableModal
+            open={showDisableModal}
+            onClose={() => setShowDisableModal(false)}
             table={selectedTable}
           />
         </>
@@ -271,10 +281,10 @@ interface TableCardProps {
   translateStatus: (status: string) => string;
   getStatusColors: (status: string) => { border: string; bg: string; badgeBg: string };
   onEdit: (table: ITable) => void;
-  onDelete: (table: ITable) => void;
+  onDisable: (table: ITable) => void;
   onSelect: (table: ITable) => void;
   isSelected: boolean;
-  isWaiter: boolean; // Add prop to check if user is waiter
+  isWaiter: boolean;
 }
 
 function TableCard({
@@ -282,24 +292,27 @@ function TableCard({
   translateStatus,
   getStatusColors,
   onEdit,
-  onDelete,
+  onDisable,
   onSelect,
   isSelected,
-  isWaiter, // Receive the waiter role status
+  isWaiter,
 }: TableCardProps) {
   const colors = getStatusColors(table.status);
+  const isAvailable = table.status === 'AVAILABLE'; // Check if table is AVAILABLE
 
   return (
     <Card
       className={`border-2 ${colors.border} ${
-        isSelected ? "bg-gray-300" : colors.bg
+        isSelected ? 'bg-gray-300' : colors.bg
       } cursor-pointer hover:shadow-md transition-shadow`}
       onClick={() => onSelect(table)}
     >
       <CardContent className="p-2 sm:p-3">
         <div className="flex justify-between items-center mb-1">
           <h2 className="text-base font-bold">Bàn {table.tableNumber}</h2>
-          <Badge className={`${colors.badgeBg} text-xs py-0 px-1`}>{translateStatus(table.status)}</Badge>
+          <Badge className={`${colors.badgeBg} text-xs py-0 px-1 text-white`}>
+            {translateStatus(table.status)}
+          </Badge>
         </div>
         <div className="flex items-center gap-1 text-gray-600 text-xs">
           <Users size={14} />
@@ -323,13 +336,16 @@ function TableCard({
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 h-7 text-xs px-1 text-red-500 hover:text-red-700"
+              className="flex-1 h-7 text-xs px-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={(e) => {
                 e.stopPropagation();
-                onDelete(table);
+                if (isAvailable) {
+                  onDisable(table); // Only trigger if AVAILABLE
+                }
               }}
+              disabled={!isAvailable} // Disable button if not AVAILABLE
             >
-              <Trash size={12} className="mr-1" /> Xóa
+              <XCircle size={12} className="mr-1" /> Vô hiệu hóa
             </Button>
           </div>
         </CardFooter>

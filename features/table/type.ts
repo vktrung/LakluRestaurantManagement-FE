@@ -25,6 +25,7 @@ export interface IUpdateTableRequest {
   tableNumber?: string;
   capacity?: number;
   // Nếu cần update thêm các trường khác, có thể thêm vào đây
+  status?: string;
 }
 
 export interface IDeleteTableRequest {

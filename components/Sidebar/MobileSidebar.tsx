@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
@@ -6,7 +5,7 @@ import Link from 'next/link';
 import { useGetUserMeQuery } from '@/features/auth/authApiSlice';
 import { useGetShiftsByStaffAndDateRangeQuery } from '@/features/schedule/scheduleApiSlice';
 import { useGetMyProfileQuery } from '@/features/profile/profileApiSlice';
-import { Table, ShoppingCart, CalendarDays, ScrollText, User, LogOut, Bell } from 'lucide-react';
+import { Table, ShoppingCart, CalendarDays, ScrollText, User, LogOut, Bell, LayoutDashboard, ChefHat, CreditCard, UtensilsCrossed, Banknote, Tag, Users, SettingsIcon, ListOrdered, Coffee, CalendarClock, History, Shield, UserCog, BadgePercent } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -47,10 +46,84 @@ interface MenuItem {
   dropdown?: boolean;
 }
 
+// Role-based menu items
+interface RoleBasedMenuItems {
+  'Quản trị viên hệ thống': MenuItem[];
+  'Quản lý': MenuItem[];
+  'Phục vụ': MenuItem[];
+  Bếp: MenuItem[];
+  'Thu ngân': MenuItem[];
+}
+
+const roleBasedMenuItems: RoleBasedMenuItems = {
+  'Quản trị viên hệ thống': [
+    { label: 'Tổng quát', href: '/quan-ly/tong-quat', icon: <LayoutDashboard className="h-5 w-5" /> },
+    { label: 'Bàn ăn', href: '/quan-ly/table', icon: <Table className="h-5 w-5" /> },
+    { label: 'Đặt bàn', href: '/quan-ly/reservation', icon: <CalendarClock className="h-5 w-5" /> },
+    { label: 'Gọi món', href: '/quan-ly/order', icon: <ShoppingCart className="h-5 w-5" /> },
+    { label: 'Mã giảm giá', href: '/voucher', icon: <Tag className="h-5 w-5" /> },
+    { label: 'Giao dịch', href: '/payment', icon: <Banknote className="h-5 w-5" /> },
+    { label: 'Danh mục', href: '/menu/category', icon: <ListOrdered className="h-5 w-5" /> },
+    { label: 'Thực đơn', href: '/menu/menu-info', icon: <UtensilsCrossed className="h-5 w-5" /> },
+    { label: 'Món ăn', href: '/menu/dish', icon: <Coffee className="h-5 w-5" /> },
+    { label: 'Nhân viên', href: '/staff', icon: <Users className="h-5 w-5" /> },
+    { label: 'Mức lương', href: '/salary', icon: <BadgePercent className="h-5 w-5" /> },
+    { label: 'Bảng lương', href: '/payroll', icon: <ScrollText className="h-5 w-5" /> },
+    { label: 'Lịch làm', href: '/schedule', icon: <CalendarDays className="h-5 w-5" /> },
+    { label: 'Vai trò', href: '/role', icon: <UserCog className="h-5 w-5" /> },
+    { label: 'Quyền', href: '/permission', icon: <Shield className="h-5 w-5" /> },
+    { label: 'Lịch sử', href: '/activitylog', icon: <History className="h-5 w-5" /> },
+    { icon: <NotificationBell isMobile /> },
+    { label: 'Tài khoản', icon: <User className="h-5 w-5" />, dropdown: true },
+  ],
+  'Quản lý': [
+    { label: 'Tổng quát', href: '/quan-ly/tong-quat', icon: <LayoutDashboard className="h-5 w-5" /> },
+    { label: 'Bàn ăn', href: '/quan-ly/table', icon: <Table className="h-5 w-5" /> },
+    { label: 'Đặt bàn', href: '/quan-ly/reservation', icon: <CalendarClock className="h-5 w-5" /> },
+    { label: 'Gọi món', href: '/quan-ly/order', icon: <ShoppingCart className="h-5 w-5" /> },
+    { label: 'Mã giảm giá', href: '/voucher', icon: <Tag className="h-5 w-5" /> },
+    { label: 'Giao dịch', href: '/payment', icon: <Banknote className="h-5 w-5" /> },
+    { label: 'Danh mục', href: '/menu/category', icon: <ListOrdered className="h-5 w-5" /> },
+    { label: 'Thực đơn', href: '/menu/menu-info', icon: <UtensilsCrossed className="h-5 w-5" /> },
+    { label: 'Món ăn', href: '/menu/dish', icon: <Coffee className="h-5 w-5" /> },
+    { label: 'Nhân viên', href: '/staff', icon: <Users className="h-5 w-5" /> },
+    { label: 'Mức lương', href: '/salary', icon: <BadgePercent className="h-5 w-5" /> },
+    { label: 'Bảng lương', href: '/payroll', icon: <ScrollText className="h-5 w-5" /> },
+    { label: 'Lịch làm', href: '/schedule', icon: <CalendarDays className="h-5 w-5" /> },
+    { label: 'Vai trò', href: '/role', icon: <UserCog className="h-5 w-5" /> },
+    { label: 'Quyền', href: '/permission', icon: <Shield className="h-5 w-5" /> },
+    { label: 'Lịch sử', href: '/activitylog', icon: <History className="h-5 w-5" /> },
+    { icon: <NotificationBell isMobile /> },
+    { label: 'Tài khoản', icon: <User className="h-5 w-5" />, dropdown: true },
+  ],
+  'Phục vụ': [
+    { label: 'Bàn ăn', href: '/quan-ly/table', icon: <Table className="h-5 w-5" /> },
+    { label: 'Gọi món', href: '/quan-ly/order', icon: <ShoppingCart className="h-5 w-5" /> },
+    { label: 'Lịch làm', href: '/schedule', icon: <CalendarDays className="h-5 w-5" /> },
+    { label: 'Bảng lương', href: '/payroll', icon: <ScrollText className="h-5 w-5" /> },
+    { icon: <NotificationBell isMobile /> },
+    { label: 'Tài khoản', icon: <User className="h-5 w-5" />, dropdown: true },
+  ],
+  Bếp: [
+    { label: 'Bếp', href: '/kitchen', icon: <ChefHat className="h-5 w-5" /> },
+    { label: 'Lịch làm', href: '/schedule', icon: <CalendarDays className="h-5 w-5" /> },
+    { label: 'Bảng lương', href: '/payroll', icon: <ScrollText className="h-5 w-5" /> },
+    { icon: <NotificationBell isMobile /> },
+    { label: 'Tài khoản', icon: <User className="h-5 w-5" />, dropdown: true },
+  ],
+  'Thu ngân': [
+    { label: 'Giao dịch', href: '/payment', icon: <Banknote className="h-5 w-5" /> },
+    { label: 'Lịch làm', href: '/schedule', icon: <CalendarDays className="h-5 w-5" /> },
+    { label: 'Bảng lương', href: '/payroll', icon: <ScrollText className="h-5 w-5" /> },
+    { icon: <NotificationBell isMobile /> },
+    { label: 'Tài khoản', icon: <User className="h-5 w-5" />, dropdown: true },
+  ],
+};
+
 // Utility function to format date as DD/MM/YYYY
 const formatDateToDDMMYYYY = (date: Date): string => {
   const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+  const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
   return `${day}/${month}/${year}`;
 };
@@ -72,10 +145,10 @@ export function MobileSidebar() {
   const { data: shiftData, isLoading: isShiftLoading, error: shiftError } = useGetShiftsByStaffAndDateRangeQuery(
     {
       staffId: staffId,
-      startDate: currentDate, // e.g., "01/05/2025"
+      startDate: currentDate,
       endDate: currentDate,
     },
-    { skip: !staffId } // Skip query if staffId is not available
+    { skip: !staffId }
   );
 
   useEffect(() => {
@@ -84,7 +157,16 @@ export function MobileSidebar() {
 
   const userRoles = userData?.data?.roleNames || [];
   const userFullName = profile?.fullName || '';
-  const isWaiter = userRoles.includes('Phục vụ');
+
+  // Determine the user's primary role (prioritize higher roles)
+  const userRole = useMemo(() => {
+    if (userRoles.includes('Quản trị viên hệ thống')) return 'Quản trị viên hệ thống';
+    if (userRoles.includes('Quản lý')) return 'Quản lý';
+    if (userRoles.includes('Phục vụ')) return 'Phục vụ';
+    if (userRoles.includes('Bếp')) return 'Bếp';
+    if (userRoles.includes('Thu ngân')) return 'Thu ngân';
+    return null;
+  }, [userRoles]);
 
   // Check if user has shifts today
   const hasShifts = useMemo(() => {
@@ -191,51 +273,35 @@ export function MobileSidebar() {
     return false;
   }, [shiftData, isShiftLoading, shiftError]);
 
-  // Filter menu items based on shift existence, attendance, and shift hours
+  // Filter menu items based on role, shift existence, attendance, and shift hours
   const filteredMenuItems = useMemo(() => {
-    if (!isWaiter) return [];
+    if (!userRole) return [];
 
-    const baseMenuItems: MenuItem[] = [
-      {
-        label: 'Bàn',
-        href: '/quan-ly/table',
-        icon: <Table className="h-5 w-5" />,
-      },
-      {
-        label: 'Gọi món',
-        href: '/quan-ly/order',
-        icon: <ShoppingCart className="h-5 w-5" />,
-      },
-      {
-        label: 'Lịch',
-        href: '/schedule',
-        icon: <CalendarDays className="h-5 w-5" />,
-      },
-      {
-        label: 'Lương',
-        href: '/payroll',
-        icon: <ScrollText className="h-5 w-5" />,
-      },
-      {
-        icon: <NotificationBell isMobile />,
-      },
-      {
-        label: 'Tài khoản',
-        icon: <User className="h-5 w-5" />,
-        dropdown: true,
-      },
-    ];
+    const baseMenuItems = roleBasedMenuItems[userRole];
 
-    // Show limited menu if no shifts, not attended, or outside shift hours
+    // For Quản trị viên hệ thống and Quản lý, show all menu items without restrictions
+    if (userRole === 'Quản trị viên hệ thống' || userRole === 'Quản lý') {
+      // Limit to 6 items to fit mobile UI (select key items)
+      return [
+        { label: 'Tổng quát', href: '/quan-ly/tong-quat', icon: <LayoutDashboard className="h-5 w-5" /> },
+        { label: 'Bàn ăn', href: '/quan-ly/table', icon: <Table className="h-5 w-5" /> },
+        { label: 'Gọi món', href: '/quan-ly/order', icon: <ShoppingCart className="h-5 w-5" /> },
+        { label: 'Nhân viên', href: '/staff', icon: <Users className="h-5 w-5" /> },
+        { icon: <NotificationBell isMobile /> },
+        { label: 'Tài khoản', icon: <User className="h-5 w-5" />, dropdown: true },
+      ];
+    }
+
+    // For Phục vụ, Bếp, Thu ngân, apply shift-based restrictions
     if (!hasShifts || !hasAttendedShift || !isWithinShiftHours) {
       return baseMenuItems.filter(
         (item) => item.href === '/schedule' || item.href === '/payroll' || !item.href
       );
     }
 
-    // Show full menu if has shifts, attended, and within shift hours
+    // Show full menu for staff roles if conditions are met
     return baseMenuItems;
-  }, [isWaiter, hasShifts, hasAttendedShift, isWithinShiftHours]);
+  }, [userRole, hasShifts, hasAttendedShift, isWithinShiftHours]);
 
   const handleLogout = () => {
     deleteCookie('auth_token');
@@ -256,14 +322,14 @@ export function MobileSidebar() {
     );
   }
 
-  if (userError || !isWaiter) {
+  if (userError || !userRole) {
     return null;
   }
 
   return (
     <div className="fixed bottom-0 left-0 right-0 h-16 bg-white dark:bg-slate-900 border-t dark:border-slate-800 flex justify-around items-center md:hidden z-50">
-      {/* Notification for missing attendance or outside shift hours */}
-      {hasShifts && (
+      {/* Notification for missing attendance or outside shift hours for staff roles */}
+      {hasShifts && (userRole === 'Phục vụ' || userRole === 'Bếp' || userRole === 'Thu ngân') && (
         <>
           {!hasAttendedShift && (
             <div className="absolute top-[-60px] left-0 right-0 p-3 bg-yellow-50 border border-yellow-300 text-yellow-800 text-sm text-center">

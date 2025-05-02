@@ -74,6 +74,7 @@ interface QuickLink {
 // Define the structure of roleBasedMenuItems
 interface RoleBasedMenuItems {
   'Quản trị viên hệ thống': MenuItem[];
+  'Quản lý': MenuItem[]; // Add Quản lý role
   'Phục vụ': MenuItem[];
   Bếp: MenuItem[];
   'Thu ngân': MenuItem[];
@@ -82,6 +83,7 @@ interface RoleBasedMenuItems {
 // Define the structure of roleBasedQuickLinks
 interface RoleBasedQuickLinks {
   'Quản trị viên hệ thống': QuickLink[];
+  'Quản lý': QuickLink[]; // Add Quản lý role
   'Phục vụ': QuickLink[];
   Bếp: QuickLink[];
   'Thu ngân': QuickLink[];
@@ -90,8 +92,8 @@ interface RoleBasedQuickLinks {
 // Define Shift interface based on API response
 interface Shift {
   id: number;
-  timeIn: string; // e.g., "2025-05-01T16:00:00"
-  timeOut: string; // e.g., "2025-05-02T01:00:00"
+  timeIn: string;
+  timeOut: string;
   detail: {
     id: number;
     managerFullName: string;
@@ -108,6 +110,52 @@ interface Shift {
 // Role-based menu items with explicit type
 const roleBasedMenuItems: RoleBasedMenuItems = {
   'Quản trị viên hệ thống': [
+    {
+      label: 'Quản lý',
+      value: 'quan-ly',
+      icon: <LayoutDashboard className="h-4 w-4" />,
+      children: [
+        { label: 'Tổng quát', href: '/quan-ly/tong-quat', icon: <LayoutDashboard className="h-4 w-4" /> },
+        { label: 'Bàn ăn', href: '/quan-ly/table', icon: <Table className="h-4 w-4" /> },
+        { label: 'Đặt bàn', href: '/quan-ly/reservation', icon: <CalendarClock className="h-4 w-4" /> },
+        { label: 'Gọi món', href: '/quan-ly/order', icon: <ShoppingCart className="h-4 w-4" /> },
+        { label: 'Mã giảm giá', href: '/voucher', icon: <Tag className="h-4 w-4" /> },
+        { label: 'Giao dịch', href: '/payment', icon: <Banknote className="h-4 w-4" /> },
+      ],
+    },
+    {
+      label: 'Menu',
+      value: 'menu',
+      icon: <UtensilsCrossed className="h-4 w-4" />,
+      children: [
+        { label: 'Danh mục', href: '/menu/category', icon: <ListOrdered className="h-4 w-4" /> },
+        { label: 'Thực đơn', href: '/menu/menu-info', icon: <UtensilsCrossed className="h-4 w-4" /> },
+        { label: 'Món ăn', href: '/menu/dish', icon: <Coffee className="h-4 w-4" /> },
+      ],
+    },
+    {
+      label: 'Nhân viên',
+      value: 'staff',
+      icon: <Users className="h-4 w-4" />,
+      children: [
+        { label: 'Danh sách', href: '/staff', icon: <Users className="h-4 w-4" /> },
+        { label: 'Mức Lương', href: '/salary', icon: <BadgePercent className="h-4 w-4" /> },
+        { label: 'Bảng Lương', href: '/payroll', icon: <ScrollText className="h-4 w-4" /> },
+        { label: 'Lịch làm việc', href: '/schedule', icon: <CalendarDays className="h-4 w-4" /> },
+      ],
+    },
+    {
+      label: 'Cài đặt',
+      value: 'cai-dat',
+      icon: <SettingsIcon className="h-4 w-4" />,
+      children: [
+        { label: 'Vai trò', href: '/role', icon: <UserCog className="h-4 w-4" /> },
+        { label: 'Quyền', href: '/permission', icon: <Shield className="h-4 w-4" /> },
+        { label: 'Lịch sử hoạt động', href: '/activitylog', icon: <History className="h-4 w-4" /> },
+      ],
+    },
+  ],
+  'Quản lý': [
     {
       label: 'Quản lý',
       value: 'quan-ly',
@@ -199,6 +247,11 @@ const roleBasedQuickLinks: RoleBasedQuickLinks = {
     { label: 'Bếp', href: '/kitchen', icon: <ChefHat className="h-4 w-4" /> },
     { label: 'Máy POS', href: '/cashier-order-2/order', icon: <Receipt className="h-4 w-4" /> },
   ],
+  'Quản lý': [
+    { label: 'Két', href: '/cash-register', icon: <CreditCard className="h-4 w-4" /> },
+    { label: 'Bếp', href: '/kitchen', icon: <ChefHat className="h-4 w-4" /> },
+    { label: 'Máy POS', href: '/cashier-order-2/order', icon: <Receipt className="h-4 w-4" /> },
+  ],
   'Phục vụ': [
     { label: 'Bàn ăn', href: '/table', icon: <Table className="h-4 w-4" /> },
     { label: 'Gọi món', href: '/quan-ly/order', icon: <ShoppingCart className="h-4 w-4" /> },
@@ -215,7 +268,7 @@ const roleBasedQuickLinks: RoleBasedQuickLinks = {
 // Utility function to format date as DD/MM/YYYY
 const formatDateToDDMMYYYY = (date: Date): string => {
   const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+  const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
   return `${day}/${month}/${year}`;
 };
@@ -239,10 +292,10 @@ export function Sidebar({ className, ...props }: SidebarProps) {
   const { data: shiftData, isLoading: isShiftLoading, error: shiftError } = useGetShiftsByStaffAndDateRangeQuery(
     {
       staffId: staffId,
-      startDate: currentDate, // e.g., "01/05/2025"
+      startDate: currentDate,
       endDate: currentDate,
     },
-    { skip: !staffId } // Skip query if staffId is not available
+    { skip: !staffId }
   );
 
   const isLoginPage = typeof window !== 'undefined' && window.location.pathname.includes('/login');
@@ -271,16 +324,13 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       return false;
     }
 
-    // Get the current user's full name
     if (!userFullName) {
       console.log('Cannot check attendance: user full name is missing');
       return false;
     }
 
-    // Loop through all shifts and check if user has attended any
     for (const shift of shiftData.data) {
       if (shift.detail && shift.detail.userAttendancesByFullName) {
-        // Check if the user's name is in the attendance records and if they've attended
         if (shift.detail.userAttendancesByFullName[userFullName] === true) {
           console.log(`User ${userFullName} has attended their shift`);
           return true;
@@ -308,7 +358,6 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       return false;
     }
 
-    // Check if there are any shifts
     const hasAnyShift = shiftData.data.length > 0;
 
     console.log('Shift check result:', {
@@ -337,13 +386,12 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       return false;
     }
 
-    const now = new Date(); // Current date and time
+    const now = new Date();
 
     for (const shift of shiftData.data) {
-      const timeIn = new Date(shift.timeIn); // e.g., 2025-05-01T16:00:00
-      const timeOut = new Date(shift.timeOut); // e.g., 2025-05-02T01:00:00
+      const timeIn = new Date(shift.timeIn);
+      const timeOut = new Date(shift.timeOut);
 
-      // Check if current time is within shift's timeIn and timeOut
       if (now >= timeIn && now <= timeOut) {
         console.log('Current time is within shift hours:', {
           shiftId: shift.id,
@@ -382,18 +430,14 @@ export function Sidebar({ className, ...props }: SidebarProps) {
 
     let items: MenuItem[] = [];
 
-    // System admin always gets full access
-    if (userRoles.includes('Quản trị viên hệ thống')) {
-      items = roleBasedMenuItems['Quản trị viên hệ thống'];
+    // System admin and Quản lý get full access
+    if (userRoles.includes('Quản trị viên hệ thống') || userRoles.includes('Quản lý')) {
+      items = roleBasedMenuItems['Quản trị viên hệ thống']; // Same items for both roles
     }
     // For staff roles, check shift, attendance, and shift hours status
     else if (userRoles.includes('Phục vụ') || userRoles.includes('Bếp') || userRoles.includes('Thu ngân')) {
       const role = userRoles.includes('Phục vụ') ? 'Phục vụ' : userRoles.includes('Bếp') ? 'Bếp' : 'Thu ngân';
 
-      // Show limited menu if:
-      // 1. No shifts today, or
-      // 2. Has shifts but hasn't attended yet, or
-      // 3. Has shifts but current time is not within shift hours
       if (!hasShifts || !hasAttendedShift || !isWithinShiftHours) {
         items = roleBasedMenuItems[role]
           .map((item) => ({
@@ -401,9 +445,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
             children: item.children.filter((child) => child.href === '/payroll' || child.href === '/schedule'),
           }))
           .filter((item) => item.children.length > 0);
-      }
-      // Show full menu if has shifts AND has attended AND current time is within shift hours
-      else {
+      } else {
         items = roleBasedMenuItems[role];
       }
     }
@@ -436,15 +478,14 @@ export function Sidebar({ className, ...props }: SidebarProps) {
 
     let links: QuickLink[] = [];
 
-    // System admin always gets full access
-    if (userRoles.includes('Quản trị viên hệ thống')) {
-      links = roleBasedQuickLinks['Quản trị viên hệ thống'];
+    // System admin and Quản lý get full access
+    if (userRoles.includes('Quản trị viên hệ thống') || userRoles.includes('Quản lý')) {
+      links = roleBasedQuickLinks['Quản trị viên hệ thống']; // Same links for both roles
     }
     // For staff roles, check shift, attendance, and shift hours status
     else if (userRoles.includes('Phục vụ') || userRoles.includes('Bếp') || userRoles.includes('Thu ngân')) {
       const role = userRoles.includes('Phục vụ') ? 'Phục vụ' : userRoles.includes('Bếp') ? 'Bếp' : 'Thu ngân';
 
-      // Only show quick links if user has shifts today AND has attended AND current time is within shift hours
       if (hasShifts && hasAttendedShift && isWithinShiftHours) {
         links = roleBasedQuickLinks[role];
       } else {

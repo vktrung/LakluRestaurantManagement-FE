@@ -11,7 +11,15 @@ import {
 } from '@/components/ui/dialog';
 import { Edit, Trash2, Info, Moon, Clock, User } from 'lucide-react';
 import type { Shift } from '@/features/schedule/types';
-import { format, parseISO, isAfter, differenceInDays } from 'date-fns';
+import {
+  format,
+  parseISO,
+  isAfter,
+  differenceInDays,
+  addMinutes,
+  isBefore,
+  isEqual,
+} from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -298,31 +306,27 @@ export default function ScheduleWeekView({
     }
   };
 
-  const shouldShowCheckInButton = (shift: Shift) => {
-    const currentTime = currentDate;
+  const shouldShowCheckInButton = (shift: Shift, now: Date) => {
+    const timeIn = parseISO(shift.timeIn);
+    const timeOut = parseISO(shift.timeOut);
+    const checkInStart = addMinutes(timeIn, -15);
+
+    // now >= checkInStart && now < timeOut
+    return (
+      (isAfter(now, checkInStart) || isEqual(now, checkInStart)) &&
+      isBefore(now, timeOut)
+    );
+  };
+
+  function shouldShowCheckOutButton(shift: Shift, now: Date) {
     const timeIn = parseISO(shift.timeIn);
     const timeOut = parseISO(shift.timeOut);
 
-    const shiftStartDate = new Date(timeIn);
-    const shiftEndDate = new Date(timeOut);
-    const currentDay = format(currentDate, 'yyyy-MM-dd');
-    const shiftStartDay = format(shiftStartDate, 'yyyy-MM-dd');
-    const shiftEndDay = format(shiftEndDate, 'yyyy-MM-dd');
-
-    // Điều kiện 1: Ngày hiện tại phải khớp với ngày của ca hoặc ca liên ngày
-    const isSameDayOrOvernight =
-      currentDay === shiftStartDay ||
-      currentDay === shiftEndDay ||
-      isOvernightShift(shift.timeIn, shift.timeOut);
-
-    // Điều kiện 2: Thời gian hiện tại nằm trong khoảng giữa timeIn và timeOut
-    const isAfterStartTime =
-      isAfter(currentTime, timeIn) ||
-      currentTime.getTime() === timeIn.getTime();
-    const isBeforeEndTime = !isAfter(currentTime, timeOut);
-
-    return isSameDayOrOvernight && isAfterStartTime && isBeforeEndTime;
-  };
+    // now >= timeIn && now < timeOut
+    return (
+      (isAfter(now, timeIn) || isEqual(now, timeIn)) && isBefore(now, timeOut)
+    );
+  }
 
   // Kiểm tra xem ca đã qua thời gian checkout chưa
   const isShiftPastCheckoutTime = (shift: Shift) => {
@@ -469,7 +473,10 @@ export default function ScheduleWeekView({
                                 {shift.detail.numberOfStaff} nhân viên
                               </div>
                               <div className="flex gap-2 mt-2">
-                                {shouldShowCheckInButton(shift) && (
+                                {shouldShowCheckInButton(
+                                  shift,
+                                  currentDate,
+                                ) && (
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -479,7 +486,10 @@ export default function ScheduleWeekView({
                                     Check-in
                                   </Button>
                                 )}
-                                {shouldShowCheckInButton(shift) && (
+                                {shouldShowCheckOutButton(
+                                  shift,
+                                  currentDate,
+                                ) && (
                                   <Button
                                     variant="outline"
                                     size="sm"

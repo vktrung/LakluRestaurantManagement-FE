@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
-import { Loader2, KeyRound, AlertCircle } from "lucide-react"
+import { Loader2, KeyRound, AlertCircle, X } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { z } from "zod"
 import { DialogFooter } from "@/components/ui/dialog"
@@ -98,7 +98,7 @@ export function ChangePasswordDialog({ userId, isOpen, onClose, onSuccess }: Cha
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="max-w-[90vw] sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Đổi mã PIN</DialogTitle>
           <DialogDescription>Nhập mã PIN mới (4 số) cho người dùng</DialogDescription>
@@ -132,8 +132,9 @@ export function ChangePasswordDialog({ userId, isOpen, onClose, onSuccess }: Cha
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
           <Button type="button" variant="outline" onClick={handleClose}>
+            <X className="mr-2 h-4 w-4" />
             Hủy
           </Button>
           <Button onClick={handleSubmit} disabled={isLoading}>

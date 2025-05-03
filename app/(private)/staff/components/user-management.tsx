@@ -315,6 +315,15 @@ export function UserManagement() {
               <Plus className="mr-2 h-4 w-4" /> Thêm người dùng
             </Button>
           </div>
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Tìm kiếm người dùng..."
+              className="pl-8 w-full"
+              onChange={handleSearch}
+            />
+          </div>
         </div>
 
         <Card>
@@ -327,7 +336,8 @@ export function UserManagement() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {/* DESKTOP VIEW */}
+            <div className="hidden md:block overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -450,13 +460,121 @@ export function UserManagement() {
                 </TableBody>
               </Table>
             </div>
-            <div className="flex items-center justify-between px-4 py-4 border-t">
-              <div className="text-sm text-muted-foreground">
+
+            {/* MOBILE VIEW */}
+            <div className="md:hidden">
+              {isLoading ? (
+                Array(3).fill(0).map((_, index) => (
+                  <div key={index} className="p-4 border-b animate-pulse">
+                    <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                ))
+              ) : filteredUsers.length === 0 ? (
+                <div className="text-center py-8">
+                  Không tìm thấy người dùng nào
+                </div>
+              ) : (
+                filteredUsers.map((user) => (
+                  <div key={user.id} className="p-4 border-b">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={user.profile.avatar || undefined} alt={user.profile.fullName} />
+                          <AvatarFallback>{user?.profile?.fullName ? getInitials(user.profile.fullName) : "NN"}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium">{user.profile.fullName}</div>
+                          <div className="text-sm text-muted-foreground">{user.email}</div>
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            <Badge className="mb-1 mr-1">ID: {user.id}</Badge>
+                            <Badge variant="outline" className="mb-1 mr-1">{user.profile.department}</Badge>
+                            <Badge className={getStatusColor(user.profile.employmentStatus) + " mb-1"}>
+                              {translateStatus(user.profile.employmentStatus)}
+                            </Badge>
+                          </div>
+                          <div className="mt-1 text-sm">
+                            <span className="font-medium">Lương:</span> {user.salaryRateName}
+                          </div>
+                          <div className="mt-1">
+                            {user.roles && user.roles.length > 0 ? (
+                              user.roles.map((role: string, index: number) => (
+                                <Badge key={index} variant="outline" className="mr-1 mb-1">
+                                  {role}
+                                </Badge>
+                              ))
+                            ) : (
+                              <Badge variant="outline" className="bg-gray-100">
+                                Không có vai trò
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Mở menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleViewUser(user)}>
+                            <FileText className="mr-2 h-4 w-4" />
+                            Xem chi tiết
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                            <UserCog className="mr-2 h-4 w-4" />
+                            Chỉnh sửa
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleChangePassword(user)}>
+                            <KeyRound className="mr-2 h-4 w-4" />
+                            Đổi mật khẩu
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          {isUserTemporaryLeave(user) ? (
+                            <>
+                              <DropdownMenuItem onClick={() => handleActivateUser(user)} className="text-green-600">
+                                <LockOpen className="mr-2 h-4 w-4" />
+                                Kích hoạt lại
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleResignUser(user)} className="text-red-600">
+                                <UserX className="mr-2 h-4 w-4" />
+                                Khóa vĩnh viễn
+                              </DropdownMenuItem>
+                            </>
+                          ) : isUserResigned(user) ? (
+                            <DropdownMenuItem onClick={() => handleActivateUser(user)} className="text-green-600">
+                              <LockOpen className="mr-2 h-4 w-4" />
+                              Kích hoạt lại
+                            </DropdownMenuItem>
+                          ) : (
+                            <>
+                              <DropdownMenuItem onClick={() => handleDeleteUser(user)} className="text-yellow-600">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Tạm khóa
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleResignUser(user)} className="text-red-600">
+                                <UserX className="mr-2 h-4 w-4" />
+                                Khóa vĩnh viễn
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-4 border-t">
+              <div className="text-sm text-muted-foreground mb-3 sm:mb-0">
                 Hiển thị <strong>{filteredUsers.length}</strong> trên tổng số <strong>{staffResponse?.data?.totalItems || 0}</strong> người
                 dùng
               </div>
               {totalPages > 1 && (
-                <Pagination>
+                <Pagination className="mx-auto sm:mx-0">
                   <PaginationContent>
                     <PaginationItem>
                       <PaginationPrevious 
@@ -464,16 +582,41 @@ export function UserManagement() {
                         className={currentPage === 0 ? "pointer-events-none opacity-50" : ""}
                       />
                     </PaginationItem>
-                    {Array.from({ length: totalPages }).map((_, index) => (
-                      <PaginationItem key={index}>
-                        <PaginationLink 
-                          onClick={() => handlePageChange(index)}
-                          isActive={currentPage === index}
-                        >
-                          {index + 1}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
+                    {Array.from({ length: totalPages }).map((_, index) => {
+                      // Chỉ hiển thị trang đầu, trang cuối và trang hiện tại +/- 1 trên mobile
+                      if (
+                        index === 0 || 
+                        index === totalPages - 1 || 
+                        Math.abs(index - currentPage) <= 1
+                      ) {
+                        return (
+                          <PaginationItem key={index} className="hidden sm:inline-block">
+                            <PaginationLink 
+                              onClick={() => handlePageChange(index)}
+                              isActive={currentPage === index}
+                            >
+                              {index + 1}
+                            </PaginationLink>
+                          </PaginationItem>
+                        )
+                      }
+                      
+                      // Thêm dấu ba chấm nếu bị nhảy trang
+                      if (
+                        (index === currentPage - 2 && currentPage > 2) ||
+                        (index === currentPage + 2 && currentPage < totalPages - 3)
+                      ) {
+                        return <PaginationEllipsis key={index} className="hidden sm:inline-block" />
+                      }
+                      
+                      return null
+                    })}
+                    {/* Hiển thị đơn giản trên mobile */}
+                    <PaginationItem className="sm:hidden">
+                      <PaginationLink isActive={true}>
+                        {currentPage + 1} / {totalPages}
+                      </PaginationLink>
+                    </PaginationItem>
                     <PaginationItem>
                       <PaginationNext 
                         onClick={() => handlePageChange(Math.min(totalPages - 1, currentPage + 1))}

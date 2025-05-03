@@ -195,10 +195,18 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
   }
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData({
-      ...formData,
-      [name]: value,
-    })
+    if (name === "roleIds") {
+      // Xử lý đặc biệt cho roleIds vì cần lưu dưới dạng mảng số nguyên
+      setFormData({
+        ...formData,
+        roleIds: [parseInt(value)],
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
 
     // Xóa lỗi của trường khi người dùng chọn lại
     if (formErrors[name]) {
@@ -340,305 +348,262 @@ export function CreateUserDialog({ isOpen, onClose, onSuccess }: CreateUserDialo
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="max-w-[90vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Thêm người dùng mới</DialogTitle>
           <DialogDescription>
-            Nhập thông tin để tạo tài khoản mới cho người dùng trong hệ thống.
+            Điền thông tin để tạo tài khoản người dùng mới trong hệ thống.
           </DialogDescription>
         </DialogHeader>
+        
+        {Object.keys(formErrors).length > 0 && (
+          <Alert variant="destructive" className="mt-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <ul className="list-disc list-inside">
+                {Object.entries(formErrors).map(([field, error]) => (
+                  <li key={field}>{getFieldDisplayName(field)}: {error}</li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
 
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="username" className="text-right">
-              Tên đăng nhập
-            </Label>
-            <div className="col-span-3">
+        <div className="grid grid-cols-1 gap-4 py-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Tên đăng nhập</Label>
               <Input
                 id="username"
                 name="username"
                 placeholder="Nhập tên đăng nhập"
-                className={formErrors.username ? "border-red-500" : ""}
                 value={formData.username}
                 onChange={handleInputChange}
-                required
+                className={formErrors.username ? "border-red-500" : ""}
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="password" className="text-right">
-              Mật khẩu (PIN)
-            </Label>
-            <div className="col-span-3">
+            <div className="space-y-2">
+              <Label htmlFor="password">Mật khẩu (Mã PIN 4 chữ số)</Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
-                placeholder="Nhập mã PIN 4 số"
-                maxLength={4}
-                className={formErrors.password || errors.password ? "border-red-500" : ""}
+                placeholder="Nhập mã PIN 4 chữ số"
                 value={formData.password}
                 onChange={handleInputChange}
-                required
+                className={errors.password || formErrors.password ? "border-red-500" : ""}
               />
+              {errors.password && (
+                <p className="text-sm text-red-500">{errors.password}</p>
+              )}
             </div>
           </div>
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="email" className="text-right">
-              Email
-            </Label>
-            <div className="col-span-3">
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="Nhập email"
-                className={formErrors.email ? "border-red-500" : ""}
-                value={formData.email}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="Nhập địa chỉ email"
+              value={formData.email}
+              onChange={handleInputChange}
+              className={formErrors.email ? "border-red-500" : ""}
+            />
           </div>
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="department" className="text-right">
-              Phòng ban
-            </Label>
-            <div className="col-span-3">
-              <Select 
-                value={formData.department} 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="department">Phòng ban</Label>
+              <Select
+                value={formData.department}
                 onValueChange={(value) => handleSelectChange("department", value)}
               >
-                <SelectTrigger className={formErrors.department ? "border-red-500" : ""}>
+                <SelectTrigger id="department" className={formErrors.department ? "border-red-500" : ""}>
                   <SelectValue placeholder="Chọn phòng ban" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="KITCHEN">Bếp</SelectItem>
-                  <SelectItem value="SERVICE">Phục vụ</SelectItem>
+                  <SelectItem value="CASHIER">Thu ngân</SelectItem>
+                  <SelectItem value="KITCHEN">Nhà bếp</SelectItem>
                   <SelectItem value="MANAGER">Quản lý</SelectItem>
-                  <SelectItem value="CASHIER">Thu Ngân</SelectItem>
+                  <SelectItem value="SERVICE">Phục vụ</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="roles">Vai trò</Label>
+              <Select
+                value={formData.roleIds.length > 0 ? formData.roleIds[0].toString() : ""}
+                onValueChange={(value) => handleSelectChange("roleIds", value)}
+              >
+                <SelectTrigger id="roles" className={formErrors.roleIds ? "border-red-500" : ""}>
+                  <SelectValue placeholder="Chọn vai trò" />
+                </SelectTrigger>
+                <SelectContent>
+                  {isLoadingRoles ? (
+                    <div className="p-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full mt-2" />
+                    </div>
+                  ) : roles.length === 0 ? (
+                    <div className="p-2 text-center text-sm text-muted-foreground">
+                      Không có vai trò nào
+                    </div>
+                  ) : (
+                    roles.map((role) => (
+                      <SelectItem key={role.id} value={role.id.toString()}>
+                        {role.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="salaryRateId" className="text-right">
-              Mức lương
-            </Label>
-            {isLoadingSalaryRates ? (
-              <Skeleton className="h-10 col-span-3" />
-            ) : (
-              <div className="col-span-3">
-                <div className="flex w-full items-center">
-                  <div className="flex-1">
-                    <Select 
-                      value={formData.salaryRateId ? formData.salaryRateId.toString() : ""} 
-                      onValueChange={(value) => {
-                        setFormData({
-                          ...formData,
-                          salaryRateId: parseInt(value)
-                        })
-                        
-                        // Xóa lỗi khi người dùng chọn lại
-                        if (formErrors.salaryRateId) {
-                          setFormErrors(prev => {
-                            const newErrors = { ...prev }
-                            delete newErrors.salaryRateId
-                            return newErrors
-                          })
-                        }
-                      }}
-                      disabled={salaryRates.length === 0}
-                    >
-                      <SelectTrigger className={formErrors.salaryRateId ? "border-red-500" : ""}>
-                        <SelectValue placeholder="Chọn mức lương" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {salaryRates.length > 0 ? (
-                          salaryRates.map((rate) => (
-                            <SelectItem key={rate.id} value={rate.id.toString()}>
-                              {rate.levelName} - {formatCurrency(rate.amount)} ({translateSalaryType(rate.type)})
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="" disabled>
-                            Không có dữ liệu về mức lương
-                          </SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="salaryRate">Mức lương</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8"
+                onClick={() => setIsCreatingSalary(true)}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Thêm mức lương
+              </Button>
+            </div>
+            
+            <Select
+              value={formData.salaryRateId.toString()}
+              onValueChange={(value) => handleSelectChange("salaryRateId", value)}
+            >
+              <SelectTrigger id="salaryRate" className={formErrors.salaryRateId ? "border-red-500" : ""}>
+                <SelectValue placeholder="Chọn mức lương" />
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingSalaryRates ? (
+                  <div className="p-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full mt-2" />
                   </div>
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    size="icon"
-                    className="ml-2"
-                    onClick={() => setIsCreatingSalary(true)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                {/* Modal thêm mức lương mới */}
-                {isCreatingSalary && (
-                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={(e) => e.stopPropagation()}>
-                    <div className="bg-white rounded-lg p-6 w-[400px] shadow-lg" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold">Thêm mức lương mới</h3>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => setIsCreatingSalary(false)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="levelName">Tên mức lương</Label>
-                          <Input
-                            id="levelName"
-                            name="levelName"
-                            placeholder="Ví dụ: Cấp 1, Senior, Junior..."
-                            value={newSalaryData.levelName}
-                            onChange={handleNewSalaryInputChange}
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="amount">Số tiền</Label>
-                          <Input
-                            id="amount"
-                            name="amount"
-                            type="number"
-                            placeholder="Nhập số tiền..."
-                            value={newSalaryData.amount || ''}
-                            onChange={handleNewSalaryInputChange}
-                            min="0"
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="type">Loại lương</Label>
-                          <Select 
-                            value={newSalaryData.type} 
-                            onValueChange={handleNewSalaryTypeChange}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Chọn loại lương" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="MONTHLY">Theo tháng</SelectItem>
-                              <SelectItem value="HOURLY">Theo giờ</SelectItem>
-                              <SelectItem value="SHIFTLY">Theo ca</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div className="flex justify-end space-x-2 pt-4">
-                          <Button 
-                            variant="outline" 
-                            onClick={() => setIsCreatingSalary(false)}
-                          >
-                            Hủy
-                          </Button>
-                          <Button 
-                            onClick={handleCreateSalary}
-                            disabled={isCreatingSalaryRate}
-                          >
-                            {isCreatingSalaryRate ? "Đang lưu..." : "Lưu mức lương"}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
+                ) : salaryRates.length === 0 ? (
+                  <div className="p-2 text-center text-sm text-muted-foreground">
+                    Không có mức lương nào
                   </div>
+                ) : (
+                  salaryRates.map((rate) => (
+                    <SelectItem key={rate.id} value={rate.id.toString()}>
+                      {rate.levelName} - {formatCurrency(rate.amount)} / {translateSalaryType(rate.type)}
+                    </SelectItem>
+                  ))
                 )}
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="role" className="text-right">
-              Vai trò
-            </Label>
-            {isLoadingRoles ? (
-              <Skeleton className="h-10 col-span-3" />
-            ) : (
-              <div className="col-span-3">
-                <Select 
-                  value={formData.roleIds.length > 0 ? formData.roleIds[0].toString() : ""} 
-                  onValueChange={(value) => {
-                    setFormData({
-                      ...formData,
-                      roleIds: [parseInt(value)]
-                    })
-                    
-                    // Xóa lỗi khi người dùng chọn lại
-                    if (formErrors.roleIds) {
-                      setFormErrors(prev => {
-                        const newErrors = { ...prev }
-                        delete newErrors.roleIds
-                        return newErrors
-                      })
-                    }
-                  }}
-                  disabled={roles.length === 0}
-                >
-                  <SelectTrigger className={formErrors.roleIds ? "border-red-500" : ""}>
-                    <SelectValue placeholder="Chọn vai trò" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roles.length > 0 ? (
-                      roles.map((role) => (
-                        <SelectItem key={role.id} value={role.id.toString()}>
-                          {role.name}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="" disabled>
-                        Không có dữ liệu về vai trò
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>
-            <X className="mr-2 h-4 w-4" />
+        <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+          <Button type="button" variant="outline" onClick={handleClose}>
+            <X className="h-4 w-4 mr-2" />
             Hủy
           </Button>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={
-              isLoading || 
-              isLoadingSalaryRates || 
-              isLoadingRoles || 
-              !isFormValid
-            }
-          >
+          <Button onClick={handleSubmit} disabled={isLoading}>
             {isLoading ? (
               <>
-                <span className="mr-2 h-4 w-4 animate-spin">⌛</span>
-                Đang xử lý...
+                <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
+                Đang tạo...
               </>
             ) : (
               <>
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="h-4 w-4 mr-2" />
                 Tạo người dùng
               </>
             )}
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Dialog tạo mức lương mới */}
+      {isCreatingSalary && (
+        <Dialog open={isCreatingSalary} onOpenChange={setIsCreatingSalary}>
+          <DialogContent className="max-w-[90vw] sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Thêm mức lương mới</DialogTitle>
+              <DialogDescription>
+                Tạo mức lương mới để áp dụng cho nhân viên.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid grid-cols-1 gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="levelName">Tên mức lương</Label>
+                <Input
+                  id="levelName"
+                  name="levelName"
+                  placeholder="Ví dụ: Lương cơ bản, Lương quản lý, ..."
+                  value={newSalaryData.levelName}
+                  onChange={handleNewSalaryInputChange}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Số tiền</Label>
+                  <Input
+                    id="amount"
+                    name="amount"
+                    type="number"
+                    placeholder="Nhập số tiền lương"
+                    value={newSalaryData.amount.toString()}
+                    onChange={handleNewSalaryInputChange}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="type">Loại lương</Label>
+                  <Select
+                    value={newSalaryData.type}
+                    onValueChange={handleNewSalaryTypeChange}
+                  >
+                    <SelectTrigger id="type">
+                      <SelectValue placeholder="Chọn loại lương" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MONTHLY">Lương tháng</SelectItem>
+                      <SelectItem value="HOURLY">Lương giờ</SelectItem>
+                      <SelectItem value="SHIFTLY">Lương ca</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+              <Button type="button" variant="outline" onClick={() => setIsCreatingSalary(false)}>
+                <X className="h-4 w-4 mr-2" />
+                Hủy
+              </Button>
+              <Button onClick={handleCreateSalary} disabled={isCreatingSalaryRate}>
+                {isCreatingSalaryRate ? (
+                  <>
+                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
+                    Đang tạo...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Tạo mức lương
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   )
 } 

@@ -584,15 +584,15 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[90vw] sm:max-w-[600px] md:max-w-[900px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{dialogTitle}</DialogTitle>
+          <DialogTitle>
+            {mode === "view" ? "Thông tin chi tiết người dùng" : "Chỉnh sửa thông tin người dùng"}
+          </DialogTitle>
           <DialogDescription>
-            {mode === "add"
-              ? "Nhập thông tin để tạo người dùng mới"
-              : mode === "edit"
-                ? "Chỉnh sửa thông tin người dùng"
-                : "Xem chi tiết thông tin người dùng"}
+            {mode === "view"
+              ? "Xem thông tin chi tiết của người dùng trong hệ thống."
+              : "Chỉnh sửa thông tin người dùng trong hệ thống."}
           </DialogDescription>
         </DialogHeader>
 
@@ -610,11 +610,11 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
           )}
         </div>
   
-        <Tabs defaultValue="info" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-3 mb-4">
-            <TabsTrigger value="info">Thông tin cơ bản</TabsTrigger>
-            <TabsTrigger value="work">Công việc</TabsTrigger>
-            <TabsTrigger value="bank">Tài khoản ngân hàng</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="w-full flex flex-wrap sm:flex-nowrap">
+            <TabsTrigger value="info" className="flex-1">Thông tin cơ bản</TabsTrigger>
+            <TabsTrigger value="profile" className="flex-1">Hồ sơ cá nhân</TabsTrigger>
+            <TabsTrigger value="roles" className="flex-1">Vai trò & lương</TabsTrigger>
           </TabsList>
   
           <TabsContent value="info" className="space-y-4">
@@ -757,8 +757,8 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
             </div>
           </TabsContent>
   
-          <TabsContent value="work" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <TabsContent value="profile" className="px-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
               <div className="space-y-2">
                 <Label htmlFor="department">Phòng ban</Label>
                 {isViewMode ? (
@@ -959,7 +959,7 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
             </div>
           </TabsContent>
   
-          <TabsContent value="bank" className="space-y-4">
+          <TabsContent value="roles" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="bankAccount">Tên tài khoản ngân hàng</Label>
@@ -985,7 +985,7 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
           </TabsContent>
         </Tabs>
   
-        <DialogFooter>
+        <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
           <Button variant="outline" onClick={onClose}>
             <X className="mr-2 h-4 w-4" />
             {isViewMode ? "Đóng" : "Hủy"}

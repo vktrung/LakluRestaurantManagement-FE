@@ -167,9 +167,9 @@ export default function OrderPage() {
 
   const reservations = reservationsResponse?.data?.content || [];
 
-  // Filter out completed reservations
+  // Filter out completed and cancelled reservations
   const activeReservations = reservations.filter(
-    (reservation) => reservation.detail.status !== "COMPLETED"
+    (reservation) => reservation.detail.status !== "COMPLETED" && reservation.detail.status !== "CANCELLED"
   );
 
   const handleTimeRangeChange = (value: string) => {
@@ -232,7 +232,7 @@ export default function OrderPage() {
       case "CONFIRMED":
         return "bg-blue-50 border-blue-300";
       case "COMPLETED":
-        return "bg-green-50 border-green-300";
+        return "bg-green-50 cent border-green-300";
       case "CANCELLED":
         return "bg-red-50 border-red-300";
       default:

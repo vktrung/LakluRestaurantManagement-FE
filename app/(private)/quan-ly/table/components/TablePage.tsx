@@ -38,11 +38,11 @@ export default function RestaurantTables() {
   const [selectedTables, setSelectedTables] = useState<ITable[]>([]);
   const router = useRouter();
 
-  // Lọc bàn theo trạng thái
+  // Filter tables by status
   const filteredTables =
     filter === 'all' ? tables : tables.filter((table) => table.status === filter);
 
-  // Nhóm bàn theo sức chứa
+  // Group tables by capacity
   const tablesByCapacity = {
     2: filteredTables.filter((table) => table.capacity === 2),
     4: filteredTables.filter((table) => table.capacity === 4),
@@ -56,7 +56,7 @@ export default function RestaurantTables() {
       case 'AVAILABLE':
         return 'Còn trống';
       case 'OCCUPIED':
-        return 'Đang sử dụng';
+        return 'Vô hiệu hóa';
       default:
         return status;
     }
@@ -69,15 +69,15 @@ export default function RestaurantTables() {
       case 'AVAILABLE':
         return { border: 'border-green-400', bg: 'bg-green-50', badgeBg: 'bg-green-500' };
       case 'OCCUPIED':
-        return { border: 'border-gray-400', bg: 'bg-gray-50', badgeBg: 'bg-gray-500' }; // Gray for OCCUPIED
+        return { border: 'border-yellow-400', bg: 'bg-yellow-50', badgeBg: 'bg-yellow-500' };
       default:
         return { border: 'border-gray-400', bg: 'bg-gray-50', badgeBg: 'bg-gray-500' };
     }
   };
 
-  // Hàm chọn hoặc bỏ chọn bàn
+  // Handle table selection
   const handleTableSelect = (table: ITable) => {
-    if (table.status !== 'AVAILABLE') return; // Chỉ cho phép chọn bàn trống
+    if (table.status !== 'AVAILABLE') return; // Only allow selecting AVAILABLE tables
 
     const isSelected = selectedTables.some((t) => t.id === table.id);
     if (isSelected) {
@@ -87,7 +87,7 @@ export default function RestaurantTables() {
     }
   };
 
-  // Hàm tạo order từ các bàn đã chọn
+  // Create order from selected tables
   const handleCreateOrder = () => {
     if (selectedTables.length === 0) {
       alert('Vui lòng chọn ít nhất một bàn để tạo order!');
@@ -122,7 +122,7 @@ export default function RestaurantTables() {
                 <SelectItem value="all">Tất cả bàn</SelectItem>
                 <SelectItem value="AVAILABLE">Còn trống</SelectItem>
                 <SelectItem value="RESERVED">Đã đặt</SelectItem>
-                <SelectItem value="OCCUPIED">Đang sử dụng</SelectItem>
+                <SelectItem value="OCCUPIED">Vô hiệu hóa</SelectItem>
               </SelectContent>
             </Select>
             {selectedTables.length > 0 && (
@@ -167,7 +167,7 @@ export default function RestaurantTables() {
                           setShowEditModal(true);
                         }}
                         onDisable={(table) => {
-                          if (table.status === 'AVAILABLE') {
+                          if (table.status === 'AVAILABLE' || table.status === 'OCCUPIED') {
                             setSelectedTable(table);
                             setShowDisableModal(true);
                           }
@@ -201,7 +201,7 @@ export default function RestaurantTables() {
                     setShowEditModal(true);
                   }}
                   onDisable={(table) => {
-                    if (table.status === 'AVAILABLE') {
+                    if (table.status === 'AVAILABLE' || table.status === 'OCCUPIED') {
                       setSelectedTable(table);
                       setShowDisableModal(true);
                     }
@@ -237,7 +237,7 @@ export default function RestaurantTables() {
                     setShowEditModal(true);
                   }}
                   onDisable={(table) => {
-                    if (table.status === 'AVAILABLE') {
+                    if (table.status === 'AVAILABLE' || table.status === 'OCCUPIED') {
                       setSelectedTable(table);
                       setShowDisableModal(true);
                     }
@@ -298,7 +298,8 @@ function TableCard({
   isWaiter,
 }: TableCardProps) {
   const colors = getStatusColors(table.status);
-  const isAvailable = table.status === 'AVAILABLE'; // Check if table is AVAILABLE
+  const isActionAllowed = table.status === 'AVAILABLE' || table.status === 'OCCUPIED';
+  const actionText = table.status === 'OCCUPIED' ? 'Kích hoạt' : 'Vô hiệu hóa';
 
   return (
     <Card
@@ -339,13 +340,13 @@ function TableCard({
               className="flex-1 h-7 text-xs px-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={(e) => {
                 e.stopPropagation();
-                if (isAvailable) {
-                  onDisable(table); // Only trigger if AVAILABLE
+                if (isActionAllowed) {
+                  onDisable(table);
                 }
               }}
-              disabled={!isAvailable} // Disable button if not AVAILABLE
+              disabled={!isActionAllowed}
             >
-              <XCircle size={12} className="mr-1" /> Vô hiệu hóa
+              <XCircle size={12} className="mr-1" /> {actionText}
             </Button>
           </div>
         </CardFooter>

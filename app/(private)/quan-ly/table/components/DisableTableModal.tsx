@@ -1,4 +1,3 @@
-// DisableTableModal.tsx
 'use client';
 
 import {
@@ -23,24 +22,28 @@ interface DisableTableModalProps {
 export default function DisableTableModal({ open, onClose, table }: DisableTableModalProps) {
   const [updateTable, { isLoading }] = useUpdateTableMutation();
 
-  const handleDisable = async () => {
+  const isDisabled = table?.status === 'OCCUPIED';
+  const actionText = isDisabled ? 'Kích hoạt lại' : 'Vô hiệu hóa';
+  const newStatus = isDisabled ? 'AVAILABLE' : 'OCCUPIED';
+
+  const handleAction = async () => {
     if (!table) return;
 
     try {
       await updateTable({
         id: table.id,
-        status: 'OCCUPIED',
+        status: newStatus,
       }).unwrap();
-      toast.success(`Bàn ${table.tableNumber} đã được vô hiệu hóa!`, {
+      toast.success(`Bàn ${table.tableNumber} đã được ${actionText.toLowerCase()}!`, {
         position: 'top-right',
       });
       onClose();
     } catch (error: any) {
-      const errorMessage = error?.data?.message || 'Có lỗi xảy ra khi vô hiệu hóa bàn.';
+      const errorMessage = error?.data?.message || `Có lỗi xảy ra khi ${actionText.toLowerCase()} bàn.`;
       toast.error(errorMessage, {
         position: 'top-right',
       });
-      console.error('Disable table error:', error);
+      console.error(`${actionText} table error:`, error);
     }
   };
 
@@ -48,17 +51,18 @@ export default function DisableTableModal({ open, onClose, table }: DisableTable
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Vô hiệu hóa bàn</DialogTitle>
+          <DialogTitle>{actionText} bàn</DialogTitle>
           <DialogDescription>
-            Bạn có chắc muốn vô hiệu hóa bàn {table?.tableNumber}? Bàn sẽ được đánh dấu là "Đang sử dụng".
+            Bạn có chắc muốn {actionText.toLowerCase()} bàn {table?.tableNumber}? Bàn sẽ được đánh dấu là "
+            {isDisabled ? 'Còn trống' : 'Vô hiệu hóa'}".
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Hủy
           </Button>
-          <Button variant="default" onClick={handleDisable} disabled={isLoading}>
-            {isLoading ? 'Đang xử lý...' : 'Vô hiệu hóa'}
+          <Button variant="default" onClick={handleAction} disabled={isLoading}>
+            {isLoading ? 'Đang xử lý...' : actionText}
           </Button>
         </DialogFooter>
       </DialogContent>

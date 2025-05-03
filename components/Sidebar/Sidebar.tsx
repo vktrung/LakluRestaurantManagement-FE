@@ -232,6 +232,8 @@ const roleBasedMenuItems: RoleBasedMenuItems = {
       value: 'thu-ngan',
       icon: <DollarSign className="h-4 w-4" />,
       children: [
+        { label: 'Đặt bàn', href: '/quan-ly/reservation', icon: <CalendarClock className="h-4 w-4" /> },
+        { label: 'Gọi món', href: '/quan-ly/order', icon: <ShoppingCart className="h-4 w-4" /> },
         { label: 'Giao dịch', href: '/payment', icon: <Banknote className="h-4 w-4" /> },
         { label: 'Lịch làm việc', href: '/schedule', icon: <CalendarDays className="h-4 w-4" /> },
         { label: 'Bảng Lương', href: '/payroll', icon: <ScrollText className="h-4 w-4" /> },

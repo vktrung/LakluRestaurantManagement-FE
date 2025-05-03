@@ -29,7 +29,6 @@ import {
   Truck,
 } from 'lucide-react';
 import ConfirmationModal from '@/components/ConfirmationModal/ConfirmationModal';
-// import ConfirmationModal from '@/components/ConfirmationModal'; // Import the modal
 
 export default function ReservationOrdersPage() {
   const params = useParams();
@@ -40,9 +39,16 @@ export default function ReservationOrdersPage() {
   const [updateOrderItemQuantity, { isLoading: isUpdatingQuantity }] = useUpdateOrderItemQuantityMutation();
   const [updateOrderItemStatusBatch, { isLoading: isUpdatingStatus }] = useUpdateOrderItemStatusBatchMutation();
 
-  const orders = (ordersResponse?.data || []).slice().sort((a: Order, b: Order) => {
-    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-  });
+  // Filter and sort orders
+  const orders = (ordersResponse?.data || [])
+    .filter((order: Order) => {
+      // Hide orders where all items are cancelled
+      return !order.orderItems.every((item: OrderItem) => item.statusLabel === 'CANCEL');
+    })
+    .slice()
+    .sort((a: Order, b: Order) => {
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
 
   const [editStates, setEditStates] = useState<{
     [key: number]: { quantity: number };

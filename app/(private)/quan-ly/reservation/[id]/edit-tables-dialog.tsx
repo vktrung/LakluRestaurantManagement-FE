@@ -141,13 +141,22 @@ export function EditTablesDialog({ reservation, isOpen, onClose }: EditTablesDia
     setTablesToRemove((prev) => (prev.includes(tableId) ? prev.filter((id) => id !== tableId) : [...prev, tableId]))
   }
 
-  const getTableStatusClass = (isAvailable: boolean, isCurrentTable: boolean) => {
+  const getTableStatusClass = (table: TableByDate, isCurrentTable: boolean = false, isSelected: boolean = false) => {
     if (isCurrentTable) {
-      return "bg-orange-100 border-orange-300 hover:bg-orange-200"
+      return isSelected 
+        ? "bg-red-100 border-red-300 ring-2 ring-red-400" 
+        : "bg-orange-100 border-orange-300 hover:bg-orange-200";
     }
-    return isAvailable 
-      ? "bg-green-100 border-green-300 hover:bg-green-200"
-      : "bg-red-100 border-red-300 cursor-not-allowed opacity-70"
+    
+    if (table.status === "AVAILABLE") {
+      return isSelected
+        ? "bg-blue-100 border-blue-300 ring-2 ring-blue-400"
+        : "bg-green-100 border-green-300 hover:bg-green-200";
+    } else if (table.status === "OCCUPIED") {
+      return "bg-gray-100 border-gray-300 cursor-not-allowed opacity-70";
+    } else {
+      return "bg-red-100 border-red-300 cursor-not-allowed opacity-70";
+    }
   }
 
   // Xử lý thay đổi số người
@@ -429,6 +438,9 @@ export function EditTablesDialog({ reservation, isOpen, onClose }: EditTablesDia
                   <Badge variant="outline" className="bg-red-100 border-red-300">
                     Không khả dụng
                   </Badge>
+                  <Badge variant="outline" className="bg-gray-100 border-gray-300">
+                    Đang bảo trì
+                  </Badge>
                   <Badge variant="outline" className="bg-blue-100 border-blue-300">
                     Đã chọn để thêm
                   </Badge>
@@ -449,28 +461,43 @@ export function EditTablesDialog({ reservation, isOpen, onClose }: EditTablesDia
                   </div>
                 ) : (
                   <div className="grid grid-cols-4 gap-2 max-h-[400px] overflow-y-auto p-2">
-                    {availableTables.filter(table => table.status === "AVAILABLE").map((table) => {
-                      const isSelected = tablesToAdd.includes(table.id)
+                    {availableTables
+                      .filter(table => !currentTableIds.includes(table.id))
+                      .map((table) => {
+                        const isSelected = tablesToAdd.includes(table.id)
+                        const isAvailable = table.status === "AVAILABLE"
+                        const isOccupied = table.status === "OCCUPIED"
 
-                      return (
-                        <button
-                          key={table.id}
-                          type="button"
-                          onClick={() => toggleTableToAdd(table.id)}
-                          className={cn(
-                            "border rounded-md p-3 text-center transition-all",
-                            "bg-green-100 border-green-300 hover:bg-green-200",
-                            isSelected && "bg-blue-100 border-blue-300 ring-2 ring-blue-400",
-                          )}
-                        >
-                          <div className="font-medium">{table.tableNumber}</div>
-                          <div className="text-xs text-muted-foreground">Sức chứa: {table.capacity} người</div>
-                          <div className="text-xs mt-1">
-                            <span className="text-green-600">Khả dụng</span>
-                          </div>
-                        </button>
-                      )
-                    })}
+                        return (
+                          <button
+                            key={table.id}
+                            type="button"
+                            onClick={() => isAvailable && toggleTableToAdd(table.id)}
+                            disabled={!isAvailable}
+                            className={cn(
+                              "border rounded-md p-3 text-center transition-all",
+                              isAvailable 
+                                ? "bg-green-100 border-green-300 hover:bg-green-200" 
+                                : isOccupied 
+                                  ? "bg-gray-100 border-gray-300 cursor-not-allowed opacity-70" 
+                                  : "bg-red-100 border-red-300 cursor-not-allowed opacity-70",
+                              isSelected && "bg-blue-100 border-blue-300 ring-2 ring-blue-400",
+                            )}
+                          >
+                            <div className="font-medium">{table.tableNumber}</div>
+                            <div className="text-xs text-muted-foreground">Sức chứa: {table.capacity} người</div>
+                            <div className="text-xs mt-1">
+                              {isAvailable ? (
+                                <span className="text-green-600">Khả dụng</span>
+                              ) : isOccupied ? (
+                                <span className="text-gray-600">Đang bảo trì</span>
+                              ) : (
+                                <span className="text-red-600">Đã đặt</span>
+                              )}
+                            </div>
+                          </button>
+                        )
+                      })}
                   </div>
                 )}
 

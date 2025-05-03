@@ -21,7 +21,7 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { useGetTablesByDateQuery, useCreateReservationMutation } from "@/features/reservation/reservationApiSlice"
-import { Reservation } from "@/features/reservation/type"
+import { Reservation, TableByDate } from "@/features/reservation/type"
 
 const reservationSchema = z.object({
   customerName: z.string()
@@ -140,10 +140,14 @@ export default function NewReservationPage() {
     }
   }
 
-  const getTableStatusClass = (isAvailable: boolean) => {
-    return isAvailable 
-      ? "bg-green-100 border-green-300 hover:bg-green-200"
-      : "bg-red-100 border-red-300 cursor-not-allowed opacity-70"
+  const getTableStatusClass = (table: TableByDate) => {
+    if (table.status === "AVAILABLE") {
+      return "bg-green-100 border-green-300 hover:bg-green-200";
+    } else if (table.status === "OCCUPIED") {
+      return "bg-gray-100 border-gray-300 cursor-not-allowed opacity-70";
+    } else {
+      return "bg-red-100 border-red-300 cursor-not-allowed opacity-70";
+    }
   }
 
   const handleInputChange = (
@@ -560,6 +564,9 @@ export default function NewReservationPage() {
                       <Badge variant="outline" className="bg-red-100 border-red-300">
                         Không khả dụng
                       </Badge>
+                      <Badge variant="outline" className="bg-gray-100 border-gray-300">
+                        Đang bảo trì
+                      </Badge>
                       <Badge variant="outline" className="bg-blue-100 border-blue-300">
                         Đã chọn
                       </Badge>
@@ -585,6 +592,7 @@ export default function NewReservationPage() {
                         const isSelected = selectedTables.includes(table.id)
                         // Bàn chỉ khả dụng nếu status là AVAILABLE
                         const isAvailable = table.status === "AVAILABLE"
+                        const isOccupied = table.status === "OCCUPIED"
 
                         return (
                           <button
@@ -594,7 +602,7 @@ export default function NewReservationPage() {
                             disabled={!isAvailable}
                             className={cn(
                               "border rounded-md p-3 text-center transition-all",
-                              getTableStatusClass(isAvailable),
+                              getTableStatusClass(table),
                               isSelected && "bg-blue-100 border-blue-300 ring-2 ring-blue-400",
                             )}
                           >
@@ -603,6 +611,8 @@ export default function NewReservationPage() {
                             <div className="text-xs mt-1">
                               {isAvailable ? (
                                 <span className="text-green-600">Khả dụng</span>
+                              ) : isOccupied ? (
+                                <span className="text-gray-600">Đang bảo trì</span>
                               ) : (
                                 <span className="text-red-600">Đã đặt</span>
                               )}

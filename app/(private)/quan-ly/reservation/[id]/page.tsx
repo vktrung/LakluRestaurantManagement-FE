@@ -78,6 +78,18 @@ export default function ReservationDetailPage({ params }: { params: { id: string
   // Lấy dữ liệu reservation từ response
   const reservation = reservationResponse?.data
 
+  // Hiển thị thông báo lỗi nếu có
+  useEffect(() => {
+    if (error) {
+      const errorMessage = error instanceof Error ? error.message : "Không thể tải thông tin đặt bàn"
+      toast.error(`Lỗi: ${errorMessage}`, {
+        description: "Vui lòng thử lại hoặc liên hệ quản trị viên",
+        duration: 5000,
+      })
+      console.error("Error loading reservation details:", error)
+    }
+  }, [error])
+
   // Format time and date
   const formatDateTime = (dateString: string | null) => {
     if (!dateString) return "-"
@@ -91,13 +103,36 @@ export default function ReservationDetailPage({ params }: { params: { id: string
     try {
       setIsCancelling(true);
       await cancelReservation(reservationId).unwrap();
-      toast.success("Đã huỷ đặt bàn thành công!");
+      toast.success("Đã huỷ đặt bàn thành công!", {
+        description: "Đặt bàn đã được hủy và các bàn đã được giải phóng",
+        duration: 3000,
+      });
       setCancelDialogOpen(false);
       // Sau khi huỷ thành công, refresh lại dữ liệu
       refetch();
-    } catch (error) {
-      toast.error("Không thể huỷ đặt bàn. Vui lòng thử lại!");
-      console.error("Lỗi khi huỷ đặt bàn:", error);
+    } catch (error: any) {
+      // Xử lý lỗi dạng đặc biệt với httpStatus 422
+      if (error?.data?.httpStatus === 422 && error?.data?.error && typeof error.data.error === 'object') {
+        const validationErrors = Object.entries(error.data.error);
+        if (validationErrors.length > 0) {
+          const [field, message] = validationErrors[0];
+          const errorMessage = String(message);
+          toast.error(errorMessage, {
+            duration: 5000,
+          });
+          console.error(`Error cancelling reservation (${field}):`, errorMessage);
+          return;
+        }
+      }
+      
+      // Xử lý các lỗi thông thường còn lại...
+      const errorMessage = error instanceof Error ? error.message : 
+                           (error?.data?.message || "Không thể huỷ đặt bàn");
+      toast.error(`Lỗi: ${errorMessage}`, {
+        description: "Vui lòng thử lại hoặc liên hệ quản trị viên",
+        duration: 5000,
+      });
+      console.error("Error cancelling reservation:", error);
     } finally {
       setIsCancelling(false);
     }

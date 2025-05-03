@@ -172,7 +172,12 @@ export default function ReservationsPage() {
   // Hiển thị thông báo lỗi nếu có
   useEffect(() => {
     if (error) {
-      toast.error("Không thể tải danh sách đặt bàn. Vui lòng thử lại sau.")
+      const errorMessage = error instanceof Error ? error.message : "Không thể tải danh sách đặt bàn"
+      toast.error(`Lỗi: ${errorMessage}. Vui lòng thử lại sau.`, {
+        description: "Đã xảy ra lỗi khi tải dữ liệu đặt bàn",
+        duration: 5000,
+      })
+      console.error("Error loading reservations:", error)
     }
   }, [error])
   
@@ -195,14 +200,37 @@ export default function ReservationsPage() {
   const handleCancelReservation = async (id: number) => {
     try {
       await cancelReservation(id).unwrap()
-      toast.success("Đã huỷ đặt bàn thành công!")
+      toast.success("Đã huỷ đặt bàn thành công!", {
+        description: "Đặt bàn đã được hủy và thông báo cho khách hàng",
+        duration: 3000,
+      })
       setCancelDialogOpen(false)
       // Refresh dữ liệu sau khi hủy
       if (isFiltering) {
         setIsFiltering(true) // Trigger refetch
       }
-    } catch (error) {
-      toast.error("Không thể huỷ đặt bàn. Vui lòng thử lại!")
+    } catch (error: any) {
+      // Xử lý lỗi dạng đặc biệt với httpStatus 422
+      if (error?.data?.httpStatus === 422 && error?.data?.error && typeof error.data.error === 'object') {
+        const validationErrors = Object.entries(error.data.error);
+        if (validationErrors.length > 0) {
+          const [field, message] = validationErrors[0];
+          const errorMessage = String(message);
+          toast.error(errorMessage, {
+            duration: 5000,
+          });
+          console.error(`Error cancelling reservation (${field}):`, errorMessage);
+          return;
+        }
+      }
+      
+      const errorMessage = error instanceof Error ? error.message : 
+                          (error?.data?.message || "Không thể huỷ đặt bàn");
+      toast.error(`Lỗi: ${errorMessage}`, {
+        description: "Vui lòng thử lại hoặc liên hệ quản trị viên",
+        duration: 5000,
+      })
+      console.error("Error cancelling reservation:", error)
     }
   }
 
@@ -210,14 +238,37 @@ export default function ReservationsPage() {
   const handleConfirmReservation = async (id: number) => {
     try {
       await confirmReservation(id).unwrap()
-      toast.success("Đã xác nhận đặt bàn thành công!")
+      toast.success("Đã xác nhận đặt bàn thành công!", {
+        description: "Đặt bàn đã được xác nhận và thông báo cho khách hàng",
+        duration: 3000,
+      })
       setConfirmDialogOpen(false)
       // Refresh dữ liệu sau khi xác nhận
       if (isFiltering) {
         setIsFiltering(true) // Trigger refetch
       }
-    } catch (error) {
-      toast.error("Không thể xác nhận đặt bàn. Vui lòng thử lại!")
+    } catch (error: any) {
+      // Xử lý lỗi dạng đặc biệt với httpStatus 422
+      if (error?.data?.httpStatus === 422 && error?.data?.error && typeof error.data.error === 'object') {
+        const validationErrors = Object.entries(error.data.error);
+        if (validationErrors.length > 0) {
+          const [field, message] = validationErrors[0];
+          const errorMessage = String(message);
+          toast.error(errorMessage, {
+            duration: 5000,
+          });
+          console.error(`Error confirming reservation (${field}):`, errorMessage);
+          return;
+        }
+      }
+      
+      const errorMessage = error instanceof Error ? error.message : 
+                          (error?.data?.message || "Không thể xác nhận đặt bàn");
+      toast.error(`Lỗi: ${errorMessage}`, {
+        description: "Vui lòng thử lại hoặc liên hệ quản trị viên",
+        duration: 5000,
+      })
+      console.error("Error confirming reservation:", error)
     }
   }
   

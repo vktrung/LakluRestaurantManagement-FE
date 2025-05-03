@@ -257,14 +257,32 @@ export default function NewReservationPage() {
   const handleApiError = (error: any) => {
     // Bắt định dạng lỗi từ API
     let errorMsg = "Không thể tạo đặt bàn. Vui lòng thử lại.";
+    console.error("API Error:", error);
     
     if (error?.data) {
+      // Trường hợp đặc biệt: httpStatus 422 với error là object
+      // Ví dụ: {"data": null, "message": null, "httpStatus": 422, "timestamp": "...", "error": {"schedule": "Bạn không có lịch làm việc trong thời gian hiện tại."}}
+      if (error.data.httpStatus === 422 && error.data.error && typeof error.data.error === 'object') {
+        const validationErrors = Object.entries(error.data.error);
+        if (validationErrors.length > 0) {
+          const [field, message] = validationErrors[0];
+          errorMsg = String(message);
+          toast.error(errorMsg, {
+            duration: 5000,
+          });
+          return;
+        }
+      }
+      
       // Trường hợp 1: Lỗi nằm trong error object như ví dụ {"": "Số người không được vượt quá số chỗ của bàn"}
       if (error.data.error && typeof error.data.error === 'object') {
         const errorEntries = Object.entries(error.data.error);
         if (errorEntries.length > 0) {
           errorMsg = String(errorEntries[0][1]);
-          toast.error(errorMsg);
+          toast.error(errorMsg, {
+            description: "Vui lòng kiểm tra lại thông tin đặt bàn",
+            duration: 5000,
+          });
           return;
         }
       }
@@ -272,14 +290,20 @@ export default function NewReservationPage() {
       // Trường hợp 2: error là một string
       if (error.data.error && typeof error.data.error === 'string') {
         errorMsg = error.data.error;
-        toast.error(errorMsg);
+        toast.error(errorMsg, {
+          description: "Vui lòng kiểm tra lại thông tin đặt bàn",
+          duration: 5000,
+        });
         return;
       }
       
       // Trường hợp 3: Thông báo lỗi nằm trong message
       if (error.data.message && error.data.message !== 'null' && error.data.message !== null) {
         errorMsg = String(error.data.message);
-        toast.error(errorMsg);
+        toast.error(errorMsg, {
+          description: "Vui lòng kiểm tra lại thông tin đặt bàn",
+          duration: 5000,
+        });
         return;
       }
       
@@ -295,14 +319,20 @@ export default function NewReservationPage() {
           const value = error.data[key];
           if (typeof value === 'string') {
             errorMsg = value;
-            toast.error(errorMsg);
+            toast.error(errorMsg, {
+              description: "Vui lòng kiểm tra lại thông tin đặt bàn",
+              duration: 5000,
+            });
             return;
           } else if (typeof value === 'object') {
             // Đối với lỗi lồng nhau
             const nestedEntries = Object.entries(value);
             if (nestedEntries.length > 0) {
               errorMsg = String(nestedEntries[0][1]);
-              toast.error(errorMsg);
+              toast.error(errorMsg, {
+                description: "Vui lòng kiểm tra lại thông tin đặt bàn",
+                duration: 5000,
+              });
               return;
             }
           }
@@ -311,14 +341,20 @@ export default function NewReservationPage() {
     }
     
     // Mặc định trả về thông báo chung
-    toast.error(errorMsg);
+    toast.error(errorMsg, {
+      description: "Đã xảy ra lỗi khi tạo đặt bàn. Vui lòng thử lại sau.",
+      duration: 5000,
+    });
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!validateForm()) {
-      toast.error("Vui lòng kiểm tra lại thông tin đặt bàn")
+      toast.error("Vui lòng kiểm tra lại thông tin đặt bàn", {
+        description: "Hãy điền đầy đủ thông tin theo yêu cầu",
+        duration: 4000,
+      })
       return
     }
 
@@ -343,7 +379,10 @@ export default function NewReservationPage() {
 
     try {
       await createReservation(reservationData).unwrap()
-      toast.success("Đã tạo đặt bàn thành công.")
+      toast.success("Đã tạo đặt bàn thành công.", {
+        description: `Đã đặt bàn cho khách hàng ${customerName} vào lúc ${checkInTime} ngày ${format(checkInDate!, "dd/MM/yyyy", { locale: vi })}`,
+        duration: 4000,
+      })
       router.push("/quan-ly/reservation")
     } catch (error: any) {
       handleApiError(error)

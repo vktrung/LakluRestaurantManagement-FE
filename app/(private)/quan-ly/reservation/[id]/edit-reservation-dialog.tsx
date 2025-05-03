@@ -108,7 +108,10 @@ export function EditReservationDialog({ reservation, isOpen, onClose, onSuccess 
       await updateReservation({ id: reservation.id, data: updateData }).unwrap()
       
       // Hiển thị thông báo thành công
-      toast.success("Cập nhật thông tin đặt bàn thành công!")
+      toast.success("Cập nhật thông tin đặt bàn thành công!", {
+        description: `Đã cập nhật thông tin cho đặt bàn #${reservation.id}`,
+        duration: 3000,
+      })
       
       // Callback khi thành công
       if (onSuccess) {
@@ -117,8 +120,29 @@ export function EditReservationDialog({ reservation, isOpen, onClose, onSuccess 
       
       // Đóng dialog
       onClose()
-    } catch (error) {
-      toast.error("Không thể cập nhật đặt bàn. Vui lòng thử lại.")
+    } catch (error: any) {
+      // Xử lý lỗi dạng đặc biệt với httpStatus 422
+      if (error?.data?.httpStatus === 422 && error?.data?.error && typeof error.data.error === 'object') {
+        const validationErrors = Object.entries(error.data.error);
+        if (validationErrors.length > 0) {
+          const [field, message] = validationErrors[0];
+          const errorMessage = String(message);
+          toast.error(errorMessage, {
+            duration: 5000,
+          });
+          console.error(`Error updating reservation (${field}):`, errorMessage);
+          return;
+        }
+      }
+      
+      // Xử lý các lỗi thông thường
+      const errorMessage = error instanceof Error ? error.message : 
+                          (error?.data?.message || "Không thể cập nhật đặt bàn");
+      toast.error(`Lỗi: ${errorMessage}`, {
+        description: "Vui lòng thử lại hoặc liên hệ quản trị viên",
+        duration: 5000,
+      })
+      console.error("Error updating reservation:", error)
     } finally {
       setIsSubmitting(false)
     }

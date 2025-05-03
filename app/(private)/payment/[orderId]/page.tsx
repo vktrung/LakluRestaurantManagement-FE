@@ -37,6 +37,15 @@ import type { OrderItem, PaymentResponse } from "@/features/payment/types"
 import type { Menu, MenuItem } from '@/features/menu/types'
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination"
 
 // Extended MenuItem interface with additional properties needed for our component
 interface ExtendedMenuItem extends MenuItem {
@@ -193,6 +202,10 @@ export default function IntegratedPaymentPage() {
   const [selectedMenuId, setSelectedMenuId] = useState<number | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
 
+  // State cho phân trang menu dishes
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(10)
+
   // Lấy danh sách món trong menu
   const { 
     data: menuDishesData, 
@@ -200,10 +213,17 @@ export default function IntegratedPaymentPage() {
   } = useGetMenuDishesQuery(
     { 
       menuId: selectedMenuId || 0,
-      activeOnly: true
+      activeOnly: true,
+      page,
+      size: pageSize
     },
     { skip: !selectedMenuId }
   )
+
+  // Reset page về 0 khi đổi menu hoặc search
+  useEffect(() => {
+    setPage(0)
+  }, [selectedMenuId, searchTerm])
 
   // === PAYMENT SECTION ===
   const [paymentMethod, setPaymentMethod] = useState<"CASH" | "TRANSFER">(() => {
@@ -1221,44 +1241,115 @@ export default function IntegratedPaymentPage() {
               {isMenuDishesLoading ? (
                 <div>Đang tải món ăn...</div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {filteredMenuItems.length === 0 ? (
-                    <div className="col-span-full text-center p-8 text-gray-500">
-                      Không tìm thấy món ăn nào
-                    </div>
-                  ) : (
-                    filteredMenuItems.map((item: MenuItem) => (
-                      <Card key={item.id} className="overflow-hidden">
-                        <div className="relative h-32 w-full bg-gray-100">
-                          {item.dish?.images && item.dish.images.length > 0 ? (
-                            <Image
-                              src={item.dish.images[0]?.link || '/placeholder.jpg'}
-                              alt={item.dish?.name || 'Menu item'}
-                              fill
-                              className="object-cover"
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {filteredMenuItems.length === 0 ? (
+                      <div className="col-span-full text-center p-8 text-gray-500">
+                        Không tìm thấy món ăn nào
+                      </div>
+                    ) : (
+                      filteredMenuItems.map((item: MenuItem) => (
+                        <Card key={item.id} className="overflow-hidden">
+                          <div className="relative h-32 w-full bg-gray-100">
+                            {item.dish?.images && item.dish.images.length > 0 ? (
+                              <Image
+                                src={item.dish.images[0]?.link || '/placeholder.jpg'}
+                                alt={item.dish?.name || 'Menu item'}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="flex items-center justify-center h-full bg-gray-200">
+                                <CalendarIcon className="h-10 w-10 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          <CardContent className="p-3">
+                            <h3 className="font-medium">{item.dish?.name || 'Không có tên'}</h3>
+                            <p className="text-sm text-gray-500 mt-1">{item.price.toLocaleString('vi-VN')} VND</p>
+                            <Button
+                              onClick={() => addItemToOrder(item)}
+                              className="w-full mt-2"
+                              size="sm"
+                              disabled={isCreatingNewItem || isUpdatingOrderItem || isPaymentCreated || isPaymentCancelled}
+                            >
+                              {isCreatingNewItem ? "Đang thêm..." : "Thêm vào order"}
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                  {/* Pagination Controls */}
+                  {menuDishesData?.data?.pagination && (
+                    <div className="flex justify-center items-center gap-2 mt-4">
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              onClick={() => setPage(page - 1)}
+                              className={`hover:bg-muted/50 transition-colors cursor-pointer ${page === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+                              tabIndex={page === 0 ? -1 : 0}
+                              aria-disabled={page === 0}
                             />
-                          ) : (
-                            <div className="flex items-center justify-center h-full bg-gray-200">
-                              <CalendarIcon className="h-10 w-10 text-gray-400" />
-                            </div>
+                          </PaginationItem>
+                          {/* Trang đầu và dấu ... nếu cần */}
+                          {page > 1 && (
+                            <>
+                              <PaginationItem>
+                                <PaginationLink onClick={() => setPage(0)} className="hover:bg-muted/50 transition-colors cursor-pointer">
+                                  1
+                                </PaginationLink>
+                              </PaginationItem>
+                              {page > 2 && (
+                                <PaginationItem>
+                                  <PaginationEllipsis />
+                                </PaginationItem>
+                              )}
+                            </>
                           )}
-                        </div>
-                        <CardContent className="p-3">
-                          <h3 className="font-medium">{item.dish?.name || 'Không có tên'}</h3>
-                          <p className="text-sm text-gray-500 mt-1">{item.price.toLocaleString('vi-VN')} VND</p>
-                          <Button
-                            onClick={() => addItemToOrder(item)}
-                            className="w-full mt-2"
-                            size="sm"
-                            disabled={isCreatingNewItem || isUpdatingOrderItem || isPaymentCreated || isPaymentCancelled}
-                          >
-                            {isCreatingNewItem ? "Đang thêm..." : "Thêm vào order"}
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))
+                          {/* Trang hiện tại và lân cận */}
+                          {Array.from({ length: 3 }, (_, i) => page - 1 + i)
+                            .filter(p => p >= 0 && p < menuDishesData.data.pagination.totalPages)
+                            .map(p => (
+                              <PaginationItem key={p}>
+                                <PaginationLink
+                                  isActive={p === page}
+                                  onClick={() => setPage(p)}
+                                  className={p === page ? "bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer shadow-sm" : "hover:bg-muted/50 transition-colors cursor-pointer"}
+                                >
+                                  {p + 1}
+                                </PaginationLink>
+                              </PaginationItem>
+                            ))}
+                          {/* Dấu ... và trang cuối nếu cần */}
+                          {page < menuDishesData.data.pagination.totalPages - 2 && (
+                            <>
+                              {page < menuDishesData.data.pagination.totalPages - 3 && (
+                                <PaginationItem>
+                                  <PaginationEllipsis />
+                                </PaginationItem>
+                              )}
+                              <PaginationItem>
+                                <PaginationLink onClick={() => setPage(menuDishesData.data.pagination.totalPages - 1)} className="hover:bg-muted/50 transition-colors cursor-pointer">
+                                  {menuDishesData.data.pagination.totalPages}
+                                </PaginationLink>
+                              </PaginationItem>
+                            </>
+                          )}
+                          <PaginationItem>
+                            <PaginationNext
+                              onClick={() => setPage(page + 1)}
+                              className={`hover:bg-muted/50 transition-colors cursor-pointer ${page + 1 >= menuDishesData.data.pagination.totalPages ? "opacity-50 cursor-not-allowed" : ""}`}
+                              tabIndex={page + 1 >= menuDishesData.data.pagination.totalPages ? -1 : 0}
+                              aria-disabled={page + 1 >= menuDishesData.data.pagination.totalPages}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
                   )}
-                </div>
+                </>
               )}
             </CardContent>
           </Card>

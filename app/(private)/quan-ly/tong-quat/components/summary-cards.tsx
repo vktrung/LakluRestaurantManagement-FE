@@ -35,38 +35,38 @@ export function SummaryCards({
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium">Tổng Doanh Thu Hôm Nay</CardTitle>
+    <div className="grid gap-2 md:gap-3 lg:gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
+      <Card className="overflow-hidden bg-gradient-to-br from-white to-blue-50 border border-blue-100 shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between py-2 px-2 sm:p-3 md:p-4 md:pb-2">
+          <CardTitle className="text-[10px] sm:text-xs md:text-sm font-medium line-clamp-1">Tổng Doanh Thu Hôm Nay</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalRevenueToday)}</div>
+        <CardContent className="py-2 px-2 sm:p-3 md:p-4 md:pt-1">
+          <div className="text-xs sm:text-base md:text-2xl font-bold line-clamp-1 text-blue-700">{formatCurrency(totalRevenueToday)}</div>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium">Tổng Món Bán Hôm Nay</CardTitle>
+      <Card className="overflow-hidden bg-gradient-to-br from-white to-green-50 border border-green-100 shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between py-2 px-2 sm:p-3 md:p-4 md:pb-2">
+          <CardTitle className="text-[10px] sm:text-xs md:text-sm font-medium line-clamp-1">Tổng Món Bán Hôm Nay</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{totalDishesToday}</div>
+        <CardContent className="py-2 px-2 sm:p-3 md:p-4 md:pt-1">
+          <div className="text-xs sm:text-base md:text-2xl font-bold text-green-700">{totalDishesToday}</div>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium">Món Bán Chạy Nhất Hôm Nay</CardTitle>
+      <Card className="overflow-hidden bg-gradient-to-br from-white to-amber-50 border border-amber-100 shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between py-2 px-2 sm:p-3 md:p-4 md:pb-2">
+          <CardTitle className="text-[10px] sm:text-xs md:text-sm font-medium line-clamp-1">Món Bán Chạy Nhất Hôm Nay</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{topDishName}</div>
-          <p className="text-xs text-muted-foreground">{topDishCount} món</p>
+        <CardContent className="py-2 px-2 sm:p-3 md:p-4 md:pt-1">
+          <div className="text-xs sm:text-base md:text-2xl font-bold line-clamp-1 text-amber-700">{topDishName}</div>
+          <p className="text-[9px] sm:text-xs text-muted-foreground">{topDishCount} món</p>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium">{getMaxRevenueTitle()}</CardTitle>
+      <Card className="overflow-hidden bg-gradient-to-br from-white to-purple-50 border border-purple-100 shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between py-2 px-2 sm:p-3 md:p-4 md:pb-2">
+          <CardTitle className="text-[10px] sm:text-xs md:text-sm font-medium line-clamp-1">{getMaxRevenueTitle()}</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(maxRevenue)}</div>
+        <CardContent className="py-2 px-2 sm:p-3 md:p-4 md:pt-1">
+          <div className="text-xs sm:text-base md:text-2xl font-bold line-clamp-1 text-purple-700">{formatCurrency(maxRevenue)}</div>
         </CardContent>
       </Card>
     </div>

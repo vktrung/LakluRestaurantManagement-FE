@@ -106,22 +106,29 @@ export default function Dashboard() {
 
   // Kiểm tra trạng thái loading và error cho tất cả API doanh thu
   if (isRevenueLoading || isTotalDishSoldLoading || isDishDetailsLoading || isWeeklyLoading || isLastThreeMonthsLoading || isLastThreeYearsLoading) 
-    return <div className="p-4">Loading...</div>;
+    return <div className="p-2 flex justify-center items-center min-h-[300px]">
+      <div className="animate-pulse flex items-center gap-2">
+        <div className="h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+        <span className="text-sm text-muted-foreground">Đang tải...</span>
+      </div>
+    </div>;
   
   if (revenueError || totalDishSoldError || dishDetailsError || weeklyError || lastThreeMonthsError || lastThreeYearsError) 
-    return <div className="p-4 text-red-500">Đã có lỗi xảy ra.</div>;
+    return <div className="p-2 text-red-500 text-center text-sm">Đã có lỗi xảy ra khi tải dữ liệu.</div>;
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Thống Kê Nhà Hàng</h1>
-        <Tabs value={timeFrame} onValueChange={(value: string) => setTimeFrame(value as TimeFrameType)} className="w-[400px]">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="daily">Ngày</TabsTrigger>
-            <TabsTrigger value="monthly">Tháng</TabsTrigger>
-            <TabsTrigger value="yearly">Năm</TabsTrigger>
-          </TabsList>
-        </Tabs>
+    <div className="p-2 md:p-3 lg:p-6 space-y-3 md:space-y-4 lg:space-y-6">
+      <div className="flex flex-col gap-2 md:flex-row md:justify-between md:items-center">
+        <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">Thống Kê Nhà Hàng</h1>
+        <div className="w-full md:w-auto">
+          <Tabs value={timeFrame} onValueChange={(value: string) => setTimeFrame(value as TimeFrameType)} className="w-full md:w-[400px]">
+            <TabsList className="grid w-full grid-cols-3 h-9">
+              <TabsTrigger value="daily" className="text-xs md:text-sm">Ngày</TabsTrigger>
+              <TabsTrigger value="monthly" className="text-xs md:text-sm">Tháng</TabsTrigger>
+              <TabsTrigger value="yearly" className="text-xs md:text-sm">Năm</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       <SummaryCards
@@ -134,9 +141,9 @@ export default function Dashboard() {
         timeFrame={timeFrame}
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
+      <Card className="overflow-hidden">
+        <CardHeader className="p-3 md:p-4 lg:p-6">
+          <CardTitle className="text-sm md:text-lg lg:text-xl">
             Doanh Thu Theo{" "}
             {timeFrame === "daily"
               ? "Ngày"
@@ -145,21 +152,23 @@ export default function Dashboard() {
               : "Năm"}
           </CardTitle>
         </CardHeader>
-        <CardContent className="pl-2">
-          <RevenueChart
-            data={revenueData}
-            timeFrame={timeFrame}
-            formatDate={formatDate}
-            formatCurrency={formatCurrency}
-          />
+        <CardContent className="px-1 md:px-2 overflow-x-auto pb-3">
+          <div className="min-w-[500px] md:min-w-0">
+            <RevenueChart
+              data={revenueData}
+              timeFrame={timeFrame}
+              formatDate={formatDate}
+              formatCurrency={formatCurrency}
+            />
+          </div>
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 gap-3 md:gap-4 lg:gap-6">
         <TopSellingDishes />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-3 md:gap-4 lg:gap-6 lg:grid-cols-2">
         <TopDishes formatCurrency={formatCurrency} />
       </div>
     </div>

@@ -136,6 +136,15 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
   // Tạo state formData với kiểu dữ liệu cụ thể
   const [formData, setFormData] = useState<UserFormData>(defaultFormData)
 
+  // Sửa lại khởi tạo state cho ngày tháng năm
+  const [dobDay, setDobDay] = useState<number | undefined>(undefined)
+  const [dobMonth, setDobMonth] = useState<number | undefined>(undefined)
+  const [dobYear, setDobYear] = useState<number | undefined>(undefined)
+
+  const [hireDateDay, setHireDateDay] = useState<number | undefined>(undefined)
+  const [hireDateMonth, setHireDateMonth] = useState<number | undefined>(undefined)
+  const [hireDateYear, setHireDateYear] = useState<number | undefined>(undefined)
+
   // Cập nhật formData khi có dữ liệu từ props hoặc API
   useEffect(() => {
     if (staffResponse?.data) {
@@ -151,11 +160,19 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
       
       // Cập nhật các state date
       if (staffResponse.data.profile?.dateOfBirth) {
-        setDateOfBirth(new Date(staffResponse.data.profile.dateOfBirth))
+        const dob = new Date(staffResponse.data.profile.dateOfBirth)
+        setDateOfBirth(dob)
+        setDobDay(dob.getDate())
+        setDobMonth(dob.getMonth() + 1)
+        setDobYear(dob.getFullYear())
       }
       
       if (staffResponse.data.profile?.hireDate) {
-        setHireDate(new Date(staffResponse.data.profile.hireDate))
+        const hDate = new Date(staffResponse.data.profile.hireDate)
+        setHireDate(hDate)
+        setHireDateDay(hDate.getDate())
+        setHireDateMonth(hDate.getMonth() + 1)
+        setHireDateYear(hDate.getFullYear())
       }
     } else if (user) {
       // Nếu không có dữ liệu từ API nhưng có user từ props
@@ -170,11 +187,19 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
       
       // Cập nhật các state date
       if (user.profile?.dateOfBirth) {
-        setDateOfBirth(new Date(user.profile.dateOfBirth))
+        const dob = new Date(user.profile.dateOfBirth)
+        setDateOfBirth(dob)
+        setDobDay(dob.getDate())
+        setDobMonth(dob.getMonth() + 1)
+        setDobYear(dob.getFullYear())
       }
       
       if (user.profile?.hireDate) {
-        setHireDate(new Date(user.profile.hireDate))
+        const hDate = new Date(user.profile.hireDate)
+        setHireDate(hDate)
+        setHireDateDay(hDate.getDate())
+        setHireDateMonth(hDate.getMonth() + 1)
+        setHireDateYear(hDate.getFullYear())
       }
     }
   }, [staffResponse, user])
@@ -247,8 +272,18 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
   const handleDateChange = (field: string, date: Date | undefined) => {
     if (field === "dateOfBirth") {
       setDateOfBirth(date)
+      if (date) {
+        setDobDay(date.getDate())
+        setDobMonth(date.getMonth() + 1)
+        setDobYear(date.getFullYear())
+      }
     } else if (field === "hireDate") {
       setHireDate(date)
+      if (date) {
+        setHireDateDay(date.getDate())
+        setHireDateMonth(date.getMonth() + 1)
+        setHireDateYear(date.getFullYear())
+      }
     }
 
     if (date) {
@@ -260,6 +295,104 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
         },
       })
     }
+  }
+
+  // Cải tiến hàm handleDateOfBirthChange để tính toán đúng số ngày trong tháng
+  const handleDateOfBirthChange = (type: 'day' | 'month' | 'year', value: number) => {
+    // Lấy giá trị hiện tại
+    let day = dobDay || 1
+    let month = dobMonth ? dobMonth - 1 : 0 // JavaScript month là 0-11
+    let year = dobYear || new Date().getFullYear()
+    
+    // Cập nhật giá trị mới
+    if (type === 'day') {
+      day = value
+      setDobDay(value)
+    } else if (type === 'month') {
+      month = value - 1 // JavaScript month là 0-11
+      setDobMonth(value)
+      
+      // Khi thay đổi tháng, kiểm tra số ngày hợp lệ trong tháng mới
+      const daysInNewMonth = new Date(year, month + 1, 0).getDate()
+      if (day > daysInNewMonth) {
+        day = daysInNewMonth
+        setDobDay(daysInNewMonth)
+      }
+    } else if (type === 'year') {
+      year = value
+      setDobYear(value)
+      
+      // Khi thay đổi năm, cần kiểm tra lại tháng 2 (28 hoặc 29 ngày)
+      if (month === 1) { // Tháng 2 (0-indexed)
+        const daysInFeb = new Date(year, 2, 0).getDate()
+        if (day > daysInFeb) {
+          day = daysInFeb
+          setDobDay(daysInFeb)
+        }
+      }
+    }
+    
+    // Tạo đối tượng Date và cập nhật state
+    const newDate = new Date(year, month, day)
+    setDateOfBirth(newDate)
+    
+    // Cập nhật formData
+    setFormData({
+      ...formData,
+      profile: {
+        ...formData.profile,
+        dateOfBirth: newDate.toISOString(),
+      },
+    })
+  }
+
+  // Cải tiến hàm handleHireDateChange để tính toán đúng số ngày trong tháng
+  const handleHireDateChange = (type: 'day' | 'month' | 'year', value: number) => {
+    // Lấy giá trị hiện tại
+    let day = hireDateDay || 1
+    let month = hireDateMonth ? hireDateMonth - 1 : 0 // JavaScript month là 0-11
+    let year = hireDateYear || new Date().getFullYear()
+    
+    // Cập nhật giá trị mới
+    if (type === 'day') {
+      day = value
+      setHireDateDay(value)
+    } else if (type === 'month') {
+      month = value - 1 // JavaScript month là 0-11
+      setHireDateMonth(value)
+      
+      // Khi thay đổi tháng, kiểm tra số ngày hợp lệ trong tháng mới
+      const daysInNewMonth = new Date(year, month + 1, 0).getDate()
+      if (day > daysInNewMonth) {
+        day = daysInNewMonth
+        setHireDateDay(daysInNewMonth)
+      }
+    } else if (type === 'year') {
+      year = value
+      setHireDateYear(value)
+      
+      // Khi thay đổi năm, cần kiểm tra lại tháng 2 (28 hoặc 29 ngày)
+      if (month === 1) { // Tháng 2 (0-indexed)
+        const daysInFeb = new Date(year, 2, 0).getDate()
+        if (day > daysInFeb) {
+          day = daysInFeb
+          setHireDateDay(daysInFeb)
+        }
+      }
+    }
+    
+    // Tạo đối tượng Date và cập nhật state
+    const newDate = new Date(year, month, day)
+    setHireDate(newDate)
+    
+    // Cập nhật formData
+    setFormData({
+      ...formData,
+      profile: {
+        ...formData.profile,
+        hireDate: newDate.toISOString(),
+      },
+    })
   }
 
   const handleSave = async () => {
@@ -401,11 +534,6 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
   const dialogTitle =
     mode === "add" ? "Thêm người dùng mới" : mode === "edit" ? "Chỉnh sửa thông tin người dùng" : "Thông tin người dùng"
 
-  // Khởi tạo giá trị khi chuyển từ chế độ xem sang chỉnh sửa
-  useEffect(() => {
-    // Đảm bảo khi chuyển sang edit mode, formData đã được khởi tạo
-  }, [isOpen, mode, formData]);
-
   // Loading state
   if (isLoading && mode !== "add") {
     return (
@@ -446,6 +574,12 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
         </DialogContent>
       </Dialog>
     )
+  }
+
+  // Hàm tính số ngày trong tháng
+  const getDaysInMonth = (month: number, year: number) => {
+    // month ở đây là 1-12
+    return new Date(year, month, 0).getDate();
   }
 
   return (
@@ -541,28 +675,62 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
                 {isViewMode ? (
                   <Input id="dateOfBirth" value={dateOfBirth ? format(dateOfBirth, "dd/MM/yyyy") : ""} disabled />
                 ) : (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !dateOfBirth && "text-muted-foreground",
-                        )}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <Select
+                        value={dobDay?.toString()}
+                        onValueChange={(value) => handleDateOfBirthChange('day', parseInt(value))}
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dateOfBirth ? format(dateOfBirth, "dd/MM/yyyy") : <span>Chọn ngày</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={dateOfBirth}
-                        onSelect={(date) => handleDateChange("dateOfBirth", date)}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Ngày" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from(
+                            { length: getDaysInMonth(dobMonth || 1, dobYear || new Date().getFullYear()) }, 
+                            (_, i) => i + 1
+                          ).map(day => (
+                            <SelectItem key={`day-${day}`} value={day.toString()}>
+                              {day}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Select
+                        value={dobMonth?.toString()}
+                        onValueChange={(value) => handleDateOfBirthChange('month', parseInt(value))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Tháng" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                            <SelectItem key={`month-${month}`} value={month.toString()}>
+                              Tháng {month}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Select
+                        value={dobYear?.toString()}
+                        onValueChange={(value) => handleDateOfBirthChange('year', parseInt(value))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Năm" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[300px]">
+                          {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                            <SelectItem key={`year-${year}`} value={year.toString()}>
+                              {year}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 )}
               </div>
               <div className="space-y-2">
@@ -687,28 +855,62 @@ export function UserDialog({ user, mode, isOpen, onClose }: UserDialogProps) {
                 {isViewMode ? (
                   <Input id="hireDate" value={hireDate ? format(hireDate, "dd/MM/yyyy") : ""} disabled />
                 ) : (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !hireDate && "text-muted-foreground",
-                        )}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <Select
+                        value={hireDateDay?.toString()}
+                        onValueChange={(value) => handleHireDateChange('day', parseInt(value))}
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {hireDate ? format(hireDate, "dd/MM/yyyy") : <span>Chọn ngày</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={hireDate}
-                        onSelect={(date) => handleDateChange("hireDate", date)}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Ngày" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from(
+                            { length: getDaysInMonth(hireDateMonth || 1, hireDateYear || new Date().getFullYear()) }, 
+                            (_, i) => i + 1
+                          ).map(day => (
+                            <SelectItem key={`hireday-${day}`} value={day.toString()}>
+                              {day}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Select
+                        value={hireDateMonth?.toString()}
+                        onValueChange={(value) => handleHireDateChange('month', parseInt(value))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Tháng" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                            <SelectItem key={`hiremonth-${month}`} value={month.toString()}>
+                              Tháng {month}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Select
+                        value={hireDateYear?.toString()}
+                        onValueChange={(value) => handleHireDateChange('year', parseInt(value))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Năm" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[300px]">
+                          {Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                            <SelectItem key={`hireyear-${year}`} value={year.toString()}>
+                              {year}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 )}
               </div>
               <div className="space-y-2 md:col-span-2">

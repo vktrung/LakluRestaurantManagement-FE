@@ -44,6 +44,15 @@ export const orderApiSlice = createApi({
       ]
     }),
 
+    //get order by ID but not cancel one
+    getOrderByReservationIdButNotCancel: builder.query<OrderResponse, number>({
+      query: (reservationId) => `${endpoints.Order}active/${reservationId}`,
+      providesTags: (result, error, reservationId) => [
+        { type: 'ReservationOrder', id: reservationId },
+        'Order'
+      ]
+    }),
+
     // Create a new order
     createOrder: builder.mutation<Order, CreateOrderRequest>({
       query: (newOrder) => ({
@@ -182,6 +191,7 @@ export const {
   useGetOrdersQuery,
   useGetOrderByIdQuery,
   useGetOrdersByReservationIdQuery,
+  useGetOrderByReservationIdButNotCancelQuery,
   useCreateOrderMutation,
   useUpdateOrderStatusMutation,
   useUpdateOrderItemStatusMutation,

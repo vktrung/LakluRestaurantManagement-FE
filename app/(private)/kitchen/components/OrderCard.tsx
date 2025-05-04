@@ -386,26 +386,6 @@ export default function OrderCard({
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Toggle
-                              aria-label="Đánh dấu hết đồ chuẩn bị"
-                              className="h-6 w-6 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                              onClick={() =>
-                                handleMarkOutOfStock(item.menuItemId)
-                              }
-                              disabled={isLoading}
-                            >
-                              <AlertTriangle className="h-3.5 w-3.5" />
-                            </Toggle>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom">
-                            <p className="text-xs">Đánh dấu hết đồ chuẩn bị</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
                     </>
                   )}
                 </div>

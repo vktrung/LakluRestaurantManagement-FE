@@ -602,7 +602,7 @@ export default function ReservationOrdersPage() {
           <div className="flex items-center gap-3">
             <Receipt className="h-6 w-6 text-emerald-600" />
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight">
-              Đơn hàng cho đặt bàn #{reservationId}
+              Đơn hàng cho đặt bàn
             </h1>
           </div>
 

@@ -478,6 +478,14 @@ export default function ReservationOrdersPage() {
         <div className="flex flex-col items-center gap-3 p-8 bg-white rounded-xl shadow-lg">
           <RefreshCw className="h-10 w-10 animate-spin text-emerald-600" />
           <p className="text-slate-700 font-medium text-lg">Đang tải đơn hàng...</p>
+          <Button
+            variant="outline"
+            className="flex items-center gap-2 border-slate-300 hover:bg-slate-100 mt-4"
+            onClick={handleBackToOrders}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Quay lại danh sách đơn hàng
+          </Button>
         </div>
       </div>
     )
@@ -488,12 +496,14 @@ export default function ReservationOrdersPage() {
       <div className="flex items-center justify-center h-screen bg-gradient-to-b from-slate-50 to-slate-100">
         <div className="flex flex-col items-center gap-3 p-8 bg-white rounded-xl shadow-lg border border-rose-200">
           <AlertTriangle className="h-10 w-10 text-rose-600" />
-          <p className="text-rose-600 text-lg font-medium">Có lỗi xảy ra khi tải đơn hàng.</p>
+          <p className="text-rose-600 text-lg font-medium">Đơn hàng trống hoặc không tồn tại</p>
           <Button
             variant="outline"
-            className="mt-2 border-rose-200 text-rose-600 hover:bg-rose-50"
+            className="flex items-center gap-2 border-slate-300 hover:bg-slate-100 mt-4"
+            onClick={handleBackToOrders}
           >
-            Thử lại
+            <ArrowLeft className="h-4 w-4" />
+            Quay lại danh sách đơn hàng
           </Button>
         </div>
       </div>
@@ -613,10 +623,18 @@ export default function ReservationOrdersPage() {
         {orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[calc(100vh-16rem)] bg-white rounded-xl shadow-sm p-8">
             <Receipt className="h-16 w-16 text-slate-300 mb-4" />
-            <p className="text-slate-600 text-lg font-medium text-center">Chưa có đơn hàng nào cho đặt bàn này</p>
-            <p className="text-slate-500 text-sm mt-2 text-center">
-              Bạn có thể tạo đơn hàng mới từ trang danh sách đặt bàn
+            <p className="text-slate-600 text-lg font-medium text-center">Đơn hàng trống hoặc không tồn tại</p>
+            <p className="text-slate-500 text-sm mt-2 text-center mb-6">
+              Vui lòng kiểm tra lại thông tin đơn hàng
             </p>
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 border-slate-300 hover:bg-slate-100"
+              onClick={handleBackToOrders}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Quay lại danh sách đơn hàng
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

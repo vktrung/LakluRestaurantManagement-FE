@@ -4,7 +4,7 @@ import { vi } from "date-fns/locale"
 import { useParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { useGetOrderByReservationIdButNotCancelQuery, useDeleteOrderMutation } from "@/features/order/orderApiSlice"
+import { useGetOrdersByReservationIdQuery, useDeleteOrderMutation } from "@/features/order/orderApiSlice"
 import type { Order, OrderItem } from "@/features/order/types"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
@@ -316,7 +316,7 @@ export default function ReservationOrdersPage() {
     isLoading,
     isError,
     refetch,
-  } = useGetOrderByReservationIdButNotCancelQuery(reservationId, {
+  } = useGetOrdersByReservationIdQuery(reservationId, {
     skip: false,
     refetchOnMountOrArgChange: true,
   })

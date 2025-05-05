@@ -75,10 +75,10 @@ const voucherSchema = z.object({
       path: ["discountValue"]
     });
   }
-  if (data.discountType === "FIXEDAMOUNT" && data.discountValue > 10000000) {
+  if (data.discountType === "FIXEDAMOUNT" && data.discountValue > 1000000) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Giảm giá cố định không được vượt quá 10,000,000đ",
+      message: "Giảm giá cố định không được vượt quá 1,000,000đ",
       path: ["discountValue"]
     });
   }
@@ -318,7 +318,7 @@ export function VoucherForm({ voucher, onSubmit, onCancel }: VoucherFormProps) {
             {errors.discountValue && <p className="text-sm text-red-500">{errors.discountValue}</p>}
             {discountType === "FIXEDAMOUNT" && (
               <p className="text-xs text-muted-foreground">
-                Giá trị từ 1,000đ đến 10,000,000đ
+                Giá trị từ 1,000đ đến 1,000,000đ
               </p>
             )}
             {discountType === "PERCENTAGE" && (

@@ -98,8 +98,7 @@ export default function NewReservationPage() {
     const currentHour = new Date().getHours();
     const currentMinute = new Date().getMinutes();
     
-    // Chỉ hiển thị giờ từ 18:00 (6h chiều) trở đi
-    for (let hour = 18; hour <= 23; hour++) {
+    for (let hour = 15; hour <= 23; hour++) {
       for (let minute of [0, 30]) {
         // Nếu là ngày hôm nay, chỉ hiển thị giờ từ thời điểm hiện tại trở đi
         if (checkInDate && isToday(checkInDate)) {

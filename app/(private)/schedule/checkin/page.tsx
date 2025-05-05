@@ -171,7 +171,7 @@ function CheckInForm() {
       // If successful
       setCheckInStatus('success');
       setErrorMessage(result.data?.message || 'Check-in thành công!');
-      toast.success(result.data?.message || 'Check-in thành công!', {
+      toast.success('Check-in thành công!', {
         position: 'top-right',
         duration: 3000,
       });

@@ -304,6 +304,7 @@ export default function Timetable() {
               hasQrCodePermission ? handleOpenUpdateDialogWithId : () => {}
             }
             handleDelete={hasQrCodePermission ? wrappedHandleDelete : () => {}}
+            currentDate={currentDate}
           />
         </TabsContent>
       </Tabs>

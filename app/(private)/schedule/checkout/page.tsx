@@ -141,18 +141,21 @@ function CheckOutForm() {
         username,
         password,
       );
-      
+
       if (result.error) {
         setCheckOutStatus('error');
         const errorMsg = result.error.message || 'Đã xảy ra lỗi khi check-out';
         setErrorMessage(errorMsg);
-        
+
         // Hiển thị toast thông báo lỗi
         if (errorMsg.toLowerCase().includes('cấm truy cập')) {
-          toast.error('Cấm truy cập: Bạn không có trong danh sách ca làm việc này', {
-            position: 'top-right',
-            duration: 5000,
-          });
+          toast.error(
+            'Cấm truy cập: Bạn không có trong danh sách ca làm việc này',
+            {
+              position: 'top-right',
+              duration: 5000,
+            },
+          );
         } else {
           toast.error(errorMsg, {
             position: 'top-right',
@@ -161,11 +164,11 @@ function CheckOutForm() {
         }
         return;
       }
-      
+
       // If successful
       setCheckOutStatus('success');
       setErrorMessage(result.data?.message || 'Check-out thành công!');
-      toast.success(result.data?.message || 'Check-out thành công!', {
+      toast.success('Check-out thành công!', {
         position: 'top-right',
         duration: 3000,
       });
@@ -177,24 +180,27 @@ function CheckOutForm() {
     } catch (error: any) {
       setCheckOutStatus('error');
       console.error('Chi tiết lỗi trong component:', error);
-      
+
       // Truy cập đúng thông báo lỗi từ API
       let errorMsg = 'Đã xảy ra lỗi khi check-out';
-      
+
       if (error.data && error.data.error) {
         errorMsg = error.data.error;
       } else if (error.message) {
         errorMsg = error.message;
       }
-      
+
       setErrorMessage(errorMsg);
-      
+
       // Hiển thị toast thông báo lỗi
       if (errorMsg.toLowerCase().includes('cấm truy cập')) {
-        toast.error('Cấm truy cập: Bạn không có trong danh sách ca làm việc này', {
-          position: 'top-right',
-          duration: 5000,
-        });
+        toast.error(
+          'Cấm truy cập: Bạn không có trong danh sách ca làm việc này',
+          {
+            position: 'top-right',
+            duration: 5000,
+          },
+        );
       } else {
         toast.error(errorMsg, {
           position: 'top-right',

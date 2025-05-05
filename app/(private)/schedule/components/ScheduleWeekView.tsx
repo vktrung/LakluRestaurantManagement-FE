@@ -321,10 +321,12 @@ export default function ScheduleWeekView({
   function shouldShowCheckOutButton(shift: Shift, now: Date) {
     const timeIn = parseISO(shift.timeIn);
     const timeOut = parseISO(shift.timeOut);
+    const timeOutPlus10 = addMinutes(timeOut, 10);
 
-    // now >= timeIn && now < timeOut
+    // now >= timeIn && now < timeOut + 10 phút
     return (
-      (isAfter(now, timeIn) || isEqual(now, timeIn)) && isBefore(now, timeOut)
+      (isAfter(now, timeIn) || isEqual(now, timeIn)) &&
+      isBefore(now, timeOutPlus10)
     );
   }
 
@@ -332,7 +334,9 @@ export default function ScheduleWeekView({
   const isShiftPastCheckoutTime = (shift: Shift) => {
     const currentTime = currentDate;
     const timeOut = parseISO(shift.timeOut);
-    const isPast = isAfter(currentTime, timeOut);
+    // Thêm 10 phút sau timeOut
+    const timeOutPlus10 = addMinutes(timeOut, 10);
+    const isPast = isAfter(currentTime, timeOutPlus10);
     return isPast;
   };
 

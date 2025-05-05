@@ -250,29 +250,7 @@ export default function EventForm({
         break;
       case 'NIGHT':
         newStartTime = setHours(setMinutes(today, 0), 18);
-        newEndTime = setHours(setMinutes(today, 0), 6);
-        if (currentStartDate === currentEndDate) {
-          const nextDay = new Date(currentEndDate);
-          nextDay.setDate(nextDay.getDate() + 1);
-          setEndDate(nextDay);
-        }
-        break;
-      case 'MORNING_TO_EVENING':
-        newStartTime = setHours(setMinutes(today, 0), 6);
-        newEndTime = setHours(setMinutes(today, 0), 18);
-        break;
-      case 'EVENING_TO_NIGHT':
-        newStartTime = setHours(setMinutes(today, 0), 12);
-        newEndTime = setHours(setMinutes(today, 0), 0);
-        if (currentStartDate === currentEndDate) {
-          const nextDay = new Date(currentEndDate);
-          nextDay.setDate(nextDay.getDate() + 1);
-          setEndDate(nextDay);
-        }
-        break;
-      case 'FULL_DAY':
-        newStartTime = setHours(setMinutes(today, 0), 6);
-        newEndTime = setHours(setMinutes(today, 0), 0);
+        newEndTime = setHours(setMinutes(today, 0), 3);
         if (currentStartDate === currentEndDate) {
           const nextDay = new Date(currentEndDate);
           nextDay.setDate(nextDay.getDate() + 1);
@@ -425,10 +403,7 @@ export default function EventForm({
                   shiftType: value as
                     | 'MORNING'
                     | 'EVENING'
-                    | 'NIGHT'
-                    | 'MORNING_TO_EVENING'
-                    | 'EVENING_TO_NIGHT'
-                    | 'FULL_DAY',
+                    | 'NIGHT',
                 });
                 updateTimeByShiftType(value);
               }}
@@ -443,16 +418,7 @@ export default function EventForm({
                   Ca chiều (12:00 - 18:00)
                 </SelectItem>
                 <SelectItem value="NIGHT">
-                  Ca tối (18:00 - 6:00 hôm sau)
-                </SelectItem>
-                <SelectItem value="MORNING_TO_EVENING">
-                  Ca sáng đến chiều (6:00 - 18:00)
-                </SelectItem>
-                <SelectItem value="EVENING_TO_NIGHT">
-                  Ca chiều đến tối (12:00 - 0:00 hôm sau)
-                </SelectItem>
-                <SelectItem value="FULL_DAY">
-                  Ca cả ngày (6:00 - 0:00 hôm sau)
+                  Ca đêm (18:00 - 3:00 hôm sau)
                 </SelectItem>
               </SelectContent>
             </Select>

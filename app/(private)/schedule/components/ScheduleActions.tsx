@@ -72,11 +72,7 @@ export default function ScheduleActions({
         },
       );
 
-      console.log(
-        `Attempting to clone schedule from ${sourceDisplayFormat} to ${targetDisplayFormat}`,
-      );
-      console.log('Source date object:', sourceWeekStart);
-      console.log('Target date object:', targetWeekStart);
+ 
 
       await handleCloneSchedule(
         sourceWeekStart,

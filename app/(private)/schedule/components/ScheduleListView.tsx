@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import {
@@ -34,11 +34,13 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Shift } from '@/features/schedule/types';
+import { useGetShiftsByStaffAndDateRangeQuery } from '@/features/schedule/scheduleApiSlice';
 
 interface ScheduleListViewProps {
   formattedStaffSchedule: Shift[];
   handleOpenDialog: (shift: Shift) => void;
   handleDelete: (id: number) => void;
+  currentDate: Date;
 }
 
 // Helper functions
@@ -119,9 +121,10 @@ export default function ScheduleListView({
   formattedStaffSchedule,
   handleOpenDialog,
   handleDelete,
+  currentDate,
 }: ScheduleListViewProps) {
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
-  const [currentWeek, setCurrentWeek] = useState(new Date());
+  const currentWeek = currentDate;
   const [attendanceFilter, setAttendanceFilter] = useState<
     'all' | 'present' | 'absent'
   >('all');
@@ -161,6 +164,11 @@ export default function ScheduleListView({
 
     return grouped;
   }, [filteredShifts, weekDays]);
+
+  // Debug logs
+  useEffect(() => {
+    
+  }, [formattedStaffSchedule, currentDate, weekDays, shiftsByDay]);
 
   const getAttendanceBadge = (status: string) => {
     switch (status) {

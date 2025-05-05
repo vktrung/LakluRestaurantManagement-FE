@@ -9,10 +9,8 @@ import {
   useGetPaymentByIdQuery,
   useGetOrderItemsInOrderQuery,
   useUpdateOrderItemQuantityMutation,
-  useGetBillQuery,
   useCancelPaymentMutation,
-  useCompletePaymentMutation,
-  paymentApiSlice
+  useCompletePaymentMutation
 } from "@/features/payment/PaymentApiSlice"
 import {
   useGetMenusQuery,
@@ -22,7 +20,7 @@ import { useCreateNewItemByOrderIdMutation, useDeleteOrderItemByIdMutation } fro
 import { formatPrice } from "@/lib/utils"
 import { getTokenFromCookie } from "@/utils/token"
 import { PaymentStatus } from "@/features/payment/types"
-import { toast, Toaster } from "sonner"
+import { toast } from "sonner"
 
 import { PaymentMethod } from "../components/PaymentMethod"
 import { VatInput } from "../components/VatInput"
@@ -36,7 +34,6 @@ import { CalendarIcon, Plus, Minus, X, Trash2, RefreshCw } from "lucide-react"
 import type { OrderItem, PaymentResponse } from "@/features/payment/types"
 import type { Menu, MenuItem } from '@/features/menu/types'
 import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
 import {
   Pagination,
   PaginationContent,
@@ -47,13 +44,6 @@ import {
   PaginationEllipsis,
 } from "@/components/ui/pagination"
 
-// Extended MenuItem interface with additional properties needed for our component
-interface ExtendedMenuItem extends MenuItem {
-  quantity: number
-  orderId?: number
-  statusLabel?: string
-  menuItemId?: number
-}
 
 // Định nghĩa kiểu cho dữ liệu trả về từ useGetPaymentByIdQuery
 interface PaymentData {
@@ -66,18 +56,6 @@ interface TempOrderItem {
   dishName: string;
   quantity: number;
   price: string | number;
-}
-
-interface TempBillData {
-  orderItems: TempOrderItem[];
-  subtotal: number;
-  tableNumber: number;
-  date: string;
-}
-
-// Thêm kiểu dữ liệu cho OrderItemExtended
-interface OrderItemExtended extends OrderItem {
-  statusLabel?: string;
 }
 
 // Thêm hàm kiểm tra và xóa dữ liệu hết hạn
@@ -120,8 +98,8 @@ interface OrderItemDisplay {
 }
 
 // Cập nhật component OrderItemCard
-const OrderItemCard = ({ item, onDelete, onChangeQuantity }: { 
-  item: OrderItemDisplay; 
+const OrderItemCard = ({ item, onDelete, onChangeQuantity }: {
+  item: OrderItemDisplay;
   onDelete: (id: number) => void;
   onChangeQuantity: (id: number, quantity: number) => void;
 }) => {
@@ -133,7 +111,7 @@ const OrderItemCard = ({ item, onDelete, onChangeQuantity }: {
           {item.price.toLocaleString()} VND
         </p>
       </div>
-      
+
       <div className="flex items-center gap-4">
         {/* Quantity Controls */}
         <div className="flex items-center border rounded-md">
@@ -207,11 +185,11 @@ export default function IntegratedPaymentPage() {
   const [pageSize, setPageSize] = useState(10)
 
   // Lấy danh sách món trong menu
-  const { 
-    data: menuDishesData, 
-    isLoading: isMenuDishesLoading 
+  const {
+    data: menuDishesData,
+    isLoading: isMenuDishesLoading
   } = useGetMenuDishesQuery(
-    { 
+    {
       menuId: selectedMenuId || 0,
       activeOnly: true,
       page,
@@ -305,7 +283,7 @@ export default function IntegratedPaymentPage() {
   // Add the updateOrderItemQuantity mutation
   const [updateOrderItemQuantity, { isLoading: isUpdatingOrderItem }] = useUpdateOrderItemQuantityMutation()
   const [createNewItemByOrderId, { isLoading: isCreatingNewItem }] = useCreateNewItemByOrderIdMutation()
-  const [deleteOrderItemById, { isLoading: isDeletingOrderItem }] = useDeleteOrderItemByIdMutation()
+  const [deleteOrderItemById] = useDeleteOrderItemByIdMutation()
 
   // Khởi tạo selectedMenuId từ dữ liệu API
   useEffect(() => {
@@ -575,53 +553,6 @@ export default function IntegratedPaymentPage() {
   };
 
   // Cập nhật hàm handleCreatePayment để xóa dữ liệu đã lưu khi tạo thanh toán thành công
-  const handleCreatePayment = async () => {
-    try {
-      setVoucherError(null)
-      const result = await createPayment({
-        orderId: orderIdNumber,
-        paymentMethod,
-        vat: vatRate,
-        voucherCode: voucherCode || undefined,
-      }).unwrap()
-
-      if (result.data?.paymentId) {
-        setPaymentId(result.data.paymentId)
-      }
-
-      // Lấy thông tin từ backend và chuyển đổi sang string nếu cần
-      setTotalAmount(String(result.data?.amountPaid || "0"))
-      setVat(String(result.data?.vat || "0"))
-      setVoucherValue(result.data?.voucherValue || null)
-      setIsPaymentCreated(true)
-
-      // Xóa dữ liệu đã lưu khi tạo thanh toán thành công
-      clearSavedPaymentData();
-
-      // Nếu chọn in hóa đơn tự động và thanh toán ngay
-      if (shouldPrintBill && result.data?.paymentId && paymentStatus === "PAID") {
-        handleNavigation(`/bill/${result.data.paymentId}`);
-      }
-    } catch (error: any) {
-      const message = error?.data?.message || error.message || "Đã xảy ra lỗi không xác định."
-      if (message.includes("foreign key constraint fails") || message.includes("Cannot delete or update a parent row")) {
-        toast.error("Đơn hàng đã được thanh toán, không thể thanh toán lại!")
-        setPaymentCompleted(true)
-        setIsCancelButtonDisabled(true)
-      } else if (message.includes("voucher") || message.includes("Voucher") || message.includes("không tìm thấy")) {
-        setVoucherError("Mã giảm giá không hợp lệ hoặc không tồn tại")
-        setErrorMessage(null)
-      } else {
-        if (message.includes("foreign key constraint fails") || message.includes("Cannot delete or update a parent row")) {
-          toast.error("Đơn hàng đã được thanh toán, không thể thanh toán lại!")
-          setPaymentCompleted(true)
-        } else {
-          toast.error(`Lỗi tạo thanh toán: ${message}`)
-          setVoucherError(null)
-        }
-      }
-    }
-  }
 
   // Thêm hàm xử lý thanh toán nhanh
   const handleQuickPayment = async () => {
@@ -1225,15 +1156,17 @@ export default function IntegratedPaymentPage() {
                 {isMenusLoading ? (
                   <div>Đang tải menu...</div>
                 ) : (
-                  menusData?.data?.map((menu: Menu) => (
-                    <Button
-                      key={menu.id}
-                      onClick={() => setSelectedMenuId(menu.id)}
-                      variant={selectedMenuId === menu.id ? 'default' : 'outline'}
-                    >
-                      {menu.name}
-                    </Button>
-                  ))
+                  menusData?.data
+                    ?.filter((menu: Menu) => menu.status === "ENABLE")
+                    .map((menu: Menu) => (
+                      <Button
+                        key={menu.id}
+                        onClick={() => setSelectedMenuId(menu.id)}
+                        variant={selectedMenuId === menu.id ? 'default' : 'outline'}
+                      >
+                        {menu.name}
+                      </Button>
+                    ))
                 )}
               </div>
 
@@ -1630,7 +1563,7 @@ export default function IntegratedPaymentPage() {
                               <span>Thanh toán đã thất bại</span>
                             </div>
                             <p className="text-sm text-gray-600 mb-4">
-                            Giao dịch không hoàn tất: Quá thời gian chờ thanh toán.
+                              Giao dịch không hoàn tất: Quá thời gian chờ thanh toán.
                             </p>
                           </div>
                         ) : (

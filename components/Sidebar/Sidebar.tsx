@@ -255,7 +255,7 @@ const roleBasedQuickLinks: RoleBasedQuickLinks = {
     { label: 'Máy POS', href: '/cashier-order-2/order', icon: <Receipt className="h-4 w-4" /> },
   ],
   'Phục vụ': [
-    { label: 'Bàn ăn', href: '/table', icon: <Table className="h-4 w-4" /> },
+    { label: 'Bàn ăn', href: '/quan-ly/table', icon: <Table className="h-4 w-4" /> },
     { label: 'Gọi món', href: '/quan-ly/order', icon: <ShoppingCart className="h-4 w-4" /> },
   ],
   Bếp: [
@@ -362,13 +362,13 @@ export function Sidebar({ className, ...props }: SidebarProps) {
 
     const hasAnyShift = shiftData.data.length > 0;
 
-    console.log('Shift check result:', {
-      hasAnyShift,
-      shiftsCount: shiftData.data.length,
-      userRoles,
-      currentDate,
-      shiftData: shiftData.data,
-    });
+    // console.log('Shift check result:', {
+    //   hasAnyShift,
+    //   shiftsCount: shiftData.data.length,
+    //   userRoles,
+    //   currentDate,
+    //   shiftData: shiftData.data,
+    // });
 
     return hasAnyShift;
   }, [shiftData, isShiftLoading, shiftError, userRoles, currentDate]);
@@ -395,24 +395,24 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       const timeOut = new Date(shift.timeOut);
 
       if (now >= timeIn && now <= timeOut) {
-        console.log('Current time is within shift hours:', {
-          shiftId: shift.id,
-          timeIn: shift.timeIn,
-          timeOut: shift.timeOut,
-          currentTime: now.toISOString(),
-        });
+        // console.log('Current time is within shift hours:', {
+        //   shiftId: shift.id,
+        //   timeIn: shift.timeIn,
+        //   timeOut: shift.timeOut,
+        //   currentTime: now.toISOString(),
+        // });
         return true;
       }
     }
 
-    console.log('Current time is outside shift hours:', {
-      currentTime: now.toISOString(),
-      shifts: shiftData.data.map((s: Shift) => ({
-        id: s.id,
-        timeIn: s.timeIn,
-        timeOut: s.timeOut,
-      })),
-    });
+    // console.log('Current time is outside shift hours:', {
+    //   currentTime: now.toISOString(),
+    //   shifts: shiftData.data.map((s: Shift) => ({
+    //     id: s.id,
+    //     timeIn: s.timeIn,
+    //     timeOut: s.timeOut,
+    //   })),
+    // });
     return false;
   }, [shiftData, isShiftLoading, shiftError]);
 
@@ -452,14 +452,14 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       }
     }
 
-    console.log('Computed menuItems:', {
-      items,
-      role: userRoles,
-      hasShifts,
-      hasAttendedShift,
-      isWithinShiftHours,
-      userFullName,
-    });
+    // console.log('Computed menuItems:', {
+    //   items,
+    //   role: userRoles,
+    //   hasShifts,
+    //   hasAttendedShift,
+    //   isWithinShiftHours,
+    //   userFullName,
+    // });
 
     return items;
   }, [userRoles, isUserLoading, userError, hasShifts, hasAttendedShift, isWithinShiftHours, userFullName]);
@@ -495,14 +495,14 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       }
     }
 
-    console.log('Computed quickLinks:', {
-      links,
-      role: userRoles,
-      hasShifts,
-      hasAttendedShift,
-      isWithinShiftHours,
-      userFullName,
-    });
+    // console.log('Computed quickLinks:', {
+    //   links,
+    //   role: userRoles,
+    //   hasShifts,
+    //   hasAttendedShift,
+    //   isWithinShiftHours,
+    //   userFullName,
+    // });
 
     return links;
   }, [userRoles, isUserLoading, userError, hasShifts, hasAttendedShift, isWithinShiftHours, userFullName]);

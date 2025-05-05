@@ -72,7 +72,7 @@ const OrderPanel = ({
   };
 
   return (
-    <div className="min-h-screen sm:h-full sm:border sm:rounded-lg sm:shadow-md p-3 sm:p-4 space-y-3 sm:space-y-4 bg-white">
+    <div className="min-h-screen sm:h-full sm:border sm:rounded-lg sm:shadow-md p-3 sm:p-4 space-y-3 sm:space-y-4 bg-white relative">
       <div className="flex items-center justify-between">
         <h2 className="text-base sm:text-xl font-semibold">Đơn hàng của bạn</h2>
         <Button
@@ -85,7 +85,7 @@ const OrderPanel = ({
         </Button>
       </div>
 
-      <div className="overflow-y-auto h-[calc(100vh-200px)] sm:h-[calc(100vh-300px)]">
+      <div className="overflow-y-auto h-[calc(100vh-250px)] sm:h-[calc(100vh-300px)]">
         {orderItems.length > 0 ? (
           <div className="space-y-3 sm:space-y-4">
             {orderItems.map((item) => (
@@ -163,10 +163,10 @@ const OrderPanel = ({
             {total.toLocaleString('vi-VN')} VND
           </span>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-2 sm:space-y-3">
           <Button
             variant="default"
-            className="w-full h-8 sm:h-10 text-xs sm:text-sm bg-green-600 hover:bg-green-700"
+            className="w-full h-8 sm:h-10 text-xs sm:text-sm bg-green-600 hover:bg-green-700 z-10 relative"
             onClick={handleCreateOrder}
             disabled={isCreatingOrder || orderItems.length === 0}
           >

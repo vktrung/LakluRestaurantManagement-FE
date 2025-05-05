@@ -65,11 +65,11 @@ export default function LoginForm() {
             if (userRoles.includes('Quản trị viên hệ thống')) {
               router.push("/quan-ly/tong-quat") // Trang tổng quát cho quản lý
             } else if (userRoles.includes('Phục vụ')) {
-              router.push("/quan-ly/table") // Trang bàn ăn cho nhân viên
+              router.push("/schedule") // Trang bàn ăn cho nhân viên
             } else if (userRoles.includes('Bếp')) {
-              router.push("/kitchen") // Trang bếp cho đầu bếp
+              router.push("/schedule") // Trang bếp cho đầu bếp
             } else if (userRoles.includes('Thu ngân')) {
-              router.push("/cashier-order-2/order") // Trang thu ngân
+              router.push("/schedule") // Trang thu ngân
             } else {
               // Mặc định chuyển đến trang chính
               router.push("/")

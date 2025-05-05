@@ -166,9 +166,12 @@ export default function ScheduleListView({
   }, [filteredShifts, weekDays]);
 
   // Debug logs
-  useEffect(() => {
-    
-  }, [formattedStaffSchedule, currentDate, weekDays, shiftsByDay]);
+  useEffect(() => {}, [
+    formattedStaffSchedule,
+    currentDate,
+    weekDays,
+    shiftsByDay,
+  ]);
 
   const getAttendanceBadge = (status: string) => {
     switch (status) {
@@ -473,11 +476,70 @@ export default function ScheduleListView({
                       </p>
                       {selectedShift.detail.userFullNames &&
                       selectedShift.detail.userFullNames.length > 0 ? (
-                        <ul className="text-sm text-slate-600 list-disc list-inside max-h-[15vh] overflow-y-auto pr-1">
+                        <ul className="space-y-3 max-h-64 overflow-y-auto pr-1">
                           {selectedShift.detail.userFullNames.map(
-                            (username: string, index: number) => (
-                              <li key={index}>{username}</li>
-                            ),
+                            (fullName, idx) => {
+                              const isPresent =
+                                selectedShift.detail.userAttendancesByFullName[
+                                  fullName
+                                ];
+                              const clockData =
+                                selectedShift.detail.userClockInClockOut?.[
+                                  fullName
+                                ];
+                              return (
+                                <li
+                                  key={idx}
+                                  className="rounded border px-3 py-2 flex flex-col bg-gray-50"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium">
+                                      {fullName}
+                                    </span>
+                                    <span
+                                      className={`text-xs px-2 py-0.5 rounded-full min-w-[64px] text-center ${
+                                        isPresent
+                                          ? 'bg-green-100 text-green-800'
+                                          : 'bg-red-100 text-red-800'
+                                      }`}
+                                    >
+                                      {isPresent ? 'Có mặt' : 'Vắng mặt'}
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-4 mt-1 pl-1">
+                                    <div className="flex items-center gap-1 min-w-[110px]">
+                                      <span className="text-xs text-slate-500">
+                                        Check-in:
+                                      </span>
+                                      <span
+                                        className={`text-xs px-2 py-0.5 rounded min-w-[80px] text-center ${
+                                          clockData?.clockIn
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-gray-100 text-gray-500'
+                                        }`}
+                                      >
+                                        {clockData?.clockIn || 'Chưa check-in'}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1 min-w-[110px]">
+                                      <span className="text-xs text-slate-500">
+                                        Check-out:
+                                      </span>
+                                      <span
+                                        className={`text-xs px-2 py-0.5 rounded min-w-[80px] text-center ${
+                                          clockData?.clockOut
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-gray-100 text-gray-500'
+                                        }`}
+                                      >
+                                        {clockData?.clockOut ||
+                                          'Chưa check-out'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </li>
+                              );
+                            },
                           )}
                         </ul>
                       ) : (

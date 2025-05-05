@@ -708,42 +708,78 @@ export default function ScheduleWeekView({
                     </div>
                   </div>
                 </CardContent>
+              </Card>
+              <Card className="border-gray-200 shadow-sm">
                 <CardContent className="p-4">
                   <div>
-                    <p className="font-semibold">Danh sách nhân viên</p>
-                    {selectedShift.detail.userFullNames &&
-                    selectedShift.detail.userFullNames.length > 0 ? (
-                      <ul className="text-sm text-slate-600 list-disc list-inside space-y-1">
+                    <p className="font-semibold mb-2">Danh sách nhân viên</p>
+                    <div className="max-h-64 overflow-y-auto pr-1">
+                      <ul className="space-y-3">
                         {selectedShift.detail.userFullNames.map(
-                          (fullName, index) => (
-                            <li
-                              key={index}
-                              className="flex justify-between items-center"
-                            >
-                              <span>{fullName}</span>
-                              <span
-                                className={`text-xs px-2 py-1 rounded-full ${
-                                  selectedShift.detail
-                                    .userAttendancesByFullName[fullName]
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-red-100 text-red-800'
-                                }`}
+                          (fullName, idx) => {
+                            const isPresent =
+                              selectedShift.detail.userAttendancesByFullName[
+                                fullName
+                              ];
+                            const clockData =
+                              selectedShift.detail.userClockInClockOut?.[
+                                fullName
+                              ];
+                            return (
+                              <li
+                                key={idx}
+                                className="rounded border px-3 py-2 flex flex-col bg-gray-50"
                               >
-                                {selectedShift.detail.userAttendancesByFullName[
-                                  fullName
-                                ]
-                                  ? 'Có mặt'
-                                  : 'Vắng mặt'}
-                              </span>
-                            </li>
-                          ),
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium">
+                                    {fullName}
+                                  </span>
+                                  <span
+                                    className={`text-xs px-2 py-0.5 rounded-full min-w-[64px] text-center ${
+                                      isPresent
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-red-100 text-red-800'
+                                    }`}
+                                  >
+                                    {isPresent ? 'Có mặt' : 'Vắng mặt'}
+                                  </span>
+                                </div>
+                                <div className="flex gap-4 mt-1 pl-1">
+                                  <div className="flex items-center gap-1 min-w-[110px]">
+                                    <span className="text-xs text-slate-500">
+                                      Check-in:
+                                    </span>
+                                    <span
+                                      className={`text-xs px-2 py-0.5 rounded min-w-[80px] text-center ${
+                                        clockData?.clockIn
+                                          ? 'bg-green-100 text-green-800'
+                                          : 'bg-gray-100 text-gray-500'
+                                      }`}
+                                    >
+                                      {clockData?.clockIn || 'Chưa check-in'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1 min-w-[110px]">
+                                    <span className="text-xs text-slate-500">
+                                      Check-out:
+                                    </span>
+                                    <span
+                                      className={`text-xs px-2 py-0.5 rounded min-w-[80px] text-center ${
+                                        clockData?.clockOut
+                                          ? 'bg-green-100 text-green-800'
+                                          : 'bg-gray-100 text-gray-500'
+                                      }`}
+                                    >
+                                      {clockData?.clockOut || 'Chưa check-out'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </li>
+                            );
+                          },
                         )}
                       </ul>
-                    ) : (
-                      <p className="text-sm text-slate-600">
-                        Không có danh sách nhân viên
-                      </p>
-                    )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

@@ -12,6 +12,12 @@ export type Shift = {
     timeOut: string;
     attended: string; 
     userAttendancesByFullName: { [key: string]: boolean };
+    userClockInClockOut: {
+      [key: string]: {
+        clockIn: string | null;
+        clockOut: string | null;
+      };
+    };
   };
 };
 export type GetShiftsByDateRangeRequest = {
